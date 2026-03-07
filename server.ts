@@ -8,6 +8,8 @@ import mongoose from "mongoose";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import dns from "dns";
+import { v2 as cloudinary } from "cloudinary";
+import { CloudinaryStorage } from "multer-storage-cloudinary";
 
 dotenv.config();
 
@@ -40,6 +42,7 @@ const Setting = mongoose.model("Setting", settingSchema);
 async function startServer() {
   const app = express();
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+  const uploadsDir = path.join(ROOT_DIR, "public", "uploads");
 
   app.use(cors());
   app.use(express.json({ limit: '50mb' }));
@@ -52,9 +55,6 @@ async function startServer() {
   } catch (error) {
     console.error("MongoDB connection Error:", error);
   }
-
-  import { v2 as cloudinary } from "cloudinary";
-  import { CloudinaryStorage } from "multer-storage-cloudinary";
 
   // Configure Cloudinary
   cloudinary.config({
