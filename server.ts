@@ -1,0 +1,212 @@
+import express from "express";
+import { createServer as createViteServer } from "vite";
+import multer from "multer";
+import path from "path";
+import fs from "fs-extra";
+import cors from "cors";
+import mongoose from "mongoose";
+import { fileURLToPath } from "url";
+import dotenv from "dotenv";
+import dns from "dns";
+
+dotenv.config();
+
+// Bypass mobile network DNS blocks that cause "ECONNREFUSED" for MongoDB
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const ROOT_DIR = process.cwd();
+
+// Get MONGODB_URI from environment variables or use a default one
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/rappani_store";
+
+// Mongoose Models
+const productSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  category: { type: String, required: true },
+  price: { type: Number, required: true },
+  image: { type: String, required: true }
+});
+const Product = mongoose.model("Product", productSchema);
+
+const settingSchema = new mongoose.Schema({
+  key: { type: String, required: true, unique: true },
+  value: { type: String, required: true }
+});
+const Setting = mongoose.model("Setting", settingSchema);
+
+async function startServer() {
+  const app = express();
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+
+  app.use(cors());
+  app.use(express.json({ limit: '50mb' }));
+
+  // Connect to MongoDB
+  try {
+    await mongoose.connect(MONGODB_URI);
+    console.log("Connected to MongoDB Cloud Database");
+    await seedInitialData();
+  } catch (error) {
+    console.error("MongoDB connection Error:", error);
+  }
+
+  // Ensure uploads directory exists
+  const uploadsDir = path.join(ROOT_DIR, "public", "uploads");
+  await fs.ensureDir(uploadsDir);
+
+  // Multer config
+  const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      cb(null, uploadsDir);
+    },
+    filename: (req, file, cb) => {
+      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+      cb(null, uniqueSuffix + path.extname(file.originalname));
+    },
+  });
+
+  const upload = multer({ storage });
+
+  // Auth Routes
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { password } = req.body;
+      const setting = await Setting.findOne({ key: 'admin_password' });
+      if (setting && password === setting.value) {
+        res.json({ success: true });
+      } else {
+        res.status(401).json({ success: false, error: "Invalid password" });
+      }
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  app.post("/api/auth/change-password", async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      const setting = await Setting.findOne({ key: 'admin_password' });
+
+      if (!setting || currentPassword !== setting.value) {
+        return res.status(401).json({ success: false, error: "Current password incorrect" });
+      }
+
+      await Setting.updateOne({ key: 'admin_password' }, { value: newPassword });
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  // API Routes
+  app.get("/api/products", async (req, res) => {
+    try {
+      const products = await Product.find({}, '-_id -__v');
+      res.json(products);
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  app.post("/api/products", async (req, res) => {
+    try {
+      const { id, name, category, price, image } = req.body;
+      await Product.create({ id, name, category, price, image });
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  app.put("/api/products/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name, category, price, image } = req.body;
+      await Product.updateOne({ id }, { name, category, price, image });
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  app.delete("/api/products/:id", async (req, res) => {
+    try {
+      const id = req.params.id.trim();
+      console.log(`[SERVER] DELETE request for ID: "${id}"`);
+      const result = await Product.deleteOne({ id });
+      console.log(`[SERVER] Delete result for "${id}": ${result.deletedCount} items affected`);
+
+      if (result.deletedCount === 0) {
+        console.warn(`[SERVER] Product with ID "${id}" not found.`);
+        return res.status(404).json({ success: false, error: "Product not found" });
+      }
+
+      res.json({ success: true, changes: result.deletedCount });
+    } catch (err) {
+      console.error("[SERVER] Delete error:", err);
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  // Image Upload Route
+  app.post("/api/upload", upload.single("image"), (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+    const imageUrl = `/uploads/${req.file.filename}`;
+    res.json({ imageUrl });
+  });
+
+  // Serve uploaded files
+  app.use("/uploads", express.static(uploadsDir));
+
+  // Vite middleware for development
+  if (process.env.NODE_ENV !== "production") {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+  } else {
+    app.use(express.static(path.join(ROOT_DIR, "dist")));
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(ROOT_DIR, "dist", "index.html"));
+    });
+  }
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
+
+async function seedInitialData() {
+  try {
+    const isSeeded = await Setting.findOne({ key: 'initial_seed' });
+    if (!isSeeded) {
+      const count = await Product.countDocuments();
+      if (count === 0) {
+        console.log("Seeding initial products into MongoDB...");
+        const defaultProducts = [
+          { id: '1', name: 'Premium Ruled Notebook', category: 'Stationary', price: 120, image: 'https://picsum.photos/seed/notebook/400/400' },
+          { id: '2', name: 'Color Pen Set (12 Pcs)', category: 'Stationary', price: 150, image: 'https://picsum.photos/seed/pens/400/400' },
+          { id: '3', name: 'Birthday Gift Box', category: 'Fancy', price: 450, image: 'https://picsum.photos/seed/giftbox/400/400' },
+          { id: '4', name: 'Cute Teddy Bear', category: 'Fancy', price: 600, image: 'https://picsum.photos/seed/teddy/400/400' },
+        ];
+        await Product.insertMany(defaultProducts);
+      }
+      await Setting.create({ key: 'initial_seed', value: 'true' });
+    }
+
+    const passExists = await Setting.findOne({ key: 'admin_password' });
+    if (!passExists) {
+      await Setting.create({ key: 'admin_password', value: 'rappani123' });
+    }
+  } catch (err) {
+    console.error("Seeding error:", err);
+  }
+}
+
+startServer();
