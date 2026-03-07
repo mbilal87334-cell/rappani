@@ -1,0 +1,1067 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
+import { Phone, Mail, Instagram, MessageCircle, MapPin, Lock, LogOut, Plus, Edit, Trash2, Store, ShoppingBag, Menu, X, Camera, Aperture, Globe, Database, Search, ArrowUp, Package, LayoutGrid } from 'lucide-react';
+
+// --- Types ---
+interface Product {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  image: string;
+}
+
+// --- API Service ---
+const API_BASE = '/api';
+
+async function fetchProducts() {
+  const res = await fetch(`${API_BASE}/products`);
+  if (!res.ok) throw new Error("Failed to fetch products");
+  return res.json();
+}
+
+async function saveProduct(product: Product, isEditing: boolean) {
+  const method = isEditing ? 'PUT' : 'POST';
+  const url = isEditing ? `${API_BASE}/products/${product.id}` : `${API_BASE}/products`;
+  const res = await fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(product),
+  });
+  if (!res.ok) throw new Error("Failed to save product");
+  return res.json();
+}
+
+async function deleteProduct(id: string) {
+  console.log(`API Service: Calling DELETE /api/products/${id}`);
+  const res = await fetch(`${API_BASE}/products/${id}`, { method: 'DELETE' });
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    console.error(`API Service: DELETE failed with status ${res.status}`, errorData);
+    throw new Error(errorData.error || "Failed to delete product");
+  }
+  console.log(`API Service: DELETE successful for ID: ${id}`);
+  return res.json();
+}
+
+async function uploadImage(dataUrl: string) {
+  // Convert DataURL to Blob
+  const res = await fetch(dataUrl);
+  const blob = await res.blob();
+  
+  const formData = new FormData();
+  formData.append('image', blob, 'upload.jpg');
+  
+  const uploadRes = await fetch(`${API_BASE}/upload`, {
+    method: 'POST',
+    body: formData,
+  });
+  if (!uploadRes.ok) throw new Error("Failed to upload image");
+  const data = await uploadRes.json();
+  return data.imageUrl;
+}
+
+// --- Translations (தமிழ் & English) ---
+const translations = {
+  en: {
+    storeName: "Rappani",
+    tagline: "Stationary & Fancy Store",
+    home: "Home",
+    products: "Products",
+    contact: "Contact",
+    adminLogin: "Admin Login",
+    welcome: "Welcome to our store",
+    heroTitle1: "Your One-Stop Shop for",
+    heroTitle2: "Stationary",
+    heroTitle3: "&",
+    heroTitle4: "Fancy",
+    heroTitle5: "Items",
+    heroDesc: "Discover a wide range of premium stationary, beautiful gifts, and fancy items for all your needs. Quality products at the best prices.",
+    shopNow: "Shop Now",
+    contactUs: "Contact Us",
+    featuredProducts: "Our Featured Products",
+    featuredDesc: "Explore our handpicked collection of stationary and fancy items.",
+    buyWhatsapp: "Buy via WhatsApp",
+    getInTouch: "Get in Touch",
+    contactDesc: "Visit our store or contact us online for orders and inquiries. We're always happy to help!",
+    callUs: "Call Us",
+    emailUs: "Email Us",
+    addressTitle: "Rappani Store",
+    addressDesc: "Stationary & Fancy Items\nOpen Mon-Sat, 9AM - 9PM",
+    rights: "Rappani Stationary and Fancy Store. All rights reserved.",
+    all: "All",
+    stationary: "Stationary",
+    fancy: "Fancy",
+    searchPlaceholder: "Search products...",
+    noProducts: "No products found",
+    storageStatus: "Memory Status: Local Database Active"
+  },
+  ta: {
+    storeName: "ரப்பானி",
+    tagline: "ஸ்டேஷனரி & ஃபேன்ஸி ஸ்டோர்",
+    home: "முகப்பு",
+    products: "பொருட்கள்",
+    contact: "தொடர்புக்கு",
+    adminLogin: "அட்மின்",
+    welcome: "எங்கள் கடைக்கு வரவேற்கிறோம்",
+    heroTitle1: "உங்களுக்கு தேவையான",
+    heroTitle2: "ஸ்டேஷனரி",
+    heroTitle3: "மற்றும்",
+    heroTitle4: "ஃபேன்ஸி",
+    heroTitle5: "பொருட்கள்",
+    heroDesc: "உங்களுக்குத் தேவையான அனைத்து சிறந்த ஸ்டேஷனரி, அழகான பரிசுகள் மற்றும் ஃபேன்ஸி பொருட்களை இங்கே கண்டறியுங்கள். சிறந்த விலையில் தரமான பொருட்கள்.",
+    shopNow: "பொருட்களைப் பார்க்க",
+    contactUs: "தொடர்பு கொள்ள",
+    featuredProducts: "எங்கள் சிறப்பான பொருட்கள்",
+    featuredDesc: "நாங்கள் உங்களுக்காகத் தேர்ந்தெடுத்த ஸ்டேஷனரி மற்றும் ஃபேன்ஸி பொருட்களைப் பாருங்கள்.",
+    buyWhatsapp: "WhatsApp-ல் வாங்க",
+    getInTouch: "தொடர்பு கொள்ளுங்கள்",
+    contactDesc: "ஆர்டர்கள் மற்றும் விவரங்களுக்கு எங்கள் கடையை நேரில் அணுகவும் அல்லது ஆன்லைனில் தொடர்பு கொள்ளவும். உங்களுக்கு உதவ நாங்கள் காத்திருக்கிறோம்!",
+    callUs: "அழைக்க",
+    emailUs: "இமெயில் அனுப்ப",
+    addressTitle: "ரப்பானி ஸ்டோர்",
+    addressDesc: "ஸ்டேஷனரி & ஃபேன்ஸி பொருட்கள்\nதிங்கள்-சனி, காலை 9 - இரவு 9",
+    rights: "ரப்பானி ஸ்டேஷனரி மற்றும் ஃபேன்ஸி ஸ்டோர். அனைத்து உரிமைகளும் பாதுகாக்கப்பட்டவை.",
+    all: "அனைத்தும்",
+    stationary: "ஸ்டேஷனரி",
+    fancy: "ஃபேன்ஸி",
+    searchPlaceholder: "பொருட்களைத் தேடுங்கள்...",
+    noProducts: "பொருட்கள் எதுவும் இல்லை",
+    storageStatus: "நினைவக நிலை: உள்ளூர் தரவுத்தளம் செயலில் உள்ளது"
+  }
+};
+
+// --- Visitor Panel ---
+function VisitorPanel({ products }: { products: Product[] }) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [lang, setLang] = useState<'en' | 'ta'>('en');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const t = translations[lang];
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 400);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const toggleLanguage = () => {
+    setLang(lang === 'en' ? 'ta' : 'en');
+  };
+
+  const categories = ['All', 'Stationary', 'Fancy'];
+
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  return (
+    <div className="min-h-screen bg-stone-50 font-sans text-stone-900">
+      {/* Header */}
+      <header className="bg-white shadow-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-20">
+            <div className="flex items-center gap-3">
+              <div className="bg-rose-500 p-2.5 rounded-xl text-white shadow-md">
+                <Store className="w-6 h-6" />
+              </div>
+              <div>
+                <h1 className="text-xl md:text-2xl font-bold text-stone-900 leading-tight">{t.storeName}</h1>
+                <p className="text-xs font-medium text-rose-500 tracking-wider uppercase">{t.tagline}</p>
+              </div>
+            </div>
+            
+            {/* Desktop Nav */}
+            <nav className="hidden md:flex items-center gap-8">
+              <a href="#home" className="text-sm font-semibold text-stone-600 hover:text-rose-500 transition-colors">{t.home}</a>
+              <a href="#products" className="text-sm font-semibold text-stone-600 hover:text-rose-500 transition-colors">{t.products}</a>
+              <a href="#contact" className="text-sm font-semibold text-stone-600 hover:text-rose-500 transition-colors">{t.contact}</a>
+              
+              {/* Language Toggle */}
+              <button onClick={toggleLanguage} className="flex items-center gap-2 text-sm font-bold text-rose-600 bg-rose-50 px-3 py-1.5 rounded-full hover:bg-rose-100 transition-colors border border-rose-200">
+                <Globe className="w-4 h-4" /> {lang === 'en' ? 'தமிழ்' : 'English'}
+              </button>
+
+              <Link to="/admin" className="flex items-center gap-2 text-sm font-semibold bg-stone-900 text-white px-4 py-2 rounded-full hover:bg-stone-800 transition-colors">
+                <Lock className="w-4 h-4" /> {t.adminLogin}
+              </Link>
+            </nav>
+
+            {/* Mobile Menu Button */}
+            <div className="md:hidden flex items-center gap-4">
+              <button onClick={toggleLanguage} className="flex items-center gap-1 text-xs font-bold text-rose-600 bg-rose-50 px-2 py-1 rounded-full border border-rose-200">
+                <Globe className="w-3 h-3" /> {lang === 'en' ? 'தமிழ்' : 'EN'}
+              </button>
+              <button className="p-2 text-stone-600" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+                {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Nav */}
+        {isMenuOpen && (
+          <div className="md:hidden bg-white border-t border-stone-100 absolute w-full shadow-lg">
+            <div className="px-4 pt-2 pb-6 space-y-1 flex flex-col">
+              <a href="#home" className="block px-3 py-3 text-base font-medium text-stone-700 hover:bg-stone-50 rounded-lg" onClick={() => setIsMenuOpen(false)}>{t.home}</a>
+              <a href="#products" className="block px-3 py-3 text-base font-medium text-stone-700 hover:bg-stone-50 rounded-lg" onClick={() => setIsMenuOpen(false)}>{t.products}</a>
+              <a href="#contact" className="block px-3 py-3 text-base font-medium text-stone-700 hover:bg-stone-50 rounded-lg" onClick={() => setIsMenuOpen(false)}>{t.contact}</a>
+              <Link to="/admin" className="mt-4 flex items-center justify-center gap-2 text-base font-medium bg-stone-900 text-white px-4 py-3 rounded-xl" onClick={() => setIsMenuOpen(false)}>
+                <Lock className="w-5 h-5" /> {t.adminLogin}
+              </Link>
+            </div>
+          </div>
+        )}
+      </header>
+
+      {/* Hero Section */}
+      <section id="home" className="relative bg-stone-900 text-white overflow-hidden">
+        <div className="absolute inset-0">
+          <img src="https://picsum.photos/seed/stationary/1920/1080?blur=2" alt="Store Background" className="w-full h-full object-cover opacity-40" referrerPolicy="no-referrer" />
+          <div className="absolute inset-0 bg-gradient-to-r from-stone-900 via-stone-900/80 to-transparent"></div>
+        </div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
+          <div className="max-w-2xl">
+            <span className="inline-block py-1 px-3 rounded-full bg-rose-500/20 text-rose-300 text-sm font-semibold tracking-wider mb-6 border border-rose-500/30">
+              {t.welcome}
+            </span>
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
+              {t.heroTitle1} <span className="text-rose-400">{t.heroTitle2}</span> {t.heroTitle3} <span className="text-rose-400">{t.heroTitle4}</span> {t.heroTitle5}
+            </h2>
+            <p className="text-lg md:text-xl text-stone-300 mb-10 max-w-xl leading-relaxed">
+              {t.heroDesc}
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <a href="#products" className="bg-rose-500 hover:bg-rose-600 text-white px-8 py-4 rounded-full font-semibold text-lg transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-rose-500/30 flex items-center gap-2">
+                <ShoppingBag className="w-5 h-5" /> {t.shopNow}
+              </a>
+              <a href="#contact" className="bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white border border-white/20 px-8 py-4 rounded-full font-semibold text-lg transition-colors flex items-center gap-2">
+                <Phone className="w-5 h-5" /> {t.contactUs}
+              </a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Products Section */}
+      <section id="products" className="py-20 bg-stone-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-stone-900 mb-4">{t.featuredProducts}</h2>
+            <p className="text-stone-500 max-w-2xl mx-auto text-lg">{t.featuredDesc}</p>
+          </div>
+
+          {/* Search and Filter */}
+          <div className="mb-12 flex flex-col md:flex-row gap-6 items-center justify-between bg-white p-6 rounded-3xl shadow-sm border border-stone-100">
+            <div className="relative w-full md:max-w-md">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
+              <input 
+                type="text" 
+                placeholder={t.searchPlaceholder}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-stone-50 border-none rounded-2xl focus:ring-2 focus:ring-rose-500 transition-all outline-none text-stone-800"
+              />
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto scrollbar-hide">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap ${
+                    selectedCategory === cat 
+                      ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30 scale-105' 
+                      : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                  }`}
+                >
+                  {cat === 'All' ? t.all : (cat === 'Stationary' ? t.stationary : t.fancy)}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          {filteredProducts.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredProducts.map((product) => (
+                <div key={product.id} className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-stone-100 group">
+                  <div className="aspect-square overflow-hidden relative bg-stone-100">
+                    <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
+                    <div className="absolute top-4 left-4 bg-rose-500 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-md">
+                      {product.category === 'Stationary' ? t.stationary : t.fancy}
+                    </div>
+                  </div>
+                  <div className="p-6">
+                    <h3 className="text-xl font-bold text-stone-900 mb-2">{product.name}</h3>
+                    <div className="flex items-center justify-between mt-4">
+                      <span className="text-2xl font-extrabold text-rose-500">₹{product.price}</span>
+                      <a href={`https://wa.me/916384137974?text=Hi, I want to buy ${product.name} (₹${product.price})`} target="_blank" rel="noopener noreferrer" className="bg-stone-900 hover:bg-stone-800 text-white px-4 py-2 rounded-full text-sm font-semibold transition-colors flex items-center gap-2">
+                        <MessageCircle className="w-4 h-4" /> {t.buyWhatsapp}
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-stone-200">
+              <div className="bg-stone-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Search className="w-8 h-8 text-stone-300" />
+              </div>
+              <h3 className="text-xl font-bold text-stone-900 mb-2">{t.noProducts}</h3>
+              <p className="text-stone-500">Try adjusting your search or filter to find what you're looking for.</p>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Contact Section */}
+      <section id="contact" className="py-20 bg-white border-t border-stone-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-stone-900 rounded-3xl overflow-hidden shadow-2xl">
+            <div className="grid lg:grid-cols-2">
+              <div className="p-10 md:p-16 flex flex-col justify-center">
+                <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">{t.getInTouch}</h2>
+                <p className="text-stone-400 mb-10 text-lg">{t.contactDesc}</p>
+                
+                <div className="space-y-6">
+                  <div className="flex items-start gap-4">
+                    <div className="bg-rose-500/20 p-3 rounded-full text-rose-400">
+                      <Phone className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-stone-400 font-medium mb-1">{t.callUs}</p>
+                      <div className="flex flex-col gap-2">
+                        <a href="https://wa.me/916384137974" target="_blank" rel="noopener noreferrer" className="text-white font-semibold text-lg hover:text-rose-400 transition-colors flex items-center gap-2">
+                          <MessageCircle className="w-4 h-4 text-[#25D366]" /> +91 6384137974
+                        </a>
+                        <a href="https://wa.me/918940324030" target="_blank" rel="noopener noreferrer" className="text-white font-semibold text-lg hover:text-rose-400 transition-colors flex items-center gap-2">
+                          <MessageCircle className="w-4 h-4 text-[#25D366]" /> +91 8940324030
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-4">
+                    <div className="bg-rose-500/20 p-3 rounded-full text-rose-400">
+                      <Mail className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-stone-400 font-medium mb-1">{t.emailUs}</p>
+                      <a href="mailto:rappaniazzam@gmail.com" className="text-white font-semibold text-lg hover:text-rose-400 transition-colors">rappaniazzam@gmail.com</a>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-12 pt-10 border-t border-stone-800 flex flex-wrap gap-4">
+                  <a href="https://wa.me/916384137974" target="_blank" rel="noopener noreferrer" className="bg-[#25D366] hover:bg-[#20bd5a] text-white px-6 py-4 rounded-full transition-transform hover:scale-105 shadow-lg shadow-[#25D366]/20 flex items-center gap-2 font-bold">
+                    <MessageCircle className="w-6 h-6" /> WhatsApp 1
+                  </a>
+                  <a href="https://wa.me/918940324030" target="_blank" rel="noopener noreferrer" className="bg-[#25D366] hover:bg-[#20bd5a] text-white px-6 py-4 rounded-full transition-transform hover:scale-105 shadow-lg shadow-[#25D366]/20 flex items-center gap-2 font-bold">
+                    <MessageCircle className="w-6 h-6" /> WhatsApp 2
+                  </a>
+                  <a href="https://instagram.com/frds_call_me_rappani" target="_blank" rel="noopener noreferrer" className="bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] hover:opacity-90 text-white p-4 rounded-full transition-transform hover:scale-110 shadow-lg shadow-[#bc1888]/20">
+                    <Instagram className="w-6 h-6" />
+                  </a>
+                </div>
+              </div>
+              
+              <div className="relative h-64 lg:h-auto bg-stone-800">
+                <img src="https://picsum.photos/seed/storefront/800/800" alt="Store Location" className="w-full h-full object-cover opacity-80" referrerPolicy="no-referrer" />
+                <div className="absolute inset-0 bg-gradient-to-t from-stone-900 via-transparent to-transparent lg:bg-gradient-to-l"></div>
+                <div className="absolute bottom-8 left-8 right-8 bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl">
+                  <div className="flex items-center gap-3 text-white mb-2">
+                    <MapPin className="w-5 h-5 text-rose-400" />
+                    <h3 className="font-bold text-lg">{t.addressTitle}</h3>
+                  </div>
+                  <p className="text-stone-300 text-sm whitespace-pre-line">{t.addressDesc}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-stone-950 text-stone-400 py-12 border-t border-stone-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <Store className="w-6 h-6 text-rose-400" />
+            <h2 className="text-xl font-bold tracking-tight text-white">{t.storeName}</h2>
+          </div>
+          <p className="mb-8">&copy; {new Date().getFullYear()} {t.rights}</p>
+          <div className="flex items-center justify-center gap-2 text-[10px] text-stone-600 uppercase tracking-widest">
+            <Database className="w-3 h-3" /> {t.storageStatus}
+          </div>
+        </div>
+      </footer>
+
+      {/* Back to Top */}
+      {showBackToTop && (
+        <button 
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          className="fixed bottom-8 right-8 bg-rose-500 text-white p-4 rounded-full shadow-2xl shadow-rose-500/40 hover:bg-rose-600 transition-all hover:scale-110 active:scale-95 z-50 animate-in fade-in zoom-in duration-300"
+        >
+          <ArrowUp className="w-6 h-6" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+// --- Admin Panel ---
+function AdminPanel({ products, setProducts }: { products: Product[], setProducts: React.Dispatch<React.SetStateAction<Product[]>> }) {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+
+  // Form State
+  const [isEditing, setIsEditing] = useState(false);
+  const [currentProduct, setCurrentProduct] = useState<Product>({ id: '', name: '', category: 'Stationary', price: 0, image: '' });
+  const [formError, setFormError] = useState('');
+
+  // Camera State
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [isUploading, setIsUploading] = useState(false);
+  
+  const [showPasswordChange, setShowPasswordChange] = useState(false);
+  const [passForm, setPassForm] = useState({ current: '', new: '', confirm: '' });
+  const [passError, setPassError] = useState('');
+  const [passSuccess, setPassSuccess] = useState('');
+
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, []);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setIsUploading(true);
+      try {
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const dataUrl = reader.result as string;
+          const imageUrl = await uploadImage(dataUrl);
+          setCurrentProduct({ ...currentProduct, image: imageUrl });
+          setFormError('');
+          setIsUploading(false);
+        };
+        reader.readAsDataURL(file);
+      } catch (err) {
+        console.error("Upload failed", err);
+        setFormError("Image upload failed. Please try again.");
+        setIsUploading(false);
+      }
+    }
+  };
+
+  const triggerCamera = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const startCamera = async () => {
+    setFormError('');
+    try {
+      stopCamera();
+      
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Your browser does not support camera access.");
+      }
+
+      let stream: MediaStream;
+      try {
+        // Try with ideal constraints first (back camera)
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { 
+            facingMode: { ideal: 'environment' },
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          } 
+        });
+      } catch (e) {
+        console.warn("Ideal constraints failed, trying simple video access", e);
+        // Fallback to any available camera
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      }
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        // Important: Wait for metadata to load before playing
+        videoRef.current.onloadedmetadata = () => {
+          if (videoRef.current) {
+            videoRef.current.play().catch(err => {
+              console.error("Video play failed:", err);
+              setFormError("Camera started but could not play video. Try clicking the camera icon again.");
+            });
+          }
+        };
+      }
+      setIsCameraOpen(true);
+    } catch (err: any) {
+      console.error("Error accessing camera:", err);
+      let msg = "Could not access the camera.";
+      if (err.name === 'NotAllowedError') msg = "Camera permission denied. Please allow camera access in your browser settings.";
+      if (err.name === 'NotFoundError') msg = "No camera found on this device.";
+      setFormError(msg);
+    }
+  };
+
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+    setIsCameraOpen(false);
+  };
+
+  const capturePhoto = async () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const context = canvas.getContext('2d');
+      if (context) {
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        setIsUploading(true);
+        try {
+          const imageUrl = await uploadImage(dataUrl);
+          setCurrentProduct({ ...currentProduct, image: imageUrl });
+          stopCamera();
+        } catch (err) {
+          console.error("Upload failed", err);
+          setFormError("Image upload failed. Please try again.");
+        } finally {
+          setIsUploading(false);
+        }
+      }
+    }
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Login failed');
+      
+      setIsAuthenticated(true);
+      setError('');
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPassError('');
+    setPassSuccess('');
+
+    if (passForm.new !== passForm.confirm) {
+      setPassError('New passwords do not match');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentPassword: passForm.current,
+          newPassword: passForm.new
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to change password');
+
+      setPassSuccess('Password changed successfully!');
+      setPassForm({ current: '', new: '', confirm: '' });
+      setTimeout(() => {
+        setShowPasswordChange(false);
+        setPassSuccess('');
+      }, 2000);
+    } catch (err: any) {
+      setPassError(err.message);
+    }
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setPassword('');
+  };
+
+  const handleSaveProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentProduct.name || !currentProduct.price || !currentProduct.image) {
+      setFormError('Please fill in all required fields.');
+      return;
+    }
+    setFormError('');
+
+    const productToSave = isEditing 
+      ? { ...currentProduct } 
+      : { ...currentProduct, id: Date.now().toString() };
+
+    try {
+      await saveProduct(productToSave, isEditing);
+      
+      if (isEditing) {
+        setProducts(prev => prev.map(p => p.id === productToSave.id ? productToSave : p));
+      } else {
+        setProducts(prev => [...prev, productToSave]);
+      }
+      
+      setCurrentProduct({ id: '', name: '', category: 'Stationary', price: 0, image: '' });
+      setIsEditing(false);
+    } catch (err) {
+      console.error("Save failed", err);
+      setFormError("Failed to save product to server.");
+    }
+  };
+
+  const handleEdit = (product: Product) => {
+    setCurrentProduct({ ...product });
+    setIsEditing(true);
+    setFormError('');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const handleDelete = async (id: string) => {
+    console.log(`Frontend: handleDelete called for ID: ${id}`);
+    setDeletingId(id);
+    setFormError('');
+    
+    try {
+      await deleteProduct(id);
+      setProducts(prev => prev.filter(p => p.id !== id));
+      console.log(`Frontend: Successfully deleted product ID: ${id}`);
+    } catch (err: any) {
+      console.error("Delete failed", err);
+      setFormError(`Failed to delete product: ${err.message}`);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-stone-900 flex items-center justify-center p-4 relative overflow-hidden">
+        {/* Background blobs */}
+        <div className="absolute top-0 -left-20 w-96 h-96 bg-rose-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 -right-20 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-700"></div>
+        
+        <div className="bg-white/95 backdrop-blur-xl p-10 rounded-[2.5rem] shadow-2xl max-w-md w-full border border-white/20 relative z-10">
+          <div className="text-center mb-10">
+            <div className="bg-gradient-to-br from-rose-500 to-rose-600 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 rotate-6 shadow-lg shadow-rose-500/30">
+              <Lock className="w-10 h-10 text-white" />
+            </div>
+            <h2 className="text-3xl font-black text-stone-900 tracking-tight">Admin Access</h2>
+            <p className="text-stone-500 mt-2 font-medium">Secure dashboard login</p>
+          </div>
+          
+          <form onSubmit={handleLogin} className="space-y-6">
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest ml-1">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-12 pr-4 py-4 rounded-2xl border-2 border-stone-100 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 outline-none transition-all bg-stone-50/50"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+            </div>
+            {error && (
+              <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-bold border border-red-100">
+                {error}
+              </div>
+            )}
+            <button type="submit" className="w-full bg-stone-900 hover:bg-stone-800 text-white py-4 rounded-2xl font-bold transition-all hover:shadow-xl active:scale-[0.98] flex items-center justify-center gap-2">
+              Unlock Dashboard <ArrowUp className="w-5 h-5 rotate-90" />
+            </button>
+            <button type="button" onClick={() => navigate('/')} className="w-full text-stone-400 hover:text-stone-600 py-2 text-sm font-bold transition-colors">
+              ← Return to Store
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-stone-50 pb-12">
+      <header className="bg-stone-900 text-white shadow-md sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Store className="w-6 h-6 text-rose-400" />
+            <h1 className="text-xl font-bold">Admin Dashboard</h1>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-4">
+            <button 
+              onClick={() => setShowPasswordChange(!showPasswordChange)}
+              className="flex items-center gap-2 bg-stone-800 hover:bg-stone-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-rose-400 border border-rose-500/30"
+            >
+              <Lock className="w-4 h-4" /> 
+              <span>Change Password</span>
+            </button>
+            <div className="hidden lg:flex items-center gap-2 text-xs text-stone-400 bg-stone-800 px-3 py-1 rounded-full border border-stone-700">
+              <Database className="w-3 h-3" /> Dedicated Storage Active
+            </div>
+            <button onClick={() => navigate('/')} className="text-sm font-medium text-stone-300 hover:text-white transition-colors hidden sm:block">View Store</button>
+            <button onClick={handleLogout} className="flex items-center gap-2 bg-stone-800 hover:bg-stone-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+              <LogOut className="w-4 h-4" /> <span className="hidden sm:inline">Logout</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Dashboard Summary */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 flex items-center gap-4">
+            <div className="bg-rose-50 p-3 rounded-xl text-rose-500">
+              <Package className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-stone-500 uppercase tracking-wider">Total Products</p>
+              <h3 className="text-2xl font-bold text-stone-900">{products.length}</h3>
+            </div>
+          </div>
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 flex items-center gap-4">
+            <div className="bg-blue-50 p-3 rounded-xl text-blue-500">
+              <LayoutGrid className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-stone-500 uppercase tracking-wider">Categories</p>
+              <h3 className="text-2xl font-bold text-stone-900">{new Set(products.map(p => p.category)).size}</h3>
+            </div>
+          </div>
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 flex items-center gap-4">
+            <div className="bg-emerald-50 p-3 rounded-xl text-emerald-500">
+              <Database className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-stone-500 uppercase tracking-wider">Database Status</p>
+              <h3 className="text-sm font-bold text-emerald-600">Connected & Syncing</h3>
+            </div>
+          </div>
+        </div>
+
+        {showPasswordChange && (
+          <div className="mb-8 bg-white p-6 rounded-2xl shadow-sm border border-stone-200 animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-stone-900 flex items-center gap-2">
+                <Lock className="w-5 h-5 text-rose-500" /> Change Admin Password
+              </h3>
+              <button onClick={() => setShowPasswordChange(false)} className="text-stone-400 hover:text-stone-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handlePasswordChange} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+              <div>
+                <label className="block text-xs font-bold text-stone-500 uppercase mb-1">Current Password</label>
+                <input
+                  type="password"
+                  value={passForm.current}
+                  onChange={(e) => setPassForm({ ...passForm, current: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border border-stone-200 focus:ring-2 focus:ring-rose-500 outline-none"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-stone-500 uppercase mb-1">New Password</label>
+                <input
+                  type="password"
+                  value={passForm.new}
+                  onChange={(e) => setPassForm({ ...passForm, new: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border border-stone-200 focus:ring-2 focus:ring-rose-500 outline-none"
+                  required
+                />
+              </div>
+              <div className="flex gap-4 items-end">
+                <div className="flex-1">
+                  <label className="block text-xs font-bold text-stone-500 uppercase mb-1">Confirm New Password</label>
+                  <input
+                    type="password"
+                    value={passForm.confirm}
+                    onChange={(e) => setPassForm({ ...passForm, confirm: e.target.value })}
+                    className="w-full px-4 py-2 rounded-lg border border-stone-200 focus:ring-2 focus:ring-rose-500 outline-none"
+                    required
+                  />
+                </div>
+                <button type="submit" className="bg-stone-900 text-white px-6 py-2 rounded-lg font-bold hover:bg-stone-800 transition-colors">
+                  Update
+                </button>
+              </div>
+            </form>
+            {passError && <p className="mt-2 text-red-500 text-sm font-medium">{passError}</p>}
+            {passSuccess && <p className="mt-2 text-green-600 text-sm font-medium">{passSuccess}</p>}
+          </div>
+        )}
+
+        {formError && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
+            <X className="w-5 h-5 flex-shrink-0 cursor-pointer" onClick={() => setFormError('')} />
+            <p className="text-sm font-semibold">{formError}</p>
+          </div>
+        )}
+        <div className="grid lg:grid-cols-3 gap-8 items-start">
+          <div className="lg:col-span-1">
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 lg:sticky lg:top-24">
+              <h2 className="text-xl font-bold text-stone-900 mb-6 flex items-center gap-2">
+                {isEditing ? <Edit className="w-5 h-5 text-rose-500" /> : <Plus className="w-5 h-5 text-rose-500" />}
+                {isEditing ? 'Edit Product' : 'Add New Product'}
+              </h2>
+              <form onSubmit={handleSaveProduct} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-stone-700 mb-1">Product Name</label>
+                  <input type="text" value={currentProduct.name} onChange={e => setCurrentProduct({...currentProduct, name: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-rose-500 outline-none" placeholder="e.g., Premium Notebook" required />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-stone-700 mb-1">Category</label>
+                  <select value={currentProduct.category} onChange={e => setCurrentProduct({...currentProduct, category: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-rose-500 outline-none">
+                    <option value="Stationary">Stationary</option>
+                    <option value="Fancy">Fancy</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-stone-700 mb-1">Price (₹)</label>
+                  <input type="number" value={currentProduct.price || ''} onChange={e => setCurrentProduct({...currentProduct, price: Number(e.target.value)})} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-rose-500 outline-none" placeholder="150" required min="1" />
+                </div>
+                <div className="relative">
+                  <label className="block text-sm font-medium text-stone-700 mb-1">Image</label>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    accept="image/*" 
+                    capture="environment" 
+                    onChange={handleFileChange} 
+                    className="hidden" 
+                  />
+                  {isUploading && (
+                    <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 rounded-lg top-6">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-500 mb-2"></div>
+                      <p className="text-xs font-bold text-rose-600">Uploading Image...</p>
+                    </div>
+                  )}
+                  {!isCameraOpen ? (
+                    <div className="flex flex-col gap-3">
+                      <div className="flex gap-2">
+                        <input type="text" value={currentProduct.image} onChange={e => setCurrentProduct({...currentProduct, image: e.target.value})} className="flex-1 w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-rose-500 outline-none" placeholder="Image URL or take photo" required />
+                        <button type="button" onClick={triggerCamera} className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-lg flex items-center justify-center transition-colors shadow-md" title="Take Photo">
+                          <Camera className="w-5 h-5" />
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <button type="button" onClick={triggerCamera} className="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 border-2 border-dashed border-rose-200 transition-all">
+                          <Camera className="w-5 h-5" /> Camera
+                        </button>
+                        <button type="button" onClick={startCamera} className="w-full bg-stone-50 hover:bg-stone-100 text-stone-600 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 border-2 border-dashed border-stone-200 transition-all">
+                          <Aperture className="w-5 h-5" /> Live View
+                        </button>
+                      </div>
+                      {currentProduct.image && (
+                        <button type="button" onClick={triggerCamera} className="w-full bg-stone-100 hover:bg-stone-200 text-stone-600 py-2 rounded-lg font-semibold text-xs flex items-center justify-center gap-2 border border-stone-200 transition-all">
+                          <Aperture className="w-4 h-4" /> Retake Photo
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="relative rounded-lg overflow-hidden bg-black aspect-video flex flex-col mt-2 shadow-inner">
+                      <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+                      <canvas ref={canvasRef} className="hidden" />
+                      <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4">
+                        <button type="button" onClick={capturePhoto} className="bg-rose-500 text-white p-4 rounded-full shadow-2xl hover:bg-rose-600 transition-transform hover:scale-110 border-4 border-white/30" title="Capture">
+                          <Aperture className="w-8 h-8" />
+                        </button>
+                        <button type="button" onClick={stopCamera} className="bg-stone-800/80 backdrop-blur-md text-white p-4 rounded-full shadow-2xl hover:bg-stone-700 transition-transform hover:scale-110 border-4 border-white/10" title="Cancel">
+                          <X className="w-8 h-8" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                {currentProduct.image && !isCameraOpen && (
+                   <div className="mt-4 rounded-lg overflow-hidden border border-stone-200 h-40 bg-stone-50 flex items-center justify-center shadow-inner">
+                      <img 
+                        src={currentProduct.image} 
+                        alt="Preview" 
+                        className="h-full object-contain"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400?text=Invalid+Image+URL';
+                        }}
+                      />
+                   </div>
+                )}
+
+                {formError && (
+                  <div className="p-3 bg-red-50 text-red-600 border border-red-100 rounded-lg text-sm font-medium">
+                    {formError}
+                  </div>
+                )}
+
+                <div className="pt-4 flex gap-3">
+                  <button type="submit" className="flex-1 bg-rose-500 hover:bg-rose-600 text-white py-3 rounded-lg font-semibold transition-colors shadow-lg shadow-rose-500/20">
+                    {isEditing ? 'Update Product' : 'Add Product'}
+                  </button>
+                  {isEditing && (
+                    <button type="button" onClick={() => { setIsEditing(false); setCurrentProduct({ id: '', name: '', category: 'Stationary', price: 0, image: '' }); }} className="px-4 py-3 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg font-semibold transition-colors">
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
+              <div className="p-6 border-b border-stone-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <h2 className="text-xl font-bold text-stone-900">Manage Products</h2>
+                <div className="flex items-center gap-3">
+                   <button onClick={() => { setIsEditing(false); setCurrentProduct({ id: '', name: '', category: 'Stationary', price: 0, image: '' }); triggerCamera(); }} className="flex items-center gap-2 bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg shadow-rose-500/20 transition-all hover:scale-105 active:scale-95">
+                      <Camera className="w-4 h-4" /> Take Photo & Add
+                   </button>
+                   <span className="bg-stone-100 text-stone-600 px-3 py-1 rounded-full text-sm font-medium">{products.length} Items</span>
+                </div>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[600px]">
+                  <thead>
+                    <tr className="bg-stone-50 text-stone-500 text-sm uppercase tracking-wider border-b border-stone-200">
+                      <th className="p-4 font-medium">Product</th>
+                      <th className="p-4 font-medium">Category</th>
+                      <th className="p-4 font-medium">Price</th>
+                      <th className="p-4 font-medium text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-200">
+                    {products.map(product => (
+                      <tr key={product.id} className="hover:bg-stone-50 transition-colors group">
+                        <td className="p-4 flex items-center gap-4">
+                          <img 
+                            src={product.image} 
+                            alt={product.name} 
+                            className="w-16 h-16 rounded-lg object-cover border border-stone-200 shadow-sm" 
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400?text=No+Image';
+                            }}
+                          />
+                          <span className="font-semibold text-stone-900 text-base">{product.name}</span>
+                        </td>
+                        <td className="p-4">
+                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
+                            product.category === 'Stationary' 
+                              ? 'bg-blue-100 text-blue-700' 
+                              : 'bg-purple-100 text-purple-700'
+                          }`}>
+                            {product.category}
+                          </span>
+                        </td>
+                        <td className="p-4 font-bold text-stone-900 text-lg">₹{product.price}</td>
+                        <td className="p-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button onClick={() => handleEdit(product)} className="p-2 text-stone-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors border border-transparent hover:border-rose-200">
+                              <Edit className="w-5 h-5" />
+                            </button>
+                            <button 
+                              onClick={() => handleDelete(product.id)} 
+                              disabled={deletingId === product.id}
+                              className={`p-2 rounded-lg transition-colors border border-transparent ${
+                                deletingId === product.id 
+                                  ? 'text-stone-300 bg-stone-50 cursor-not-allowed' 
+                                  : 'text-stone-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200'
+                              }`}
+                            >
+                              {deletingId === product.id ? (
+                                <div className="w-5 h-5 border-2 border-stone-300 border-t-stone-500 rounded-full animate-spin" />
+                              ) : (
+                                <Trash2 className="w-5 h-5" />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+// --- Main App ---
+export default function App() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const allProducts = await fetchProducts();
+        setProducts(allProducts);
+      } catch (e) {
+        console.error("Failed to load backend data", e);
+        // Do not fallback to defaultProducts, just show empty or error
+        setProducts([]);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-500 mx-auto mb-4"></div>
+          <p className="text-stone-500 font-medium">Loading Store Memory...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<VisitorPanel products={products} />} />
+        <Route path="/admin" element={<AdminPanel products={products} setProducts={setProducts} />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
