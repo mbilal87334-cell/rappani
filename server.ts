@@ -142,13 +142,35 @@ async function startServer() {
     try {
       const id = req.params.id.trim();
       console.log(`[SERVER] DELETE request for ID: "${id}"`);
-      const result = await Product.deleteOne({ id });
-      console.log(`[SERVER] Delete result for "${id}": ${result.deletedCount} items affected`);
 
-      if (result.deletedCount === 0) {
+      // 1. Find the product first to get the image URL
+      const product = await Product.findOne({ id });
+      if (!product) {
         console.warn(`[SERVER] Product with ID "${id}" not found.`);
         return res.status(404).json({ success: false, error: "Product not found" });
       }
+
+      // 2. Delete the image from Cloudinary if it exists
+      if (product.image && product.image.includes("res.cloudinary.com")) {
+        try {
+          const urlParts = product.image.split('/');
+          const filename = urlParts.pop(); // e.g., image123.jpg
+          const folder = urlParts.pop();   // e.g., rappani_store_uploads
+
+          if (filename && folder) {
+            // Remove extension to get public_id
+            const publicId = `${folder}/${filename.split('.')[0]}`;
+            await cloudinary.uploader.destroy(publicId);
+            console.log(`[SERVER] Deleted image from Cloudinary: ${publicId}`);
+          }
+        } catch (cloudinaryErr) {
+          console.error("[SERVER] Error deleting from Cloudinary:", cloudinaryErr);
+        }
+      }
+
+      // 3. Delete the product from MongoDB
+      const result = await Product.deleteOne({ id });
+      console.log(`[SERVER] Delete result for "${id}": ${result.deletedCount} items affected`);
 
       res.json({ success: true, changes: result.deletedCount });
     } catch (err) {
