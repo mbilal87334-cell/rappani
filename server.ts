@@ -53,18 +53,24 @@ async function startServer() {
     console.error("MongoDB connection Error:", error);
   }
 
-  // Ensure uploads directory exists
-  const uploadsDir = path.join(ROOT_DIR, "public", "uploads");
-  await fs.ensureDir(uploadsDir);
+  import { v2 as cloudinary } from "cloudinary";
+  import { CloudinaryStorage } from "multer-storage-cloudinary";
 
-  // Multer config
-  const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-      cb(null, uploadsDir);
-    },
-    filename: (req, file, cb) => {
-      const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-      cb(null, uniqueSuffix + path.extname(file.originalname));
+  // Configure Cloudinary
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+  });
+
+  // Cloudinary storage config
+  const storage = new CloudinaryStorage({
+    cloudinary: cloudinary,
+    params: async (req, file) => {
+      return {
+        folder: "rappani_store_uploads",
+        allowed_formats: ["jpg", "jpeg", "png", "webp", "gif"]
+      };
     },
   });
 
@@ -156,8 +162,8 @@ async function startServer() {
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
     }
-    const imageUrl = `/uploads/${req.file.filename}`;
-    res.json({ imageUrl });
+    // Cloudinary returns the image URL in req.file.path
+    res.json({ imageUrl: req.file.path });
   });
 
   // Serve uploaded files
