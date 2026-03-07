@@ -7,14 +7,10 @@ import cors from "cors";
 import mongoose from "mongoose";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
-import dns from "dns";
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 
 dotenv.config();
-
-// Bypass mobile network DNS blocks that cause "ECONNREFUSED" for MongoDB
-dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,6 +18,10 @@ const ROOT_DIR = process.cwd();
 
 // Get MONGODB_URI from environment variables or use a default one
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/rappani_store";
+
+// Global connection state
+let dbConnectionState = "initializing";
+let dbConnectionError = "";
 
 // Mongoose Models
 const productSchema = new mongoose.Schema({
@@ -50,11 +50,24 @@ async function startServer() {
   // Connect to MongoDB
   try {
     await mongoose.connect(MONGODB_URI);
+    dbConnectionState = "connected";
     console.log("Connected to MongoDB Cloud Database");
     await seedInitialData();
-  } catch (error) {
+  } catch (error: any) {
+    dbConnectionState = "error";
+    dbConnectionError = error?.message || String(error);
     console.error("MongoDB connection Error:", error);
   }
+
+  // Health/Debug Route
+  app.get("/api/health", (req, res) => {
+    res.json({
+      status: "ok",
+      dbConnectionState,
+      dbConnectionError,
+      hasMongoUri: !!process.env.MONGODB_URI,
+    });
+  });
 
   // Configure Cloudinary
   cloudinary.config({
@@ -86,8 +99,9 @@ async function startServer() {
       } else {
         res.status(401).json({ success: false, error: "Invalid password" });
       }
-    } catch (err) {
-      res.status(500).json({ success: false, error: "Server error" });
+    } catch (err: any) {
+      console.error("[SERVER] Login err:", err);
+      res.status(500).json({ success: false, error: err?.message || "Server error" });
     }
   });
 
