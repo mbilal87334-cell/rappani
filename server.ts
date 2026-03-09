@@ -41,6 +41,18 @@ const settingSchema = new mongoose.Schema({
 });
 const Setting = mongoose.model("Setting", settingSchema);
 
+const orderSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  customerName: { type: String, required: true },
+  customerPhone: { type: String, required: true },
+  items: { type: Array, required: true },
+  totalAmount: { type: Number, required: true },
+  paymentMethod: { type: String, required: true },
+  status: { type: String, required: true, default: 'Pending' },
+  createdAt: { type: Date, required: true, default: Date.now }
+});
+const Order = mongoose.model("Order", orderSchema);
+
 async function startServer() {
   const app = express();
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
@@ -170,6 +182,56 @@ async function startServer() {
       const { id } = req.params;
       const { name, category, price, originalPrice, stock, image } = req.body;
       await Product.updateOne({ id }, { name, category, price, originalPrice, stock, image });
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  app.post("/api/checkout", async (req, res) => {
+    try {
+      const { items, customerName, customerPhone, paymentMethod, totalAmount } = req.body;
+
+      const orderId = Date.now().toString();
+      await Order.create({
+        id: orderId,
+        customerName,
+        customerPhone,
+        items,
+        totalAmount,
+        paymentMethod,
+        status: 'Pending',
+        createdAt: new Date()
+      });
+
+      // Automatically reduce stock based on items
+      for (const item of items) {
+        await Product.updateOne(
+          { id: item.product.id, stock: { $exists: true, $gte: item.quantity } },
+          { $inc: { stock: -item.quantity } }
+        );
+      }
+      res.json({ success: true, orderId });
+    } catch (err) {
+      console.error("[SERVER] Checkout error:", err);
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  app.get("/api/orders", async (req, res) => {
+    try {
+      const orders = await Order.find({}, '-_id -__v').sort({ createdAt: -1 });
+      res.json(orders);
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  app.put("/api/orders/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      await Order.updateOne({ id }, { status });
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });

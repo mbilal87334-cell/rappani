@@ -23,6 +23,17 @@ interface Setting {
   value: string;
 }
 
+interface Order {
+  id: string;
+  customerName: string;
+  customerPhone: string;
+  items: CartItem[];
+  totalAmount: number;
+  paymentMethod: string;
+  status: string;
+  createdAt: string;
+}
+
 // --- API Service ---
 const API_BASE = '/api';
 
@@ -60,13 +71,29 @@ async function saveProduct(product: Product, isEditing: boolean) {
   return res.json();
 }
 
-async function checkoutCart(items: { id: string; quantity: number }[]) {
+async function checkoutCart(payload: { customerName: string; customerPhone: string; paymentMethod: string; totalAmount: number; items: CartItem[] }) {
   const res = await fetch(`${API_BASE}/checkout`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ items }),
+    body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error("Failed to checkout");
+  return res.json();
+}
+
+async function fetchOrders() {
+  const res = await fetch(`${API_BASE}/orders`);
+  if (!res.ok) throw new Error("Failed to fetch orders");
+  return res.json();
+}
+
+async function updateOrderStatus(id: string, status: string) {
+  const res = await fetch(`${API_BASE}/orders/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status })
+  });
+  if (!res.ok) throw new Error("Failed to update order status");
   return res.json();
 }
 
@@ -146,7 +173,10 @@ const translations = {
     originalPrice: "Original Price (Optional)",
     paymentInfo: "Pay via GPay to 8940324030 and collect your items at the shop.",
     payGpay: "Pay Now with GPay / UPI",
-    outOfStock: "Out of Stock"
+    outOfStock: "Out of Stock",
+    enterDetails: "Please enter your details",
+    nameLabel: "Your Name",
+    phoneLabel: "Phone Number"
   },
   ta: {
     storeName: "ரப்பானி",
@@ -193,7 +223,10 @@ const translations = {
     originalPrice: "பழைய விலை (விருப்பமிருந்தால்)",
     paymentInfo: "8940324030 என்ற எண்ணிற்கு GPay செய்துவிட்டு, கடைக்கு வந்து பொருட்களைப் பெற்றுக்கொள்ளவும்.",
     payGpay: "GPay / UPI-ல் செலுத்துங்கள்",
-    outOfStock: "ஸ்டாக் இல்லை"
+    outOfStock: "ஸ்டாக் இல்லை",
+    enterDetails: "உங்கள் விவரங்களை உள்ளிடவும்",
+    nameLabel: "உங்கள் பெயர்",
+    phoneLabel: "போன் நம்பர்"
   }
 };
 
@@ -206,6 +239,9 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [showBackToTop, setShowBackToTop] = useState(false);
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [checkoutError, setCheckoutError] = useState('');
   const t = translations[lang];
 
   const getCategoryName = (cat: string) => {
@@ -288,10 +324,22 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
   const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  const processCheckoutAndClearCart = async () => {
+  const processCheckoutAndClearCart = async (paymentMethod: string) => {
+    if (!customerName || !customerPhone) {
+      setCheckoutError(t.enterDetails);
+      return false;
+    }
+    setCheckoutError('');
+
     try {
-      const itemsToCheckout = cart.map(item => ({ id: item.product.id, quantity: item.quantity }));
-      await checkoutCart(itemsToCheckout);
+      const payload = {
+        customerName,
+        customerPhone,
+        paymentMethod,
+        totalAmount: cartTotalAmount,
+        items: cart
+      };
+      await checkoutCart(payload);
 
       setProducts(prev => prev.map(p => {
         const cartItem = cart.find(ci => ci.product.id === p.id);
@@ -301,24 +349,44 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
         return p;
       }));
       setCart([]);
+      setCustomerName('');
+      setCustomerPhone('');
       setTimeout(() => setIsCartOpen(false), 500);
+      return true;
     } catch (err) {
       console.error("Failed to checkout cart", err);
+      // fallback just empty if fail but WhatsApp is opened
+      return true;
     }
   };
 
-  const handleWhatsAppCheckout = () => {
+  const handleWhatsAppCheckout = async () => {
     if (cart.length === 0) return;
+    if (!customerName || !customerPhone) {
+      setCheckoutError(t.enterDetails);
+      return;
+    }
 
-    let message = `Hi, I want to place an order:\n\n`;
+    let message = `Hi, I want to place an order:\n\n*Customer*: ${customerName}\n*Phone*: ${customerPhone}\n\n`;
     cart.forEach(item => {
       message += `- ${item.product.name} (x${item.quantity}) = ₹${item.product.price * item.quantity}\n`;
     });
-    message += `\n*Total: ₹${cartTotalAmount}*\n\nPayment Mode: GPay to 8940324030\nDelivery: I will collect the items at the shop.\n\nPlease confirm!`;
+    message += `\n*Total: ₹${cartTotalAmount}*\n\nPayment Mode: WhatsApp Checkout\nDelivery: I will collect the items at the shop.\n\nPlease confirm!`;
 
     const encodedMsg = encodeURIComponent(message);
-    window.open(`https://wa.me/${settings.whatsapp_1 || '916384137974'}?text=${encodedMsg}`, '_blank');
-    processCheckoutAndClearCart();
+    const success = await processCheckoutAndClearCart('WhatsApp');
+    if (success) {
+      window.open(`https://wa.me/${settings.whatsapp_1 || '916384137974'}?text=${encodedMsg}`, '_blank');
+    }
+  };
+
+  const handleGPayCheckout = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!customerName || !customerPhone) {
+      e.preventDefault();
+      setCheckoutError(t.enterDetails);
+      return;
+    }
+    await processCheckoutAndClearCart('GPay');
   };
 
   return (
@@ -666,6 +734,32 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                   <p>{t.paymentInfo}</p>
                 </div>
 
+                {/* Customer Details for Checkout */}
+                <div className="bg-white p-4 rounded-xl border border-stone-200 mb-4 shadow-sm">
+                  <h4 className="text-sm font-bold text-stone-900 mb-3">{t.enterDetails}</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <input
+                        type="text"
+                        placeholder={t.nameLabel}
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                        className={`w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-rose-500 ${checkoutError && !customerName ? 'border-red-400' : 'border-stone-200'}`}
+                      />
+                    </div>
+                    <div>
+                      <input
+                        type="tel"
+                        placeholder={t.phoneLabel}
+                        value={customerPhone}
+                        onChange={(e) => setCustomerPhone(e.target.value)}
+                        className={`w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-rose-500 ${checkoutError && !customerPhone ? 'border-red-400' : 'border-stone-200'}`}
+                      />
+                    </div>
+                  </div>
+                  {checkoutError && <p className="text-xs text-red-500 font-medium mt-2">{checkoutError}</p>}
+                </div>
+
                 <div className="bg-white p-4 rounded-xl border border-stone-200 mb-4 flex flex-col items-center justify-center shadow-inner">
                   <p className="text-sm font-bold text-stone-600 mb-2">Scan QR to Pay (₹{cartTotalAmount})</p>
                   <img
@@ -715,6 +809,27 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+
+  // Admin section Tabs
+  const [adminTab, setAdminTab] = useState<'products' | 'orders'>('products');
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated && adminTab === 'orders') {
+      setIsLoadingOrders(true);
+      fetchOrders().then(setOrders).catch(console.error).finally(() => setIsLoadingOrders(false));
+    }
+  }, [isAuthenticated, adminTab]);
+
+  const handleMarkDelivered = async (orderId: string) => {
+    try {
+      await updateOrderStatus(orderId, 'Completed');
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'Completed' } : o));
+    } catch (err) {
+      console.error("Failed to update status", err);
+    }
+  };
 
   // Form State
   const [isEditing, setIsEditing] = useState(false);
@@ -1335,216 +1450,308 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
             <p className="text-sm font-semibold">{formError}</p>
           </div>
         )}
-        <div className="grid lg:grid-cols-3 gap-8 items-start">
-          <div className="lg:col-span-1">
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 lg:sticky lg:top-24">
-              <h2 className="text-xl font-bold text-stone-900 mb-6 flex items-center gap-2">
-                {isEditing ? <Edit className="w-5 h-5 text-rose-500" /> : <Plus className="w-5 h-5 text-rose-500" />}
-                {isEditing ? 'Edit Product' : 'Add New Product'}
-              </h2>
-              <form onSubmit={handleSaveProduct} className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-1">Product Name</label>
-                  <input type="text" value={currentProduct.name} onChange={e => setCurrentProduct({ ...currentProduct, name: e.target.value })} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-rose-500 outline-none" placeholder="e.g., Premium Notebook" required />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-1">Category</label>
-                  <select value={currentProduct.category} onChange={e => setCurrentProduct({ ...currentProduct, category: e.target.value })} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-rose-500 outline-none">
-                    <option value="Stationary">Stationary</option>
-                    <option value="Fancy">Fancy</option>
-                    <option value="Toys">Toys</option>
-                    <option value="Sports Items">Sports Items</option>
-                    <option value="Snacks">Snacks</option>
-                    <option value="Offers">Offers (Special)</option>
-                  </select>
-                </div>
-                <div className="flex gap-4">
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-stone-700 mb-1">Price (₹)</label>
-                    <input type="number" value={currentProduct.price || ''} onChange={e => setCurrentProduct({ ...currentProduct, price: Number(e.target.value) })} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-rose-500 outline-none" placeholder="150" required min="1" />
-                  </div>
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-stone-700 mb-1">Original Price (₹)</label>
-                    <input type="number" value={currentProduct.originalPrice || ''} onChange={e => setCurrentProduct({ ...currentProduct, originalPrice: Number(e.target.value) || undefined })} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Optional" min="1" />
-                  </div>
-                  <div className="flex-1">
-                    <label className="block text-sm font-medium text-stone-700 mb-1">Stock (Max Qty)</label>
-                    <input type="number" value={currentProduct.stock === undefined ? '' : currentProduct.stock} onChange={e => setCurrentProduct({ ...currentProduct, stock: e.target.value !== '' ? Number(e.target.value) : undefined })} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-purple-500 outline-none" placeholder="Unlimited" min="0" />
-                  </div>
-                </div>
-                <div className="relative">
-                  <label className="block text-sm font-medium text-stone-700 mb-1">Image</label>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    accept="image/*"
-                    capture="environment"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                  {isUploading && (
-                    <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 rounded-lg top-6">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-500 mb-2"></div>
-                      <p className="text-xs font-bold text-rose-600">Uploading Image...</p>
-                    </div>
-                  )}
-                  {!isCameraOpen ? (
-                    <div className="flex flex-col gap-3">
-                      <div className="flex gap-2">
-                        <input type="text" value={currentProduct.image} onChange={e => setCurrentProduct({ ...currentProduct, image: e.target.value })} className="flex-1 w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-rose-500 outline-none" placeholder="Image URL or take photo" required />
-                        <button type="button" onClick={triggerCamera} className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-lg flex items-center justify-center transition-colors shadow-md" title="Take Photo">
-                          <Camera className="w-5 h-5" />
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <button type="button" onClick={triggerCamera} className="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 border-2 border-dashed border-rose-200 transition-all">
-                          <Camera className="w-5 h-5" /> Camera
-                        </button>
-                        <button type="button" onClick={startCamera} className="w-full bg-stone-50 hover:bg-stone-100 text-stone-600 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 border-2 border-dashed border-stone-200 transition-all">
-                          <Aperture className="w-5 h-5" /> Live View
-                        </button>
-                      </div>
-                      {currentProduct.image && (
-                        <button type="button" onClick={triggerCamera} className="w-full bg-stone-100 hover:bg-stone-200 text-stone-600 py-2 rounded-lg font-semibold text-xs flex items-center justify-center gap-2 border border-stone-200 transition-all">
-                          <Aperture className="w-4 h-4" /> Retake Photo
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="relative rounded-lg overflow-hidden bg-black aspect-video flex flex-col mt-2 shadow-inner">
-                      <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
-                      <canvas ref={canvasRef} className="hidden" />
-                      <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4">
-                        <button type="button" onClick={capturePhoto} className="bg-rose-500 text-white p-4 rounded-full shadow-2xl hover:bg-rose-600 transition-transform hover:scale-110 border-4 border-white/30" title="Capture">
-                          <Aperture className="w-8 h-8" />
-                        </button>
-                        <button type="button" onClick={stopCamera} className="bg-stone-800/80 backdrop-blur-md text-white p-4 rounded-full shadow-2xl hover:bg-stone-700 transition-transform hover:scale-110 border-4 border-white/10" title="Cancel">
-                          <X className="w-8 h-8" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
 
-                {currentProduct.image && !isCameraOpen && (
-                  <div className="mt-4 rounded-lg overflow-hidden border border-stone-200 h-40 bg-stone-50 flex items-center justify-center shadow-inner">
-                    <img
-                      src={currentProduct.image}
-                      alt="Preview"
-                      className="h-full object-contain"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400?text=Invalid+Image+URL';
-                      }}
+        <div className="flex gap-4 mb-6 border-b border-stone-200 pb-4">
+          <button
+            onClick={() => setAdminTab('products')}
+            className={`px-6 py-2 font-bold rounded-lg transition-colors ${adminTab === 'products' ? 'bg-rose-500 text-white shadow-md' : 'bg-white text-stone-500 hover:bg-stone-100'}`}
+          >
+            Manage Products
+          </button>
+          <button
+            onClick={() => setAdminTab('orders')}
+            className={`px-6 py-2 font-bold rounded-lg transition-colors flex items-center gap-2 ${adminTab === 'orders' ? 'bg-rose-500 text-white shadow-md' : 'bg-white text-stone-500 hover:bg-stone-100'}`}
+          >
+            Manage Orders
+            {orders.length > 0 && adminTab !== 'orders' && <span className="bg-rose-500 text-white text-xs px-2 py-0.5 rounded-full">{orders.filter(o => o.status === 'Pending').length}</span>}
+          </button>
+        </div>
+
+        {adminTab === 'products' ? (
+          <div className="grid lg:grid-cols-3 gap-8 items-start">
+            <div className="lg:col-span-1">
+              <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 lg:sticky lg:top-24">
+                <h2 className="text-xl font-bold text-stone-900 mb-6 flex items-center gap-2">
+                  {isEditing ? <Edit className="w-5 h-5 text-rose-500" /> : <Plus className="w-5 h-5 text-rose-500" />}
+                  {isEditing ? 'Edit Product' : 'Add New Product'}
+                </h2>
+                <form onSubmit={handleSaveProduct} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-1">Product Name</label>
+                    <input type="text" value={currentProduct.name} onChange={e => setCurrentProduct({ ...currentProduct, name: e.target.value })} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-rose-500 outline-none" placeholder="e.g., Premium Notebook" required />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-1">Category</label>
+                    <select value={currentProduct.category} onChange={e => setCurrentProduct({ ...currentProduct, category: e.target.value })} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-rose-500 outline-none">
+                      <option value="Stationary">Stationary</option>
+                      <option value="Fancy">Fancy</option>
+                      <option value="Toys">Toys</option>
+                      <option value="Sports Items">Sports Items</option>
+                      <option value="Snacks">Snacks</option>
+                      <option value="Offers">Offers (Special)</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-stone-700 mb-1">Price (₹)</label>
+                      <input type="number" value={currentProduct.price || ''} onChange={e => setCurrentProduct({ ...currentProduct, price: Number(e.target.value) })} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-rose-500 outline-none" placeholder="150" required min="1" />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-stone-700 mb-1">Original Price (₹)</label>
+                      <input type="number" value={currentProduct.originalPrice || ''} onChange={e => setCurrentProduct({ ...currentProduct, originalPrice: Number(e.target.value) || undefined })} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Optional" min="1" />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-stone-700 mb-1">Stock (Max Qty)</label>
+                      <input type="number" value={currentProduct.stock === undefined ? '' : currentProduct.stock} onChange={e => setCurrentProduct({ ...currentProduct, stock: e.target.value !== '' ? Number(e.target.value) : undefined })} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-purple-500 outline-none" placeholder="Unlimited" min="0" />
+                    </div>
+                  </div>
+                  <div className="relative">
+                    <label className="block text-sm font-medium text-stone-700 mb-1">Image</label>
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handleFileChange}
+                      className="hidden"
                     />
+                    {isUploading && (
+                      <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 rounded-lg top-6">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-500 mb-2"></div>
+                        <p className="text-xs font-bold text-rose-600">Uploading Image...</p>
+                      </div>
+                    )}
+                    {!isCameraOpen ? (
+                      <div className="flex flex-col gap-3">
+                        <div className="flex gap-2">
+                          <input type="text" value={currentProduct.image} onChange={e => setCurrentProduct({ ...currentProduct, image: e.target.value })} className="flex-1 w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-rose-500 outline-none" placeholder="Image URL or take photo" required />
+                          <button type="button" onClick={triggerCamera} className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-lg flex items-center justify-center transition-colors shadow-md" title="Take Photo">
+                            <Camera className="w-5 h-5" />
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button type="button" onClick={triggerCamera} className="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 border-2 border-dashed border-rose-200 transition-all">
+                            <Camera className="w-5 h-5" /> Camera
+                          </button>
+                          <button type="button" onClick={startCamera} className="w-full bg-stone-50 hover:bg-stone-100 text-stone-600 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 border-2 border-dashed border-stone-200 transition-all">
+                            <Aperture className="w-5 h-5" /> Live View
+                          </button>
+                        </div>
+                        {currentProduct.image && (
+                          <button type="button" onClick={triggerCamera} className="w-full bg-stone-100 hover:bg-stone-200 text-stone-600 py-2 rounded-lg font-semibold text-xs flex items-center justify-center gap-2 border border-stone-200 transition-all">
+                            <Aperture className="w-4 h-4" /> Retake Photo
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="relative rounded-lg overflow-hidden bg-black aspect-video flex flex-col mt-2 shadow-inner">
+                        <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+                        <canvas ref={canvasRef} className="hidden" />
+                        <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-4">
+                          <button type="button" onClick={capturePhoto} className="bg-rose-500 text-white p-4 rounded-full shadow-2xl hover:bg-rose-600 transition-transform hover:scale-110 border-4 border-white/30" title="Capture">
+                            <Aperture className="w-8 h-8" />
+                          </button>
+                          <button type="button" onClick={stopCamera} className="bg-stone-800/80 backdrop-blur-md text-white p-4 rounded-full shadow-2xl hover:bg-stone-700 transition-transform hover:scale-110 border-4 border-white/10" title="Cancel">
+                            <X className="w-8 h-8" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
 
-                {formError && (
-                  <div className="p-3 bg-red-50 text-red-600 border border-red-100 rounded-lg text-sm font-medium">
-                    {formError}
-                  </div>
-                )}
-
-                <div className="pt-4 flex gap-3">
-                  <button type="submit" className="flex-1 bg-rose-500 hover:bg-rose-600 text-white py-3 rounded-lg font-semibold transition-colors shadow-lg shadow-rose-500/20">
-                    {isEditing ? 'Update Product' : 'Add Product'}
-                  </button>
-                  {isEditing && (
-                    <button type="button" onClick={() => { setIsEditing(false); setCurrentProduct({ id: '', name: '', category: 'Stationary', price: 0, originalPrice: '' as unknown as number, image: '' }); }} className="px-4 py-3 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg font-semibold transition-colors">
-                      Cancel
-                    </button>
+                  {currentProduct.image && !isCameraOpen && (
+                    <div className="mt-4 rounded-lg overflow-hidden border border-stone-200 h-40 bg-stone-50 flex items-center justify-center shadow-inner">
+                      <img
+                        src={currentProduct.image}
+                        alt="Preview"
+                        className="h-full object-contain"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400?text=Invalid+Image+URL';
+                        }}
+                      />
+                    </div>
                   )}
-                </div>
-              </form>
-            </div>
-          </div>
 
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
-              <div className="p-6 border-b border-stone-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h2 className="text-xl font-bold text-stone-900">Manage Products</h2>
-                <div className="flex items-center gap-3">
-                  <button onClick={() => { setIsEditing(false); setCurrentProduct({ id: '', name: '', category: 'Stationary', price: 0, originalPrice: '' as unknown as number, image: '' }); triggerCamera(); }} className="flex items-center gap-2 bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg shadow-rose-500/20 transition-all hover:scale-105 active:scale-95">
-                    <Camera className="w-4 h-4" /> Take Photo & Add
-                  </button>
-                  <span className="bg-stone-100 text-stone-600 px-3 py-1 rounded-full text-sm font-medium">{products.length} Items</span>
+                  {formError && (
+                    <div className="p-3 bg-red-50 text-red-600 border border-red-100 rounded-lg text-sm font-medium">
+                      {formError}
+                    </div>
+                  )}
+
+                  <div className="pt-4 flex gap-3">
+                    <button type="submit" className="flex-1 bg-rose-500 hover:bg-rose-600 text-white py-3 rounded-lg font-semibold transition-colors shadow-lg shadow-rose-500/20">
+                      {isEditing ? 'Update Product' : 'Add Product'}
+                    </button>
+                    {isEditing && (
+                      <button type="button" onClick={() => { setIsEditing(false); setCurrentProduct({ id: '', name: '', category: 'Stationary', price: 0, originalPrice: '' as unknown as number, image: '' }); }} className="px-4 py-3 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg font-semibold transition-colors">
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <div className="lg:col-span-2">
+              <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
+                <div className="p-6 border-b border-stone-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <h2 className="text-xl font-bold text-stone-900">Manage Products</h2>
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => { setIsEditing(false); setCurrentProduct({ id: '', name: '', category: 'Stationary', price: 0, originalPrice: '' as unknown as number, image: '' }); triggerCamera(); }} className="flex items-center gap-2 bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg shadow-rose-500/20 transition-all hover:scale-105 active:scale-95">
+                      <Camera className="w-4 h-4" /> Take Photo & Add
+                    </button>
+                    <span className="bg-stone-100 text-stone-600 px-3 py-1 rounded-full text-sm font-medium">{products.length} Items</span>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse min-w-[600px]">
+                    <thead>
+                      <tr className="bg-stone-50 text-stone-500 text-sm uppercase tracking-wider border-b border-stone-200">
+                        <th className="p-4 font-medium">Product</th>
+                        <th className="p-4 font-medium">Category</th>
+                        <th className="p-4 font-medium">Price</th>
+                        <th className="p-4 font-medium text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-200">
+                      {products.map(product => (
+                        <tr key={product.id} className="hover:bg-stone-50 transition-colors group">
+                          <td className="p-4 flex items-center gap-4">
+                            <img
+                              src={product.image}
+                              alt={product.name}
+                              className="w-16 h-16 rounded-lg object-cover border border-stone-200 shadow-sm"
+                              referrerPolicy="no-referrer"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400?text=No+Image';
+                              }}
+                            />
+                            <span className="font-semibold text-stone-900 text-base">{product.name}</span>
+                          </td>
+                          <td className="p-4">
+                            <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${getCategoryColor(product.category)}`}>
+                              {product.category}
+                            </span>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex flex-col gap-1">
+                              <span className="font-bold text-stone-900 text-lg">₹{product.price}</span>
+                              {product.originalPrice && product.originalPrice > product.price && (
+                                <span className="text-xs font-bold text-stone-400 line-through">₹{product.originalPrice}</span>
+                              )}
+                              {product.stock !== undefined && (
+                                <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded shadow-sm inline-block self-start ${product.stock > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                                  {product.stock > 0 ? `Stock: ${product.stock}` : 'Out of Stock'}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-4 text-right">
+                            <div className="flex justify-end gap-2">
+                              <button onClick={() => handleEdit(product)} className="p-2 text-stone-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors border border-transparent hover:border-rose-200">
+                                <Edit className="w-5 h-5" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(product.id)}
+                                disabled={deletingId === product.id}
+                                className={`p-2 rounded-lg transition-colors border border-transparent ${deletingId === product.id
+                                  ? 'text-stone-300 bg-stone-50 cursor-not-allowed'
+                                  : 'text-stone-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200'
+                                  }`}
+                              >
+                                {deletingId === product.id ? (
+                                  <div className="w-5 h-5 border-2 border-stone-300 border-t-stone-500 rounded-full animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-5 h-5" />
+                                )}
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
-
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden">
+            <div className="p-6 border-b border-stone-200 bg-stone-50 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-stone-900 flex items-center gap-2">
+                <Package className="w-5 h-5 text-rose-500" /> Recent Orders
+              </h2>
+            </div>
+            {isLoadingOrders ? (
+              <div className="p-10 text-center text-stone-500">Loading orders...</div>
+            ) : orders.length === 0 ? (
+              <div className="p-10 text-center text-stone-500">No orders found.</div>
+            ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse min-w-[600px]">
+                <table className="w-full text-left border-collapse min-w-[800px]">
                   <thead>
                     <tr className="bg-stone-50 text-stone-500 text-sm uppercase tracking-wider border-b border-stone-200">
-                      <th className="p-4 font-medium">Product</th>
-                      <th className="p-4 font-medium">Category</th>
-                      <th className="p-4 font-medium">Price</th>
-                      <th className="p-4 font-medium text-right">Actions</th>
+                      <th className="p-4 font-medium">Order ID</th>
+                      <th className="p-4 font-medium">Customer</th>
+                      <th className="p-4 font-medium">Items</th>
+                      <th className="p-4 font-medium">Total</th>
+                      <th className="p-4 font-medium">Status / Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-200">
-                    {products.map(product => (
-                      <tr key={product.id} className="hover:bg-stone-50 transition-colors group">
-                        <td className="p-4 flex items-center gap-4">
-                          <img
-                            src={product.image}
-                            alt={product.name}
-                            className="w-16 h-16 rounded-lg object-cover border border-stone-200 shadow-sm"
-                            referrerPolicy="no-referrer"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400?text=No+Image';
-                            }}
-                          />
-                          <span className="font-semibold text-stone-900 text-base">{product.name}</span>
+                    {orders.map(order => (
+                      <tr key={order.id} className="hover:bg-stone-50 transition-colors">
+                        <td className="p-4">
+                          <span className="font-mono text-xs text-stone-500">{order.id}</span><br />
+                          <span className="text-xs text-stone-400">{new Date(order.createdAt).toLocaleString()}</span>
                         </td>
                         <td className="p-4">
-                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${getCategoryColor(product.category)}`}>
-                            {product.category}
-                          </span>
+                          <span className="font-bold text-stone-900 block">{order.customerName}</span>
+                          <span className="text-xs text-stone-500 bg-stone-200 px-2 py-0.5 rounded-full inline-block mt-1">{order.customerPhone}</span>
                         </td>
                         <td className="p-4">
-                          <div className="flex flex-col gap-1">
-                            <span className="font-bold text-stone-900 text-lg">₹{product.price}</span>
-                            {product.originalPrice && product.originalPrice > product.price && (
-                              <span className="text-xs font-bold text-stone-400 line-through">₹{product.originalPrice}</span>
-                            )}
-                            {product.stock !== undefined && (
-                              <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded shadow-sm inline-block self-start ${product.stock > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
-                                {product.stock > 0 ? `Stock: ${product.stock}` : 'Out of Stock'}
-                              </span>
-                            )}
+                          <div className="text-sm max-h-24 overflow-y-auto pr-2">
+                            {order.items.map((item, idx) => (
+                              <div key={idx} className="mb-1 border-b border-stone-100 last:border-0 pb-1 flex gap-2 items-center">
+                                <img src={item.product.image} alt={item.product.name} className="w-8 h-8 rounded object-cover" />
+                                <div>
+                                  <p className="font-semibold text-stone-800 line-clamp-1 leading-tight">{item.product.name}</p>
+                                  <p className="text-xs text-stone-500">₹{item.product.price} x {item.quantity}</p>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </td>
-                        <td className="p-4 text-right">
-                          <div className="flex justify-end gap-2">
-                            <button onClick={() => handleEdit(product)} className="p-2 text-stone-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors border border-transparent hover:border-rose-200">
-                              <Edit className="w-5 h-5" />
-                            </button>
+                        <td className="p-4">
+                          <span className="font-bold text-stone-900">₹{order.totalAmount}</span><br />
+                          <span className="text-[10px] uppercase bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded inline-block mt-1">{order.paymentMethod}</span>
+                        </td>
+                        <td className="p-4">
+                          {order.status === 'Pending' ? (
                             <button
-                              onClick={() => handleDelete(product.id)}
-                              disabled={deletingId === product.id}
-                              className={`p-2 rounded-lg transition-colors border border-transparent ${deletingId === product.id
-                                ? 'text-stone-300 bg-stone-50 cursor-not-allowed'
-                                : 'text-stone-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200'
-                                }`}
+                              onClick={() => handleMarkDelivered(order.id)}
+                              className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors shadow-sm"
                             >
-                              {deletingId === product.id ? (
-                                <div className="w-5 h-5 border-2 border-stone-300 border-t-stone-500 rounded-full animate-spin" />
-                              ) : (
-                                <Trash2 className="w-5 h-5" />
-                              )}
+                              Mark Delivered
                             </button>
-                          </div>
+                          ) : (
+                            <span className="bg-stone-200 text-stone-600 px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1">
+                              ✓ Completed
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            </div>
+            )}
           </div>
-        </div>
-      </main>
-    </div>
+        )
+        }
+      </main >
+    </div >
   );
 }
 
