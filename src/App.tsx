@@ -48,10 +48,10 @@ async function uploadImage(dataUrl: string) {
   // Convert DataURL to Blob
   const res = await fetch(dataUrl);
   const blob = await res.blob();
-  
+
   const formData = new FormData();
   formData.append('image', blob, 'upload.jpg');
-  
+
   const uploadRes = await fetch(`${API_BASE}/upload`, {
     method: 'POST',
     body: formData,
@@ -94,7 +94,10 @@ const translations = {
     fancy: "Fancy",
     searchPlaceholder: "Search products...",
     noProducts: "No products found",
-    storageStatus: "Memory Status: Local Database Active"
+    storageStatus: "Memory Status: Local Database Active",
+    toys: "Toys",
+    sports: "Sports Items",
+    snacks: "Snacks"
   },
   ta: {
     storeName: "ரப்பானி",
@@ -127,7 +130,10 @@ const translations = {
     fancy: "ஃபேன்ஸி",
     searchPlaceholder: "பொருட்களைத் தேடுங்கள்...",
     noProducts: "பொருட்கள் எதுவும் இல்லை",
-    storageStatus: "நினைவக நிலை: உள்ளூர் தரவுத்தளம் செயலில் உள்ளது"
+    storageStatus: "நினைவக நிலை: உள்ளூர் தரவுத்தளம் செயலில் உள்ளது",
+    toys: "பொம்மைகள்",
+    sports: "விளையாட்டுப் பொருட்கள்",
+    snacks: "ஸ்நாக்ஸ்"
   }
 };
 
@@ -139,6 +145,18 @@ function VisitorPanel({ products }: { products: Product[] }) {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [showBackToTop, setShowBackToTop] = useState(false);
   const t = translations[lang];
+
+  const getCategoryName = (cat: string) => {
+    switch (cat) {
+      case 'All': return t.all;
+      case 'Stationary': return t.stationary;
+      case 'Fancy': return t.fancy;
+      case 'Toys': return t.toys;
+      case 'Sports Items': return t.sports;
+      case 'Snacks': return t.snacks;
+      default: return cat;
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -152,7 +170,7 @@ function VisitorPanel({ products }: { products: Product[] }) {
     setLang(lang === 'en' ? 'ta' : 'en');
   };
 
-  const categories = ['All', 'Stationary', 'Fancy'];
+  const categories = ['All', 'Stationary', 'Fancy', 'Toys', 'Sports Items', 'Snacks'];
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -175,13 +193,13 @@ function VisitorPanel({ products }: { products: Product[] }) {
                 <p className="text-xs font-medium text-rose-500 tracking-wider uppercase">{t.tagline}</p>
               </div>
             </div>
-            
+
             {/* Desktop Nav */}
             <nav className="hidden md:flex items-center gap-8">
               <a href="#home" className="text-sm font-semibold text-stone-600 hover:text-rose-500 transition-colors">{t.home}</a>
               <a href="#products" className="text-sm font-semibold text-stone-600 hover:text-rose-500 transition-colors">{t.products}</a>
               <a href="#contact" className="text-sm font-semibold text-stone-600 hover:text-rose-500 transition-colors">{t.contact}</a>
-              
+
               {/* Language Toggle */}
               <button onClick={toggleLanguage} className="flex items-center gap-2 text-sm font-bold text-rose-600 bg-rose-50 px-3 py-1.5 rounded-full hover:bg-rose-100 transition-colors border border-rose-200">
                 <Globe className="w-4 h-4" /> {lang === 'en' ? 'தமிழ்' : 'English'}
@@ -260,8 +278,8 @@ function VisitorPanel({ products }: { products: Product[] }) {
           <div className="mb-12 flex flex-col md:flex-row gap-6 items-center justify-between bg-white p-6 rounded-3xl shadow-sm border border-stone-100">
             <div className="relative w-full md:max-w-md">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
-              <input 
-                type="text" 
+              <input
+                type="text"
                 placeholder={t.searchPlaceholder}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -273,18 +291,17 @@ function VisitorPanel({ products }: { products: Product[] }) {
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap ${
-                    selectedCategory === cat 
-                      ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30 scale-105' 
+                  className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap ${selectedCategory === cat
+                      ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30 scale-105'
                       : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-                  }`}
+                    }`}
                 >
-                  {cat === 'All' ? t.all : (cat === 'Stationary' ? t.stationary : t.fancy)}
+                  {getCategoryName(cat)}
                 </button>
               ))}
             </div>
           </div>
-          
+
           {filteredProducts.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredProducts.map((product) => (
@@ -292,7 +309,7 @@ function VisitorPanel({ products }: { products: Product[] }) {
                   <div className="aspect-square overflow-hidden relative bg-stone-100">
                     <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
                     <div className="absolute top-4 left-4 bg-rose-500 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-md">
-                      {product.category === 'Stationary' ? t.stationary : t.fancy}
+                      {getCategoryName(product.category)}
                     </div>
                   </div>
                   <div className="p-6">
@@ -327,7 +344,7 @@ function VisitorPanel({ products }: { products: Product[] }) {
               <div className="p-10 md:p-16 flex flex-col justify-center">
                 <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">{t.getInTouch}</h2>
                 <p className="text-stone-400 mb-10 text-lg">{t.contactDesc}</p>
-                
+
                 <div className="space-y-6">
                   <div className="flex items-start gap-4">
                     <div className="bg-rose-500/20 p-3 rounded-full text-rose-400">
@@ -345,7 +362,7 @@ function VisitorPanel({ products }: { products: Product[] }) {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-4">
                     <div className="bg-rose-500/20 p-3 rounded-full text-rose-400">
                       <Mail className="w-6 h-6" />
@@ -369,7 +386,7 @@ function VisitorPanel({ products }: { products: Product[] }) {
                   </a>
                 </div>
               </div>
-              
+
               <div className="relative h-64 lg:h-auto bg-stone-800">
                 <img src="https://picsum.photos/seed/storefront/800/800" alt="Store Location" className="w-full h-full object-cover opacity-80" referrerPolicy="no-referrer" />
                 <div className="absolute inset-0 bg-gradient-to-t from-stone-900 via-transparent to-transparent lg:bg-gradient-to-l"></div>
@@ -402,7 +419,7 @@ function VisitorPanel({ products }: { products: Product[] }) {
 
       {/* Back to Top */}
       {showBackToTop && (
-        <button 
+        <button
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           className="fixed bottom-8 right-8 bg-rose-500 text-white p-4 rounded-full shadow-2xl shadow-rose-500/40 hover:bg-rose-600 transition-all hover:scale-110 active:scale-95 z-50 animate-in fade-in zoom-in duration-300"
         >
@@ -412,6 +429,17 @@ function VisitorPanel({ products }: { products: Product[] }) {
     </div>
   );
 }
+
+const getCategoryColor = (category: string) => {
+  switch (category) {
+    case 'Stationary': return 'bg-blue-100 text-blue-700';
+    case 'Fancy': return 'bg-purple-100 text-purple-700';
+    case 'Toys': return 'bg-yellow-100 text-yellow-700';
+    case 'Sports Items': return 'bg-orange-100 text-orange-700';
+    case 'Snacks': return 'bg-green-100 text-green-700';
+    default: return 'bg-gray-100 text-gray-700';
+  }
+};
 
 // --- Admin Panel ---
 function AdminPanel({ products, setProducts }: { products: Product[], setProducts: React.Dispatch<React.SetStateAction<Product[]>> }) {
@@ -432,7 +460,7 @@ function AdminPanel({ products, setProducts }: { products: Product[], setProduct
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [isUploading, setIsUploading] = useState(false);
-  
+
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [passForm, setPassForm] = useState({ current: '', new: '', confirm: '' });
   const [passError, setPassError] = useState('');
@@ -476,7 +504,7 @@ function AdminPanel({ products, setProducts }: { products: Product[], setProduct
     setFormError('');
     try {
       stopCamera();
-      
+
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         throw new Error("Your browser does not support camera access.");
       }
@@ -484,12 +512,12 @@ function AdminPanel({ products, setProducts }: { products: Product[], setProduct
       let stream: MediaStream;
       try {
         // Try with ideal constraints first (back camera)
-        stream = await navigator.mediaDevices.getUserMedia({ 
-          video: { 
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
             facingMode: { ideal: 'environment' },
             width: { ideal: 1280 },
             height: { ideal: 720 }
-          } 
+          }
         });
       } catch (e) {
         console.warn("Ideal constraints failed, trying simple video access", e);
@@ -564,7 +592,7 @@ function AdminPanel({ products, setProducts }: { products: Product[], setProduct
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Login failed');
-      
+
       setIsAuthenticated(true);
       setError('');
     } catch (err: any) {
@@ -619,19 +647,19 @@ function AdminPanel({ products, setProducts }: { products: Product[], setProduct
     }
     setFormError('');
 
-    const productToSave = isEditing 
-      ? { ...currentProduct } 
+    const productToSave = isEditing
+      ? { ...currentProduct }
       : { ...currentProduct, id: Date.now().toString() };
 
     try {
       await saveProduct(productToSave, isEditing);
-      
+
       if (isEditing) {
         setProducts(prev => prev.map(p => p.id === productToSave.id ? productToSave : p));
       } else {
         setProducts(prev => [...prev, productToSave]);
       }
-      
+
       setCurrentProduct({ id: '', name: '', category: 'Stationary', price: 0, image: '' });
       setIsEditing(false);
     } catch (err) {
@@ -653,7 +681,7 @@ function AdminPanel({ products, setProducts }: { products: Product[], setProduct
     console.log(`Frontend: handleDelete called for ID: ${id}`);
     setDeletingId(id);
     setFormError('');
-    
+
     try {
       await deleteProduct(id);
       setProducts(prev => prev.filter(p => p.id !== id));
@@ -672,7 +700,7 @@ function AdminPanel({ products, setProducts }: { products: Product[], setProduct
         {/* Background blobs */}
         <div className="absolute top-0 -left-20 w-96 h-96 bg-rose-500/20 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute bottom-0 -right-20 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-700"></div>
-        
+
         <div className="bg-white/95 backdrop-blur-xl p-10 rounded-[2.5rem] shadow-2xl max-w-md w-full border border-white/20 relative z-10">
           <div className="text-center mb-10">
             <div className="bg-gradient-to-br from-rose-500 to-rose-600 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 rotate-6 shadow-lg shadow-rose-500/30">
@@ -681,7 +709,7 @@ function AdminPanel({ products, setProducts }: { products: Product[], setProduct
             <h2 className="text-3xl font-black text-stone-900 tracking-tight">Admin Access</h2>
             <p className="text-stone-500 mt-2 font-medium">Secure dashboard login</p>
           </div>
-          
+
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
               <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest ml-1">Password</label>
@@ -723,11 +751,11 @@ function AdminPanel({ products, setProducts }: { products: Product[], setProduct
             <h1 className="text-xl font-bold">Admin Dashboard</h1>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
-            <button 
+            <button
               onClick={() => setShowPasswordChange(!showPasswordChange)}
               className="flex items-center gap-2 bg-stone-800 hover:bg-stone-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-rose-400 border border-rose-500/30"
             >
-              <Lock className="w-4 h-4" /> 
+              <Lock className="w-4 h-4" />
               <span>Change Password</span>
             </button>
             <div className="hidden lg:flex items-center gap-2 text-xs text-stone-400 bg-stone-800 px-3 py-1 rounded-full border border-stone-700">
@@ -841,28 +869,31 @@ function AdminPanel({ products, setProducts }: { products: Product[], setProduct
               <form onSubmit={handleSaveProduct} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-stone-700 mb-1">Product Name</label>
-                  <input type="text" value={currentProduct.name} onChange={e => setCurrentProduct({...currentProduct, name: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-rose-500 outline-none" placeholder="e.g., Premium Notebook" required />
+                  <input type="text" value={currentProduct.name} onChange={e => setCurrentProduct({ ...currentProduct, name: e.target.value })} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-rose-500 outline-none" placeholder="e.g., Premium Notebook" required />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-stone-700 mb-1">Category</label>
-                  <select value={currentProduct.category} onChange={e => setCurrentProduct({...currentProduct, category: e.target.value})} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-rose-500 outline-none">
+                  <select value={currentProduct.category} onChange={e => setCurrentProduct({ ...currentProduct, category: e.target.value })} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-rose-500 outline-none">
                     <option value="Stationary">Stationary</option>
                     <option value="Fancy">Fancy</option>
+                    <option value="Toys">Toys</option>
+                    <option value="Sports Items">Sports Items</option>
+                    <option value="Snacks">Snacks</option>
                   </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-stone-700 mb-1">Price (₹)</label>
-                  <input type="number" value={currentProduct.price || ''} onChange={e => setCurrentProduct({...currentProduct, price: Number(e.target.value)})} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-rose-500 outline-none" placeholder="150" required min="1" />
+                  <input type="number" value={currentProduct.price || ''} onChange={e => setCurrentProduct({ ...currentProduct, price: Number(e.target.value) })} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-rose-500 outline-none" placeholder="150" required min="1" />
                 </div>
                 <div className="relative">
                   <label className="block text-sm font-medium text-stone-700 mb-1">Image</label>
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    accept="image/*" 
-                    capture="environment" 
-                    onChange={handleFileChange} 
-                    className="hidden" 
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleFileChange}
+                    className="hidden"
                   />
                   {isUploading && (
                     <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 rounded-lg top-6">
@@ -873,7 +904,7 @@ function AdminPanel({ products, setProducts }: { products: Product[], setProduct
                   {!isCameraOpen ? (
                     <div className="flex flex-col gap-3">
                       <div className="flex gap-2">
-                        <input type="text" value={currentProduct.image} onChange={e => setCurrentProduct({...currentProduct, image: e.target.value})} className="flex-1 w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-rose-500 outline-none" placeholder="Image URL or take photo" required />
+                        <input type="text" value={currentProduct.image} onChange={e => setCurrentProduct({ ...currentProduct, image: e.target.value })} className="flex-1 w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-rose-500 outline-none" placeholder="Image URL or take photo" required />
                         <button type="button" onClick={triggerCamera} className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-lg flex items-center justify-center transition-colors shadow-md" title="Take Photo">
                           <Camera className="w-5 h-5" />
                         </button>
@@ -907,18 +938,18 @@ function AdminPanel({ products, setProducts }: { products: Product[], setProduct
                     </div>
                   )}
                 </div>
-                
+
                 {currentProduct.image && !isCameraOpen && (
-                   <div className="mt-4 rounded-lg overflow-hidden border border-stone-200 h-40 bg-stone-50 flex items-center justify-center shadow-inner">
-                      <img 
-                        src={currentProduct.image} 
-                        alt="Preview" 
-                        className="h-full object-contain"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400?text=Invalid+Image+URL';
-                        }}
-                      />
-                   </div>
+                  <div className="mt-4 rounded-lg overflow-hidden border border-stone-200 h-40 bg-stone-50 flex items-center justify-center shadow-inner">
+                    <img
+                      src={currentProduct.image}
+                      alt="Preview"
+                      className="h-full object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400?text=Invalid+Image+URL';
+                      }}
+                    />
+                  </div>
                 )}
 
                 {formError && (
@@ -946,13 +977,13 @@ function AdminPanel({ products, setProducts }: { products: Product[], setProduct
               <div className="p-6 border-b border-stone-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h2 className="text-xl font-bold text-stone-900">Manage Products</h2>
                 <div className="flex items-center gap-3">
-                   <button onClick={() => { setIsEditing(false); setCurrentProduct({ id: '', name: '', category: 'Stationary', price: 0, image: '' }); triggerCamera(); }} className="flex items-center gap-2 bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg shadow-rose-500/20 transition-all hover:scale-105 active:scale-95">
-                      <Camera className="w-4 h-4" /> Take Photo & Add
-                   </button>
-                   <span className="bg-stone-100 text-stone-600 px-3 py-1 rounded-full text-sm font-medium">{products.length} Items</span>
+                  <button onClick={() => { setIsEditing(false); setCurrentProduct({ id: '', name: '', category: 'Stationary', price: 0, image: '' }); triggerCamera(); }} className="flex items-center gap-2 bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg shadow-rose-500/20 transition-all hover:scale-105 active:scale-95">
+                    <Camera className="w-4 h-4" /> Take Photo & Add
+                  </button>
+                  <span className="bg-stone-100 text-stone-600 px-3 py-1 rounded-full text-sm font-medium">{products.length} Items</span>
                 </div>
               </div>
-              
+
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse min-w-[600px]">
                   <thead>
@@ -967,10 +998,10 @@ function AdminPanel({ products, setProducts }: { products: Product[], setProduct
                     {products.map(product => (
                       <tr key={product.id} className="hover:bg-stone-50 transition-colors group">
                         <td className="p-4 flex items-center gap-4">
-                          <img 
-                            src={product.image} 
-                            alt={product.name} 
-                            className="w-16 h-16 rounded-lg object-cover border border-stone-200 shadow-sm" 
+                          <img
+                            src={product.image}
+                            alt={product.name}
+                            className="w-16 h-16 rounded-lg object-cover border border-stone-200 shadow-sm"
                             referrerPolicy="no-referrer"
                             onError={(e) => {
                               (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400?text=No+Image';
@@ -979,11 +1010,7 @@ function AdminPanel({ products, setProducts }: { products: Product[], setProduct
                           <span className="font-semibold text-stone-900 text-base">{product.name}</span>
                         </td>
                         <td className="p-4">
-                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${
-                            product.category === 'Stationary' 
-                              ? 'bg-blue-100 text-blue-700' 
-                              : 'bg-purple-100 text-purple-700'
-                          }`}>
+                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold ${getCategoryColor(product.category)}`}>
                             {product.category}
                           </span>
                         </td>
@@ -993,14 +1020,13 @@ function AdminPanel({ products, setProducts }: { products: Product[], setProduct
                             <button onClick={() => handleEdit(product)} className="p-2 text-stone-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors border border-transparent hover:border-rose-200">
                               <Edit className="w-5 h-5" />
                             </button>
-                            <button 
-                              onClick={() => handleDelete(product.id)} 
+                            <button
+                              onClick={() => handleDelete(product.id)}
                               disabled={deletingId === product.id}
-                              className={`p-2 rounded-lg transition-colors border border-transparent ${
-                                deletingId === product.id 
-                                  ? 'text-stone-300 bg-stone-50 cursor-not-allowed' 
+                              className={`p-2 rounded-lg transition-colors border border-transparent ${deletingId === product.id
+                                  ? 'text-stone-300 bg-stone-50 cursor-not-allowed'
                                   : 'text-stone-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200'
-                              }`}
+                                }`}
                             >
                               {deletingId === product.id ? (
                                 <div className="w-5 h-5 border-2 border-stone-300 border-t-stone-500 rounded-full animate-spin" />
