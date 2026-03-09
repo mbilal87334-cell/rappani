@@ -60,6 +60,16 @@ async function saveProduct(product: Product, isEditing: boolean) {
   return res.json();
 }
 
+async function checkoutCart(items: { id: string; quantity: number }[]) {
+  const res = await fetch(`${API_BASE}/checkout`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items }),
+  });
+  if (!res.ok) throw new Error("Failed to checkout");
+  return res.json();
+}
+
 async function deleteProduct(id: string) {
   console.log(`API Service: Calling DELETE /api/products/${id}`);
   const res = await fetch(`${API_BASE}/products/${id}`, { method: 'DELETE' });
@@ -186,7 +196,7 @@ const translations = {
 };
 
 // --- Visitor Panel ---
-function VisitorPanel({ products, settings }: { products: Product[], settings: Record<string, string> }) {
+function VisitorPanel({ products, settings, setProducts }: { products: Product[], settings: Record<string, string>, setProducts: React.Dispatch<React.SetStateAction<Product[]>> }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -266,6 +276,25 @@ function VisitorPanel({ products, settings }: { products: Product[], settings: R
 
   const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
+  const processCheckoutAndClearCart = async () => {
+    try {
+      const itemsToCheckout = cart.map(item => ({ id: item.product.id, quantity: item.quantity }));
+      await checkoutCart(itemsToCheckout);
+
+      setProducts(prev => prev.map(p => {
+        const cartItem = cart.find(ci => ci.product.id === p.id);
+        if (cartItem && p.stock !== undefined) {
+          return { ...p, stock: Math.max(0, p.stock - cartItem.quantity) };
+        }
+        return p;
+      }));
+      setCart([]);
+      setTimeout(() => setIsCartOpen(false), 500);
+    } catch (err) {
+      console.error("Failed to checkout cart", err);
+    }
+  };
+
   const handleWhatsAppCheckout = () => {
     if (cart.length === 0) return;
 
@@ -277,6 +306,7 @@ function VisitorPanel({ products, settings }: { products: Product[], settings: R
 
     const encodedMsg = encodeURIComponent(message);
     window.open(`https://wa.me/${settings.whatsapp_1 || '916384137974'}?text=${encodedMsg}`, '_blank');
+    processCheckoutAndClearCart();
   };
 
   return (
@@ -635,6 +665,7 @@ function VisitorPanel({ products, settings }: { products: Product[], settings: R
                 </div>
 
                 <a
+                  onClick={processCheckoutAndClearCart}
                   href={`upi://pay?pa=${(settings.upi_id || '8940324030@upi').trim()}&pn=Rappani%20Store&am=${cartTotalAmount}&cu=INR`}
                   className="w-full bg-[#1A73E8] hover:bg-[#155ebb] text-white py-4 rounded-2xl font-bold text-lg transition-all hover:scale-[1.02] shadow-xl shadow-[#1A73E8]/20 flex items-center justify-center gap-2 mb-3 cursor-pointer"
                 >
@@ -1543,7 +1574,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<VisitorPanel products={products} settings={settings} />} />
+        <Route path="/" element={<VisitorPanel products={products} settings={settings} setProducts={setProducts} />} />
         <Route path="/admin" element={<AdminPanel products={products} setProducts={setProducts} settings={settings} setSettings={setSettings} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
