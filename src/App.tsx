@@ -175,6 +175,7 @@ const translations = {
     payGpay: "Pay Now with GPay / UPI",
     outOfStock: "Out of Stock",
     enterDetails: "Please enter your details",
+    invalidPhone: "Please enter a valid 10-digit mobile number",
     nameLabel: "Your Name",
     phoneLabel: "Phone Number"
   },
@@ -225,6 +226,7 @@ const translations = {
     payGpay: "GPay / UPI-ல் செலுத்துங்கள்",
     outOfStock: "ஸ்டாக் இல்லை",
     enterDetails: "உங்கள் விவரங்களை உள்ளிடவும்",
+    invalidPhone: "சரியான 10-இலக்க போன் நம்பரை உள்ளிடவும்",
     nameLabel: "உங்கள் பெயர்",
     phoneLabel: "போன் நம்பர்"
   }
@@ -329,6 +331,14 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
       setCheckoutError(t.enterDetails);
       return false;
     }
+
+    // Validate Indian phone number format (10 digits)
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(customerPhone.trim())) {
+      setCheckoutError(t.invalidPhone);
+      return false;
+    }
+
     setCheckoutError('');
 
     try {
@@ -367,6 +377,12 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
       return;
     }
 
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(customerPhone.trim())) {
+      setCheckoutError(t.invalidPhone);
+      return;
+    }
+
     let message = `Hi, I want to place an order:\n\n*Customer*: ${customerName}\n*Phone*: ${customerPhone}\n\n`;
     cart.forEach(item => {
       message += `- ${item.product.name} (x${item.quantity}) = ₹${item.product.price * item.quantity}\n`;
@@ -386,7 +402,17 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
       setCheckoutError(t.enterDetails);
       return;
     }
-    await processCheckoutAndClearCart('GPay');
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(customerPhone.trim())) {
+      e.preventDefault();
+      setCheckoutError(t.invalidPhone);
+      return;
+    }
+
+    const success = await processCheckoutAndClearCart('GPay');
+    if (!success) {
+      e.preventDefault();
+    }
   };
 
   return (
