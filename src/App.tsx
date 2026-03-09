@@ -17,8 +17,29 @@ interface CartItem {
   quantity: number;
 }
 
+interface Setting {
+  key: string;
+  value: string;
+}
+
 // --- API Service ---
 const API_BASE = '/api';
+
+async function fetchSettings() {
+  const res = await fetch(`${API_BASE}/settings`);
+  if (!res.ok) throw new Error("Failed to fetch settings");
+  return res.json();
+}
+
+async function updateSetting(key: string, value: string) {
+  const res = await fetch(`${API_BASE}/settings`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key, value }),
+  });
+  if (!res.ok) throw new Error("Failed to update setting");
+  return res.json();
+}
 
 async function fetchProducts() {
   const res = await fetch(`${API_BASE}/products`);
@@ -158,7 +179,7 @@ const translations = {
 };
 
 // --- Visitor Panel ---
-function VisitorPanel({ products }: { products: Product[] }) {
+function VisitorPanel({ products, settings }: { products: Product[], settings: Record<string, string> }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -476,17 +497,22 @@ function VisitorPanel({ products }: { products: Product[] }) {
                 </div>
               </div>
 
-              <div className="relative h-64 lg:h-auto bg-stone-800">
-                <img src="https://picsum.photos/seed/storefront/800/800" alt="Store Location" className="w-full h-full object-cover opacity-80" referrerPolicy="no-referrer" />
-                <div className="absolute inset-0 bg-gradient-to-t from-stone-900 via-transparent to-transparent lg:bg-gradient-to-l"></div>
-                <div className="absolute bottom-8 left-8 right-8 bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl">
+              <a
+                href="https://www.google.com/maps/search/?api=1&query=21,B+Kottikulam+Road+Rappani+Bazar+Melapalayam+Tirunelveli-627005"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative h-64 lg:h-auto bg-stone-800 block cursor-pointer group overflow-hidden"
+              >
+                <img src={settings.location_image || "https://picsum.photos/seed/storefront/800/800"} alt="Store Location" className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
+                <div className="absolute inset-0 bg-gradient-to-t from-stone-900 via-transparent to-transparent lg:bg-gradient-to-l group-hover:bg-stone-900/10 transition-colors"></div>
+                <div className="absolute bottom-8 left-8 right-8 bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl group-hover:bg-white/20 transition-colors">
                   <div className="flex items-center gap-3 text-white mb-2">
                     <MapPin className="w-5 h-5 text-rose-400" />
                     <h3 className="font-bold text-lg">{t.addressTitle}</h3>
                   </div>
                   <p className="text-stone-300 text-sm whitespace-pre-line">{t.addressDesc}</p>
                 </div>
-              </div>
+              </a>
             </div>
           </div>
         </div>
@@ -590,7 +616,7 @@ const getCategoryColor = (category: string) => {
 };
 
 // --- Admin Panel ---
-function AdminPanel({ products, setProducts }: { products: Product[], setProducts: React.Dispatch<React.SetStateAction<Product[]>> }) {
+function AdminPanel({ products, setProducts, settings, setSettings }: { products: Product[], setProducts: React.Dispatch<React.SetStateAction<Product[]>>, settings: Record<string, string>, setSettings: React.Dispatch<React.SetStateAction<Record<string, string>>> }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -606,6 +632,29 @@ function AdminPanel({ products, setProducts }: { products: Product[], setProduct
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const locationImageRef = useRef<HTMLInputElement>(null);
+  const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
+
+  const handleLocationImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setIsUpdatingLocation(true);
+      try {
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const dataUrl = reader.result as string;
+          const imageUrl = await uploadImage(dataUrl);
+          await updateSetting('location_image', imageUrl);
+          setSettings(prev => ({ ...prev, location_image: imageUrl }));
+          setIsUpdatingLocation(false);
+        };
+        reader.readAsDataURL(file);
+      } catch (err) {
+        console.error("Upload failed", err);
+        setIsUpdatingLocation(false);
+      }
+    }
+  };
 
   const [isUploading, setIsUploading] = useState(false);
 
@@ -947,6 +996,25 @@ function AdminPanel({ products, setProducts }: { products: Product[], setProduct
               <h3 className="text-sm font-bold text-emerald-600">Connected & Syncing</h3>
             </div>
           </div>
+
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="bg-orange-50 p-3 rounded-xl text-orange-500">
+                <MapPin className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-stone-500 uppercase tracking-wider">Store Location</p>
+                <h3 className="text-sm font-bold text-stone-900 mt-1">Update Background</h3>
+              </div>
+            </div>
+            <div className="relative">
+              <input type="file" ref={locationImageRef} accept="image/*" onChange={handleLocationImageChange} className="hidden" />
+              <button disabled={isUpdatingLocation} onClick={() => locationImageRef.current?.click()} className="flex items-center justify-center gap-2 bg-stone-100 hover:bg-stone-200 text-stone-600 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-stone-200">
+                {isUpdatingLocation ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-stone-600"></div> : <Camera className="w-4 h-4" />}
+                {isUpdatingLocation ? 'Uploading...' : 'Upload Image'}
+              </button>
+            </div>
+          </div>
         </div>
 
         {showPasswordChange && (
@@ -1213,17 +1281,21 @@ function AdminPanel({ products, setProducts }: { products: Product[], setProduct
 // --- Main App ---
 export default function App() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [settings, setSettings] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const allProducts = await fetchProducts();
+        const [allProducts, allSettings] = await Promise.all([
+          fetchProducts().catch(() => []),
+          fetchSettings().catch(() => [])
+        ]);
         setProducts(allProducts);
+        const settingsMap = allSettings.reduce((acc: any, curr: any) => ({ ...acc, [curr.key]: curr.value }), {});
+        setSettings(settingsMap);
       } catch (e) {
         console.error("Failed to load backend data", e);
-        // Do not fallback to defaultProducts, just show empty or error
-        setProducts([]);
       } finally {
         setIsLoading(false);
       }
@@ -1245,8 +1317,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<VisitorPanel products={products} />} />
-        <Route path="/admin" element={<AdminPanel products={products} setProducts={setProducts} />} />
+        <Route path="/" element={<VisitorPanel products={products} settings={settings} />} />
+        <Route path="/admin" element={<AdminPanel products={products} setProducts={setProducts} settings={settings} setSettings={setSettings} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
