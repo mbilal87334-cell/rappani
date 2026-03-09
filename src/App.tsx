@@ -131,7 +131,8 @@ const translations = {
     emptyCart: "Your cart is empty",
     total: "Total",
     offer: "Offer",
-    originalPrice: "Original Price (Optional)"
+    originalPrice: "Original Price (Optional)",
+    paymentInfo: "Pay via GPay to 8940324030 and collect your items at the shop."
   },
   ta: {
     storeName: "ரப்பானி",
@@ -174,7 +175,8 @@ const translations = {
     emptyCart: "கார்ட் காலியாக உள்ளது",
     total: "மொத்தம்",
     offer: "ஆஃபர்",
-    originalPrice: "பழைய விலை (விருப்பமிருந்தால்)"
+    originalPrice: "பழைய விலை (விருப்பமிருந்தால்)",
+    paymentInfo: "8940324030 என்ற எண்ணிற்கு GPay செய்துவிட்டு, கடைக்கு வந்து பொருட்களைப் பெற்றுக்கொள்ளவும்."
   }
 };
 
@@ -251,7 +253,7 @@ function VisitorPanel({ products, settings }: { products: Product[], settings: R
     cart.forEach(item => {
       message += `- ${item.product.name} (x${item.quantity}) = ₹${item.product.price * item.quantity}\n`;
     });
-    message += `\n*Total: ₹${cartTotalAmount}*\n\nPlease confirm!`;
+    message += `\n*Total: ₹${cartTotalAmount}*\n\nPayment Mode: GPay to 8940324030\nDelivery: I will collect the items at the shop.\n\nPlease confirm!`;
 
     const encodedMsg = encodeURIComponent(message);
     window.open(`https://wa.me/${settings.whatsapp_1 || '916384137974'}?text=${encodedMsg}`, '_blank');
@@ -585,9 +587,13 @@ function VisitorPanel({ products, settings }: { products: Product[], settings: R
 
             {cart.length > 0 && (
               <div className="p-6 border-t border-stone-100 bg-stone-50">
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-between mb-4">
                   <span className="text-lg font-bold text-stone-600">{t.total}</span>
                   <span className="text-3xl font-extrabold text-stone-900">₹{cartTotalAmount}</span>
+                </div>
+                <div className="bg-emerald-100 text-emerald-800 p-3 rounded-xl mb-6 text-xs sm:text-sm font-semibold flex items-start gap-2 border border-emerald-200">
+                  <span className="mt-0.5">ℹ️</span>
+                  <p>{t.paymentInfo}</p>
                 </div>
                 <button
                   onClick={handleWhatsAppCheckout}
