@@ -338,7 +338,7 @@ function VisitorPanel({ products, settings }: { products: Product[], settings: R
       {/* Hero Section */}
       <section id="home" className="relative bg-stone-900 text-white overflow-hidden">
         <div className="absolute inset-0">
-          <img src="https://picsum.photos/seed/stationary/1920/1080?blur=2" alt="Store Background" className="w-full h-full object-cover opacity-40" referrerPolicy="no-referrer" />
+          <img src={settings.hero_image || "https://picsum.photos/seed/stationary/1920/1080?blur=2"} alt="Store Background" className="w-full h-full object-cover opacity-40" referrerPolicy="no-referrer" />
           <div className="absolute inset-0 bg-gradient-to-r from-stone-900 via-stone-900/80 to-transparent"></div>
         </div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
@@ -635,6 +635,9 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
   const locationImageRef = useRef<HTMLInputElement>(null);
   const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
 
+  const heroImageRef = useRef<HTMLInputElement>(null);
+  const [isUpdatingHero, setIsUpdatingHero] = useState(false);
+
   const handleLocationImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -652,6 +655,27 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
       } catch (err) {
         console.error("Upload failed", err);
         setIsUpdatingLocation(false);
+      }
+    }
+  };
+
+  const handleHeroImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setIsUpdatingHero(true);
+      try {
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const dataUrl = reader.result as string;
+          const imageUrl = await uploadImage(dataUrl);
+          await updateSetting('hero_image', imageUrl);
+          setSettings(prev => ({ ...prev, hero_image: imageUrl }));
+          setIsUpdatingHero(false);
+        };
+        reader.readAsDataURL(file);
+      } catch (err) {
+        console.error("Upload failed", err);
+        setIsUpdatingHero(false);
       }
     }
   };
@@ -1012,6 +1036,25 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
               <button disabled={isUpdatingLocation} onClick={() => locationImageRef.current?.click()} className="flex items-center justify-center gap-2 bg-stone-100 hover:bg-stone-200 text-stone-600 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-stone-200">
                 {isUpdatingLocation ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-stone-600"></div> : <Camera className="w-4 h-4" />}
                 {isUpdatingLocation ? 'Uploading...' : 'Upload Image'}
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="bg-purple-50 p-3 rounded-xl text-purple-500">
+                <Store className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-stone-500 uppercase tracking-wider">Welcome Banner</p>
+                <h3 className="text-sm font-bold text-stone-900 mt-1">Update Background</h3>
+              </div>
+            </div>
+            <div className="relative">
+              <input type="file" ref={heroImageRef} accept="image/*" onChange={handleHeroImageChange} className="hidden" />
+              <button disabled={isUpdatingHero} onClick={() => heroImageRef.current?.click()} className="flex items-center justify-center gap-2 bg-stone-100 hover:bg-stone-200 text-stone-600 px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-stone-200">
+                {isUpdatingHero ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-stone-600"></div> : <Camera className="w-4 h-4" />}
+                {isUpdatingHero ? 'Uploading...' : 'Upload Image'}
               </button>
             </div>
           </div>
