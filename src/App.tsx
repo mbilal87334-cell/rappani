@@ -570,7 +570,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
               </div>
 
               <a
-                href="https://www.google.com/maps/search/?api=1&query=21,B+Kottikulam+Road+Rappani+Bazar+Melapalayam+Tirunelveli-627005"
+                href="https://maps.app.goo.gl/QwQ3ePTo52WKz6A79?g_st=aw"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="relative h-64 lg:h-auto bg-stone-800 block cursor-pointer group overflow-hidden"
