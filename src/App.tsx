@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
-import { Phone, Mail, Instagram, MessageCircle, MapPin, Lock, LogOut, Plus, Edit, Trash2, Store, ShoppingBag, Menu, X, Camera, Aperture, Globe, Database, Search, ArrowUp, Package, LayoutGrid } from 'lucide-react';
+import { Phone, Mail, Instagram, MessageCircle, MapPin, Lock, LogOut, Plus, Edit, Trash2, Store, ShoppingBag, Menu, X, Camera, Aperture, Globe, Database, Search, ArrowUp, Package, LayoutGrid, ShoppingCart, Minus } from 'lucide-react';
 
 // --- Types ---
 interface Product {
@@ -8,7 +8,13 @@ interface Product {
   name: string;
   category: string;
   price: number;
+  originalPrice?: number;
   image: string;
+}
+
+interface CartItem {
+  product: Product;
+  quantity: number;
 }
 
 // --- API Service ---
@@ -97,7 +103,14 @@ const translations = {
     storageStatus: "Memory Status: Local Database Active",
     toys: "Toys",
     sports: "Sports Items",
-    snacks: "Snacks"
+    snacks: "Snacks",
+    cart: "Cart",
+    addToCart: "Add to Cart",
+    checkoutWhatsapp: "Checkout on WhatsApp",
+    emptyCart: "Your cart is empty",
+    total: "Total",
+    offer: "Offer",
+    originalPrice: "Original Price (Optional)"
   },
   ta: {
     storeName: "ரப்பானி",
@@ -133,12 +146,21 @@ const translations = {
     storageStatus: "நினைவக நிலை: உள்ளூர் தரவுத்தளம் செயலில் உள்ளது",
     toys: "பொம்மைகள்",
     sports: "விளையாட்டுப் பொருட்கள்",
-    snacks: "ஸ்நாக்ஸ்"
+    snacks: "ஸ்நாக்ஸ்",
+    cart: "கார்ட்",
+    addToCart: "கார்ட்டில் சேர்க்க",
+    checkoutWhatsapp: "WhatsApp-ல் வாங்க",
+    emptyCart: "கார்ட் காலியாக உள்ளது",
+    total: "மொத்தம்",
+    offer: "ஆஃபர்",
+    originalPrice: "பழைய விலை (விருப்பமிருந்தால்)"
   }
 };
 
 // --- Visitor Panel ---
 function VisitorPanel({ products }: { products: Product[] }) {
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [lang, setLang] = useState<'en' | 'ta'>('en');
   const [searchQuery, setSearchQuery] = useState('');
@@ -178,6 +200,42 @@ function VisitorPanel({ products }: { products: Product[] }) {
     return matchesSearch && matchesCategory;
   });
 
+  const addToCart = (product: Product) => {
+    setCart(prev => {
+      const existing = prev.find(item => item.product.id === product.id);
+      if (existing) {
+        return prev.map(item => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+      }
+      return [...prev, { product, quantity: 1 }];
+    });
+    setIsCartOpen(true);
+  };
+
+  const updateQuantity = (id: string, overrideQuantity: number) => {
+    if (overrideQuantity <= 0) {
+      setCart(prev => prev.filter(item => item.product.id !== id));
+    } else {
+      setCart(prev => prev.map(item => item.product.id === id ? { ...item, quantity: overrideQuantity } : item));
+    }
+  };
+
+  const cartTotalAmount = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+
+  const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  const handleWhatsAppCheckout = () => {
+    if (cart.length === 0) return;
+
+    let message = `Hi, I want to place an order:\n\n`;
+    cart.forEach(item => {
+      message += `- ${item.product.name} (x${item.quantity}) = ₹${item.product.price * item.quantity}\n`;
+    });
+    message += `\n*Total: ₹${cartTotalAmount}*\n\nPlease confirm!`;
+
+    const encodedMsg = encodeURIComponent(message);
+    window.open(`https://wa.me/916384137974?text=${encodedMsg}`, '_blank');
+  };
+
   return (
     <div className="min-h-screen bg-stone-50 font-sans text-stone-900">
       {/* Header */}
@@ -205,6 +263,15 @@ function VisitorPanel({ products }: { products: Product[] }) {
                 <Globe className="w-4 h-4" /> {lang === 'en' ? 'தமிழ்' : 'English'}
               </button>
 
+              <button onClick={() => setIsCartOpen(true)} className="relative p-2 text-stone-600 hover:text-rose-500 transition-colors">
+                <ShoppingCart className="w-5 h-5" />
+                {cartItemsCount > 0 && (
+                  <span className="absolute top-0 right-0 bg-rose-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center translate-x-1/4 -translate-y-1/4">
+                    {cartItemsCount}
+                  </span>
+                )}
+              </button>
+
               <Link to="/admin" className="flex items-center gap-2 text-sm font-semibold bg-stone-900 text-white px-4 py-2 rounded-full hover:bg-stone-800 transition-colors">
                 <Lock className="w-4 h-4" /> {t.adminLogin}
               </Link>
@@ -215,6 +282,16 @@ function VisitorPanel({ products }: { products: Product[] }) {
               <button onClick={toggleLanguage} className="flex items-center gap-1 text-xs font-bold text-rose-600 bg-rose-50 px-2 py-1 rounded-full border border-rose-200">
                 <Globe className="w-3 h-3" /> {lang === 'en' ? 'தமிழ்' : 'EN'}
               </button>
+
+              <button onClick={() => setIsCartOpen(true)} className="relative p-2 text-stone-600">
+                <ShoppingCart className="w-5 h-5" />
+                {cartItemsCount > 0 && (
+                  <span className="absolute top-1 right-1 bg-rose-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center -translate-y-1/2 translate-x-1/2">
+                    {cartItemsCount}
+                  </span>
+                )}
+              </button>
+
               <button className="p-2 text-stone-600" onClick={() => setIsMenuOpen(!isMenuOpen)}>
                 {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
@@ -292,8 +369,8 @@ function VisitorPanel({ products }: { products: Product[] }) {
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
                   className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap ${selectedCategory === cat
-                      ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30 scale-105'
-                      : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                    ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30 scale-105'
+                    : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
                     }`}
                 >
                   {getCategoryName(cat)}
@@ -308,17 +385,29 @@ function VisitorPanel({ products }: { products: Product[] }) {
                 <div key={product.id} className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-stone-100 group">
                   <div className="aspect-square overflow-hidden relative bg-stone-100">
                     <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
-                    <div className="absolute top-4 left-4 bg-rose-500 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-md">
-                      {getCategoryName(product.category)}
+                    <div className="absolute top-4 left-4 flex flex-col gap-2">
+                      <div className="bg-rose-500 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-md inline-block self-start">
+                        {getCategoryName(product.category)}
+                      </div>
+                      {product.originalPrice && product.originalPrice > product.price && (
+                        <div className="bg-emerald-500 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-md inline-block self-start animate-bounce">
+                          {t.offer}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="p-6">
                     <h3 className="text-xl font-bold text-stone-900 mb-2">{product.name}</h3>
                     <div className="flex items-center justify-between mt-4">
-                      <span className="text-2xl font-extrabold text-rose-500">₹{product.price}</span>
-                      <a href={`https://wa.me/916384137974?text=Hi, I want to buy ${product.name} (₹${product.price})`} target="_blank" rel="noopener noreferrer" className="bg-stone-900 hover:bg-stone-800 text-white px-4 py-2 rounded-full text-sm font-semibold transition-colors flex items-center gap-2">
-                        <MessageCircle className="w-4 h-4" /> {t.buyWhatsapp}
-                      </a>
+                      <div className="flex flex-col">
+                        <span className="text-2xl font-extrabold text-rose-500">₹{product.price}</span>
+                        {product.originalPrice && product.originalPrice > product.price && (
+                          <span className="text-sm font-bold text-stone-400 line-through">₹{product.originalPrice}</span>
+                        )}
+                      </div>
+                      <button onClick={() => addToCart(product)} className="bg-stone-900 hover:bg-stone-800 text-white px-4 py-2 rounded-full text-sm font-semibold transition-colors flex items-center gap-2">
+                        <Plus className="w-4 h-4" /> {t.addToCart}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -426,6 +515,65 @@ function VisitorPanel({ products }: { products: Product[] }) {
           <ArrowUp className="w-6 h-6" />
         </button>
       )}
+
+      {/* Cart Drawer */}
+      {isCartOpen && (
+        <div className="fixed inset-0 z-[100] flex justify-end">
+          <div className="absolute inset-0 bg-stone-900/50 backdrop-blur-sm" onClick={() => setIsCartOpen(false)}></div>
+          <div className="relative w-full max-w-md bg-white h-full flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
+            <div className="p-6 border-b border-stone-100 flex items-center justify-between">
+              <h2 className="text-2xl font-bold text-stone-900 flex items-center gap-2">
+                <ShoppingCart className="w-6 h-6 text-rose-500" /> {t.cart} ({cartItemsCount})
+              </h2>
+              <button onClick={() => setIsCartOpen(false)} className="p-2 text-stone-400 hover:text-stone-600 transition-colors">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
+              {cart.length === 0 ? (
+                <div className="flex-1 flex flex-col items-center justify-center text-center text-stone-400">
+                  <div className="bg-stone-50 w-24 h-24 rounded-full flex items-center justify-center mb-4">
+                    <ShoppingBag className="w-10 h-10 text-stone-300" />
+                  </div>
+                  <p className="text-lg font-bold text-stone-600 mb-2">{t.emptyCart}</p>
+                  <button onClick={() => setIsCartOpen(false)} className="text-rose-500 font-semibold">{t.shopNow}</button>
+                </div>
+              ) : (
+                cart.map(item => (
+                  <div key={item.product.id} className="flex gap-4 bg-stone-50 p-4 rounded-2xl border border-stone-100 items-center">
+                    <img src={item.product.image} alt={item.product.name} className="w-16 h-16 rounded-xl object-cover bg-white" referrerPolicy="no-referrer" />
+                    <div className="flex-1">
+                      <h4 className="font-bold text-stone-900 line-clamp-1">{item.product.name}</h4>
+                      <p className="font-extrabold text-rose-500 text-sm">₹{item.product.price} x {item.quantity}</p>
+                    </div>
+                    <div className="flex items-center gap-3 bg-white px-2 py-1 rounded-full shadow-sm border border-stone-100">
+                      <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)} className="p-1 text-stone-400 hover:text-rose-500 transition-colors"><Minus className="w-4 h-4" /></button>
+                      <span className="font-bold text-stone-900 text-sm min-w-[1rem] text-center">{item.quantity}</span>
+                      <button onClick={() => updateQuantity(item.product.id, item.quantity + 1)} className="p-1 text-stone-400 hover:text-rose-500 transition-colors"><Plus className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {cart.length > 0 && (
+              <div className="p-6 border-t border-stone-100 bg-stone-50">
+                <div className="flex items-center justify-between mb-6">
+                  <span className="text-lg font-bold text-stone-600">{t.total}</span>
+                  <span className="text-3xl font-extrabold text-stone-900">₹{cartTotalAmount}</span>
+                </div>
+                <button
+                  onClick={handleWhatsAppCheckout}
+                  className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-2xl font-bold text-lg transition-all hover:scale-[1.02] shadow-xl shadow-[#25D366]/20 flex items-center justify-center gap-2"
+                >
+                  <MessageCircle className="w-6 h-6" /> {t.checkoutWhatsapp}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -450,7 +598,7 @@ function AdminPanel({ products, setProducts }: { products: Product[], setProduct
 
   // Form State
   const [isEditing, setIsEditing] = useState(false);
-  const [currentProduct, setCurrentProduct] = useState<Product>({ id: '', name: '', category: 'Stationary', price: 0, image: '' });
+  const [currentProduct, setCurrentProduct] = useState<Product>({ id: '', name: '', category: 'Stationary', price: 0, originalPrice: '' as unknown as number, image: '' });
   const [formError, setFormError] = useState('');
 
   // Camera State
@@ -660,7 +808,7 @@ function AdminPanel({ products, setProducts }: { products: Product[], setProduct
         setProducts(prev => [...prev, productToSave]);
       }
 
-      setCurrentProduct({ id: '', name: '', category: 'Stationary', price: 0, image: '' });
+      setCurrentProduct({ id: '', name: '', category: 'Stationary', price: 0, originalPrice: '' as unknown as number, image: '' });
       setIsEditing(false);
     } catch (err) {
       console.error("Save failed", err);
@@ -881,9 +1029,15 @@ function AdminPanel({ products, setProducts }: { products: Product[], setProduct
                     <option value="Snacks">Snacks</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-stone-700 mb-1">Price (₹)</label>
-                  <input type="number" value={currentProduct.price || ''} onChange={e => setCurrentProduct({ ...currentProduct, price: Number(e.target.value) })} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-rose-500 outline-none" placeholder="150" required min="1" />
+                <div className="flex gap-4">
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-stone-700 mb-1">Price (₹)</label>
+                    <input type="number" value={currentProduct.price || ''} onChange={e => setCurrentProduct({ ...currentProduct, price: Number(e.target.value) })} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-rose-500 outline-none" placeholder="150" required min="1" />
+                  </div>
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-stone-700 mb-1">Original Price (₹)</label>
+                    <input type="number" value={currentProduct.originalPrice || ''} onChange={e => setCurrentProduct({ ...currentProduct, originalPrice: Number(e.target.value) || undefined })} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Optional" min="1" />
+                  </div>
                 </div>
                 <div className="relative">
                   <label className="block text-sm font-medium text-stone-700 mb-1">Image</label>
@@ -963,7 +1117,7 @@ function AdminPanel({ products, setProducts }: { products: Product[], setProduct
                     {isEditing ? 'Update Product' : 'Add Product'}
                   </button>
                   {isEditing && (
-                    <button type="button" onClick={() => { setIsEditing(false); setCurrentProduct({ id: '', name: '', category: 'Stationary', price: 0, image: '' }); }} className="px-4 py-3 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg font-semibold transition-colors">
+                    <button type="button" onClick={() => { setIsEditing(false); setCurrentProduct({ id: '', name: '', category: 'Stationary', price: 0, originalPrice: '' as unknown as number, image: '' }); }} className="px-4 py-3 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-lg font-semibold transition-colors">
                       Cancel
                     </button>
                   )}
@@ -977,7 +1131,7 @@ function AdminPanel({ products, setProducts }: { products: Product[], setProduct
               <div className="p-6 border-b border-stone-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h2 className="text-xl font-bold text-stone-900">Manage Products</h2>
                 <div className="flex items-center gap-3">
-                  <button onClick={() => { setIsEditing(false); setCurrentProduct({ id: '', name: '', category: 'Stationary', price: 0, image: '' }); triggerCamera(); }} className="flex items-center gap-2 bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg shadow-rose-500/20 transition-all hover:scale-105 active:scale-95">
+                  <button onClick={() => { setIsEditing(false); setCurrentProduct({ id: '', name: '', category: 'Stationary', price: 0, originalPrice: '' as unknown as number, image: '' }); triggerCamera(); }} className="flex items-center gap-2 bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg shadow-rose-500/20 transition-all hover:scale-105 active:scale-95">
                     <Camera className="w-4 h-4" /> Take Photo & Add
                   </button>
                   <span className="bg-stone-100 text-stone-600 px-3 py-1 rounded-full text-sm font-medium">{products.length} Items</span>
@@ -1014,7 +1168,14 @@ function AdminPanel({ products, setProducts }: { products: Product[], setProduct
                             {product.category}
                           </span>
                         </td>
-                        <td className="p-4 font-bold text-stone-900 text-lg">₹{product.price}</td>
+                        <td className="p-4">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-stone-900 text-lg">₹{product.price}</span>
+                            {product.originalPrice && product.originalPrice > product.price && (
+                              <span className="text-xs font-bold text-stone-400 line-through">₹{product.originalPrice}</span>
+                            )}
+                          </div>
+                        </td>
                         <td className="p-4 text-right">
                           <div className="flex justify-end gap-2">
                             <button onClick={() => handleEdit(product)} className="p-2 text-stone-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors border border-transparent hover:border-rose-200">
@@ -1024,8 +1185,8 @@ function AdminPanel({ products, setProducts }: { products: Product[], setProduct
                               onClick={() => handleDelete(product.id)}
                               disabled={deletingId === product.id}
                               className={`p-2 rounded-lg transition-colors border border-transparent ${deletingId === product.id
-                                  ? 'text-stone-300 bg-stone-50 cursor-not-allowed'
-                                  : 'text-stone-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200'
+                                ? 'text-stone-300 bg-stone-50 cursor-not-allowed'
+                                : 'text-stone-500 hover:text-red-600 hover:bg-red-50 hover:border-red-200'
                                 }`}
                             >
                               {deletingId === product.id ? (
