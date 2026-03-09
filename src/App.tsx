@@ -771,7 +771,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                 </div>
 
                 <a
-                  onClick={processCheckoutAndClearCart}
+                  onClick={handleGPayCheckout}
                   href={`upi://pay?pa=${(settings.upi_id || '8940324030@upi').trim()}&pn=Rappani%20Store&am=${cartTotalAmount}&cu=INR`}
                   className="w-full bg-[#1A73E8] hover:bg-[#155ebb] text-white py-4 rounded-2xl font-bold text-lg transition-all hover:scale-[1.02] shadow-xl shadow-[#1A73E8]/20 flex items-center justify-center gap-2 mb-3 cursor-pointer"
                 >
