@@ -23,6 +23,9 @@ const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/rappan
 let dbConnectionState = "initializing";
 let dbConnectionError = "";
 
+// Memory store for OTPs (simulating SMS)
+const otpStore = new Map<string, { otp: string, expiresAt: number }>();
+
 // Mongoose Models
 const productSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
@@ -133,6 +136,37 @@ async function startServer() {
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });
     }
+  });
+
+  // OTP Validation Routes
+  app.post("/api/send-otp", (req, res) => {
+    const { phone } = req.body;
+    if (!phone || phone.length !== 10) return res.status(400).json({ error: "Invalid phone number" });
+
+    // Generate a 4-digit OTP
+    const otp = Math.floor(1000 + Math.random() * 9000).toString();
+    // Valid for 5 minutes
+    otpStore.set(phone, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
+
+    console.log(`[SIMULATED SMS] OTP for ${phone} is ${otp}`);
+    // Simulate SMS by returning it to client (only for testing without real SMS API)
+    res.json({ success: true, mockOtp: otp });
+  });
+
+  app.post("/api/verify-otp", (req, res) => {
+    const { phone, otp } = req.body;
+    const record = otpStore.get(phone);
+
+    if (!record) return res.status(400).json({ error: "No OTP assigned to this number" });
+    if (record.expiresAt < Date.now()) {
+      otpStore.delete(phone);
+      return res.status(400).json({ error: "OTP Expired" });
+    }
+    if (record.otp !== otp) return res.status(400).json({ error: "Invalid OTP" });
+
+    // OTP matches correctly
+    otpStore.delete(phone);
+    res.json({ success: true });
   });
 
   // API Routes

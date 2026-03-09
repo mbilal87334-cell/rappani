@@ -177,7 +177,12 @@ const translations = {
     enterDetails: "Please enter your details",
     invalidPhone: "Please enter a valid 10-digit mobile number",
     nameLabel: "Your Name",
-    phoneLabel: "Phone Number"
+    phoneLabel: "Phone Number",
+    sendOtp: "Send OTP (Simulated)",
+    verifyOtp: "Verify OTP",
+    enterOtp: "Enter 4-digit OTP",
+    phoneVerified: "✔ Phone Verified",
+    unverifiedPhoneError: "Please verify your phone number using OTP."
   },
   ta: {
     storeName: "ரப்பானி",
@@ -228,7 +233,12 @@ const translations = {
     enterDetails: "உங்கள் விவரங்களை உள்ளிடவும்",
     invalidPhone: "சரியான 10-இலக்க போன் நம்பரை உள்ளிடவும்",
     nameLabel: "உங்கள் பெயர்",
-    phoneLabel: "போன் நம்பர்"
+    phoneLabel: "போன் நம்பர்",
+    sendOtp: "OTP அனுப்பு",
+    verifyOtp: "OTP-ஐ சரிபார்",
+    enterOtp: "4-இலக்க OTP",
+    phoneVerified: "✔ சரிபார்க்கப்பட்டது",
+    unverifiedPhoneError: "OTP மூலம் உங்கள் எண்ணை சரிபார்க்கவும்."
   }
 };
 
@@ -244,7 +254,66 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [checkoutError, setCheckoutError] = useState('');
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [otpInput, setOtpInput] = useState('');
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const t = translations[lang];
+
+  const handleSendOtp = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(customerPhone.trim())) {
+      setCheckoutError(t.invalidPhone);
+      return;
+    }
+    setCheckoutError('');
+    setIsSendingOtp(true);
+    try {
+      const res = await fetch('/api/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: customerPhone }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setIsOtpSent(true);
+        alert(`SIMULATED SMS\n\nYour Rappani Store OTP is: ${data.mockOtp}`);
+      } else {
+        setCheckoutError(data.error || "Failed to send OTP");
+      }
+    } catch (err) {
+      setCheckoutError("Failed to send OTP.");
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!otpInput) return;
+    setIsVerifyingOtp(true);
+    setCheckoutError('');
+    try {
+      const res = await fetch('/api/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: customerPhone, otp: otpInput }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setIsPhoneVerified(true);
+        setIsOtpSent(false); // Hide OTP form
+      } else {
+        setCheckoutError(data.error || "Invalid OTP");
+      }
+    } catch (err) {
+      setCheckoutError("Failed to verify OTP.");
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
 
   const getCategoryName = (cat: string) => {
     switch (cat) {
@@ -339,6 +408,11 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
       return false;
     }
 
+    if (!isPhoneVerified) {
+      setCheckoutError(t.unverifiedPhoneError);
+      return false;
+    }
+
     setCheckoutError('');
 
     try {
@@ -383,6 +457,11 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
       return;
     }
 
+    if (!isPhoneVerified) {
+      setCheckoutError(t.unverifiedPhoneError);
+      return;
+    }
+
     let message = `Hi, I want to place an order:\n\n*Customer*: ${customerName}\n*Phone*: ${customerPhone}\n\n`;
     cart.forEach(item => {
       message += `- ${item.product.name} (x${item.quantity}) = ₹${item.product.price * item.quantity}\n`;
@@ -406,6 +485,12 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
     if (!phoneRegex.test(customerPhone.trim())) {
       e.preventDefault();
       setCheckoutError(t.invalidPhone);
+      return;
+    }
+
+    if (!isPhoneVerified) {
+      e.preventDefault();
+      setCheckoutError(t.unverifiedPhoneError);
       return;
     }
 
@@ -778,9 +863,41 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                         type="tel"
                         placeholder={t.phoneLabel}
                         value={customerPhone}
-                        onChange={(e) => setCustomerPhone(e.target.value)}
-                        className={`w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-rose-500 ${checkoutError && !customerPhone ? 'border-red-400' : 'border-stone-200'}`}
+                        onChange={(e) => {
+                          setCustomerPhone(e.target.value.replace(/[^0-9]/g, ''));
+                          setIsPhoneVerified(false);
+                          setIsOtpSent(false);
+                        }}
+                        disabled={isPhoneVerified}
+                        maxLength={10}
+                        className={`w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-rose-500 ${checkoutError && (!customerPhone || !isPhoneVerified) ? 'border-red-400' : 'border-stone-200'} ${isPhoneVerified ? 'bg-stone-100 text-stone-500 opacity-70 cursor-not-allowed' : ''}`}
                       />
+
+                      {!isPhoneVerified && !isOtpSent && customerPhone.length === 10 && (
+                        <button onClick={handleSendOtp} disabled={isSendingOtp} className="mt-2 text-xs bg-stone-800 hover:bg-stone-900 text-white px-3 py-1.5 rounded-md font-bold transition-colors shadow-sm">
+                          {isSendingOtp ? '...' : t.sendOtp}
+                        </button>
+                      )}
+
+                      {isOtpSent && !isPhoneVerified && (
+                        <div className="flex gap-2 items-center mt-2 animate-in fade-in slide-in-from-top-1">
+                          <input
+                            type="text"
+                            maxLength={4}
+                            value={otpInput}
+                            onChange={e => setOtpInput(e.target.value.replace(/[^0-9]/g, ''))}
+                            placeholder={t.enterOtp}
+                            className="w-32 px-3 py-1.5 border border-stone-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-rose-500"
+                          />
+                          <button onClick={handleVerifyOtp} disabled={isVerifyingOtp} className="text-sm bg-rose-500 hover:bg-rose-600 text-white px-3 py-1.5 rounded-md font-bold transition-colors shadow-sm">
+                            {isVerifyingOtp ? '...' : t.verifyOtp}
+                          </button>
+                        </div>
+                      )}
+
+                      {isPhoneVerified && (
+                        <p className="text-xs text-emerald-600 font-bold mt-1.5">{t.phoneVerified}</p>
+                      )}
                     </div>
                   </div>
                   {checkoutError && <p className="text-xs text-red-500 font-medium mt-2">{checkoutError}</p>}
