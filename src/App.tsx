@@ -142,6 +142,7 @@ const translations = {
     emptyCart: "Your cart is empty",
     total: "Total",
     offer: "Offer",
+    offers: "Special Offers",
     originalPrice: "Original Price (Optional)",
     paymentInfo: "Pay via GPay to 8940324030 and collect your items at the shop.",
     payGpay: "Pay Now with GPay / UPI",
@@ -188,6 +189,7 @@ const translations = {
     emptyCart: "கார்ட் காலியாக உள்ளது",
     total: "மொத்தம்",
     offer: "ஆஃபர்",
+    offers: "சிறப்பு ஆஃபர்கள்",
     originalPrice: "பழைய விலை (விருப்பமிருந்தால்)",
     paymentInfo: "8940324030 என்ற எண்ணிற்கு GPay செய்துவிட்டு, கடைக்கு வந்து பொருட்களைப் பெற்றுக்கொள்ளவும்.",
     payGpay: "GPay / UPI-ல் செலுத்துங்கள்",
@@ -209,6 +211,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
   const getCategoryName = (cat: string) => {
     switch (cat) {
       case 'All': return t.all;
+      case 'Offers': return t.offers;
       case 'Stationary': return t.stationary;
       case 'Fancy': return t.fancy;
       case 'Toys': return t.toys;
@@ -230,11 +233,20 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
     setLang(lang === 'en' ? 'ta' : 'en');
   };
 
-  const categories = ['All', 'Stationary', 'Fancy', 'Toys', 'Sports Items', 'Snacks'];
+  const categories = ['All', 'Offers', 'Stationary', 'Fancy', 'Toys', 'Sports Items', 'Snacks'];
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
+    let matchesCategory = false;
+
+    if (selectedCategory === 'All') {
+      matchesCategory = true;
+    } else if (selectedCategory === 'Offers') {
+      matchesCategory = product.originalPrice !== undefined && product.originalPrice > product.price;
+    } else {
+      matchesCategory = product.category === selectedCategory;
+    }
+
     return matchesSearch && matchesCategory;
   });
 
