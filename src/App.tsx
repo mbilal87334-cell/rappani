@@ -9,6 +9,7 @@ interface Product {
   category: string;
   price: number;
   originalPrice?: number;
+  stock?: number;
   image: string;
 }
 
@@ -133,7 +134,8 @@ const translations = {
     offer: "Offer",
     originalPrice: "Original Price (Optional)",
     paymentInfo: "Pay via GPay to 8940324030 and collect your items at the shop.",
-    payGpay: "Pay Now with GPay / UPI"
+    payGpay: "Pay Now with GPay / UPI",
+    outOfStock: "Out of Stock"
   },
   ta: {
     storeName: "ரப்பானி",
@@ -178,7 +180,8 @@ const translations = {
     offer: "ஆஃபர்",
     originalPrice: "பழைய விலை (விருப்பமிருந்தால்)",
     paymentInfo: "8940324030 என்ற எண்ணிற்கு GPay செய்துவிட்டு, கடைக்கு வந்து பொருட்களைப் பெற்றுக்கொள்ளவும்.",
-    payGpay: "GPay / UPI-ல் செலுத்துங்கள்"
+    payGpay: "GPay / UPI-ல் செலுத்துங்கள்",
+    outOfStock: "ஸ்டாக் இல்லை"
   }
 };
 
@@ -226,9 +229,16 @@ function VisitorPanel({ products, settings }: { products: Product[], settings: R
   });
 
   const addToCart = (product: Product) => {
+    // If tracking stock and stock is less than 1, do not add
+    if (product.stock !== undefined && product.stock <= 0) return;
+
     setCart(prev => {
       const existing = prev.find(item => item.product.id === product.id);
       if (existing) {
+        // Prevent adding more than stock
+        if (product.stock !== undefined && existing.quantity >= product.stock) {
+          return prev;
+        }
         return prev.map(item => item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
       }
       return [...prev, { product, quantity: 1 }];
@@ -240,7 +250,15 @@ function VisitorPanel({ products, settings }: { products: Product[], settings: R
     if (overrideQuantity <= 0) {
       setCart(prev => prev.filter(item => item.product.id !== id));
     } else {
-      setCart(prev => prev.map(item => item.product.id === id ? { ...item, quantity: overrideQuantity } : item));
+      setCart(prev => prev.map(item => {
+        if (item.product.id === id) {
+          if (item.product.stock !== undefined && overrideQuantity > item.product.stock) {
+            return { ...item, quantity: item.product.stock };
+          }
+          return { ...item, quantity: overrideQuantity };
+        }
+        return item;
+      }));
     }
   };
 
@@ -430,8 +448,16 @@ function VisitorPanel({ products, settings }: { products: Product[], settings: R
                           <span className="text-sm font-bold text-stone-400 line-through">₹{product.originalPrice}</span>
                         )}
                       </div>
-                      <button onClick={() => addToCart(product)} className="bg-stone-900 hover:bg-stone-800 text-white px-4 py-2 rounded-full text-sm font-semibold transition-colors flex items-center gap-2">
-                        <Plus className="w-4 h-4" /> {t.addToCart}
+                      <button
+                        onClick={() => addToCart(product)}
+                        disabled={product.stock !== undefined && product.stock <= 0}
+                        className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 ${product.stock !== undefined && product.stock <= 0 ? 'bg-stone-300 text-stone-500 cursor-not-allowed' : 'bg-stone-900 hover:bg-stone-800 text-white'}`}
+                      >
+                        {product.stock !== undefined && product.stock <= 0 ? (
+                          <>{t.outOfStock}</>
+                        ) : (
+                          <><Plus className="w-4 h-4" /> {t.addToCart}</>
+                        )}
                       </button>
                     </div>
                   </div>
@@ -649,7 +675,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
 
   // Form State
   const [isEditing, setIsEditing] = useState(false);
-  const [currentProduct, setCurrentProduct] = useState<Product>({ id: '', name: '', category: 'Stationary', price: 0, originalPrice: '' as unknown as number, image: '' });
+  const [currentProduct, setCurrentProduct] = useState<Product>({ id: '', name: '', category: 'Stationary', price: 0, originalPrice: '' as unknown as number, stock: '' as unknown as number, image: '' });
   const [formError, setFormError] = useState('');
 
   // Camera State
@@ -1297,6 +1323,10 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
                     <label className="block text-sm font-medium text-stone-700 mb-1">Original Price (₹)</label>
                     <input type="number" value={currentProduct.originalPrice || ''} onChange={e => setCurrentProduct({ ...currentProduct, originalPrice: Number(e.target.value) || undefined })} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Optional" min="1" />
                   </div>
+                  <div className="flex-1">
+                    <label className="block text-sm font-medium text-stone-700 mb-1">Stock (Max Qty)</label>
+                    <input type="number" value={currentProduct.stock === undefined ? '' : currentProduct.stock} onChange={e => setCurrentProduct({ ...currentProduct, stock: e.target.value !== '' ? Number(e.target.value) : undefined })} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-purple-500 outline-none" placeholder="Unlimited" min="0" />
+                  </div>
                 </div>
                 <div className="relative">
                   <label className="block text-sm font-medium text-stone-700 mb-1">Image</label>
@@ -1428,10 +1458,15 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
                           </span>
                         </td>
                         <td className="p-4">
-                          <div className="flex flex-col">
+                          <div className="flex flex-col gap-1">
                             <span className="font-bold text-stone-900 text-lg">₹{product.price}</span>
                             {product.originalPrice && product.originalPrice > product.price && (
                               <span className="text-xs font-bold text-stone-400 line-through">₹{product.originalPrice}</span>
+                            )}
+                            {product.stock !== undefined && (
+                              <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded shadow-sm inline-block self-start ${product.stock > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                                {product.stock > 0 ? `Stock: ${product.stock}` : 'Out of Stock'}
+                              </span>
                             )}
                           </div>
                         </td>

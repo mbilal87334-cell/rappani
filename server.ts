@@ -30,6 +30,7 @@ const productSchema = new mongoose.Schema({
   category: { type: String, required: true },
   price: { type: Number, required: true },
   originalPrice: { type: Number, required: false },
+  stock: { type: Number, required: false },
   image: { type: String, required: true }
 });
 const Product = mongoose.model("Product", productSchema);
@@ -156,8 +157,8 @@ async function startServer() {
 
   app.post("/api/products", async (req, res) => {
     try {
-      const { id, name, category, price, originalPrice, image } = req.body;
-      await Product.create({ id, name, category, price, originalPrice, image });
+      const { id, name, category, price, originalPrice, stock, image } = req.body;
+      await Product.create({ id, name, category, price, originalPrice, stock, image });
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });
@@ -167,8 +168,8 @@ async function startServer() {
   app.put("/api/products/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, category, price, originalPrice, image } = req.body;
-      await Product.updateOne({ id }, { name, category, price, originalPrice, image });
+      const { name, category, price, originalPrice, stock, image } = req.body;
+      await Product.updateOne({ id }, { name, category, price, originalPrice, stock, image });
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });
