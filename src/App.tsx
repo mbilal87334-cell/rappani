@@ -597,8 +597,19 @@ function VisitorPanel({ products, settings }: { products: Product[], settings: R
                   <span className="mt-0.5">ℹ️</span>
                   <p>{t.paymentInfo}</p>
                 </div>
+
+                <div className="bg-white p-4 rounded-xl border border-stone-200 mb-4 flex flex-col items-center justify-center shadow-inner">
+                  <p className="text-sm font-bold text-stone-600 mb-2">Scan QR to Pay (₹{cartTotalAmount})</p>
+                  <img
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`upi://pay?pa=${(settings.upi_id || '8940324030@upi').trim()}&pn=Rappani%20Store&am=${cartTotalAmount}&cu=INR`)}`}
+                    alt="Scan to Pay"
+                    className="w-32 h-32 rounded-lg"
+                  />
+                  <p className="text-xs text-stone-400 mt-3 font-medium uppercase tracking-wider">{settings.upi_id || '8940324030@upi'}</p>
+                </div>
+
                 <a
-                  href={`upi://pay?pa=${settings.upi_id || '8940324030@upi'}&pn=Rappani+Store&am=${cartTotalAmount}&cu=INR`}
+                  href={`upi://pay?pa=${(settings.upi_id || '8940324030@upi').trim()}&pn=Rappani%20Store&am=${cartTotalAmount}&cu=INR`}
                   className="w-full bg-[#1A73E8] hover:bg-[#155ebb] text-white py-4 rounded-2xl font-bold text-lg transition-all hover:scale-[1.02] shadow-xl shadow-[#1A73E8]/20 flex items-center justify-center gap-2 mb-3 cursor-pointer"
                 >
                   💳 {t.payGpay}
