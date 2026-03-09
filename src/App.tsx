@@ -242,7 +242,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
     if (selectedCategory === 'All') {
       matchesCategory = true;
     } else if (selectedCategory === 'Offers') {
-      matchesCategory = product.originalPrice !== undefined && product.originalPrice > product.price;
+      matchesCategory = product.category === 'Offers' || (product.originalPrice !== undefined && product.originalPrice > product.price);
     } else {
       matchesCategory = product.category === selectedCategory;
     }
@@ -1355,6 +1355,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
                     <option value="Toys">Toys</option>
                     <option value="Sports Items">Sports Items</option>
                     <option value="Snacks">Snacks</option>
+                    <option value="Offers">Offers (Special)</option>
                   </select>
                 </div>
                 <div className="flex gap-4">
