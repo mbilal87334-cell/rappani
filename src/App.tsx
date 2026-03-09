@@ -132,7 +132,8 @@ const translations = {
     total: "Total",
     offer: "Offer",
     originalPrice: "Original Price (Optional)",
-    paymentInfo: "Pay via GPay to 8940324030 and collect your items at the shop."
+    paymentInfo: "Pay via GPay to 8940324030 and collect your items at the shop.",
+    payGpay: "Pay Now with GPay / UPI"
   },
   ta: {
     storeName: "ரப்பானி",
@@ -176,7 +177,8 @@ const translations = {
     total: "மொத்தம்",
     offer: "ஆஃபர்",
     originalPrice: "பழைய விலை (விருப்பமிருந்தால்)",
-    paymentInfo: "8940324030 என்ற எண்ணிற்கு GPay செய்துவிட்டு, கடைக்கு வந்து பொருட்களைப் பெற்றுக்கொள்ளவும்."
+    paymentInfo: "8940324030 என்ற எண்ணிற்கு GPay செய்துவிட்டு, கடைக்கு வந்து பொருட்களைப் பெற்றுக்கொள்ளவும்.",
+    payGpay: "GPay / UPI-ல் செலுத்துங்கள்"
   }
 };
 
@@ -595,6 +597,12 @@ function VisitorPanel({ products, settings }: { products: Product[], settings: R
                   <span className="mt-0.5">ℹ️</span>
                   <p>{t.paymentInfo}</p>
                 </div>
+                <a
+                  href={`upi://pay?pa=${settings.upi_id || '8940324030@upi'}&pn=Rappani+Store&am=${cartTotalAmount}&cu=INR`}
+                  className="w-full bg-[#1A73E8] hover:bg-[#155ebb] text-white py-4 rounded-2xl font-bold text-lg transition-all hover:scale-[1.02] shadow-xl shadow-[#1A73E8]/20 flex items-center justify-center gap-2 mb-3 cursor-pointer"
+                >
+                  💳 {t.payGpay}
+                </a>
                 <button
                   onClick={handleWhatsAppCheckout}
                   className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-2xl font-bold text-lg transition-all hover:scale-[1.02] shadow-xl shadow-[#25D366]/20 flex items-center justify-center gap-2"
@@ -714,6 +722,26 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
     } finally {
       setIsUpdatingWhatsapp(false);
       setTimeout(() => setWhatsappSuccess(''), 3000);
+    }
+  };
+
+  const [upiForm, setUpiForm] = useState({ upi_id: settings.upi_id || '' });
+  const [isUpdatingUpi, setIsUpdatingUpi] = useState(false);
+  const [upiSuccess, setUpiSuccess] = useState('');
+
+  const handleUpiUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsUpdatingUpi(true);
+    setUpiSuccess('');
+    try {
+      if (upiForm.upi_id) await updateSetting('upi_id', upiForm.upi_id);
+      setSettings(prev => ({ ...prev, upi_id: upiForm.upi_id }));
+      setUpiSuccess('UPI ID updated successfully!');
+    } catch (err) {
+      console.error("Failed to update UPI", err);
+    } finally {
+      setIsUpdatingUpi(false);
+      setTimeout(() => setUpiSuccess(''), 3000);
     }
   };
 
@@ -1131,6 +1159,41 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
           </form>
           {whatsappSuccess && (
             <p className="mt-4 text-green-600 font-medium text-sm animate-in fade-in slide-in-from-top-2">{whatsappSuccess}</p>
+          )}
+        </div>
+
+        {/* UPI Management */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 mb-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="bg-[#1A73E8]/10 p-2 rounded-xl text-[#1A73E8] flex items-center justify-center">
+              <span className="text-xl font-bold">₹</span>
+            </div>
+            <h2 className="text-xl font-bold text-stone-900">Manage GPay / UPI Options</h2>
+          </div>
+          <p className="text-stone-500 mb-4 text-sm font-medium">To use the direct GPay button, set your phone number's exact original UPI ID. E.g. 8940324030@okicici, 8940324030@ybl, etc. Or just use your business UPI ID.</p>
+          <form onSubmit={handleUpiUpdate} className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end max-w-2xl">
+            <div>
+              <label className="block text-xs font-bold text-stone-500 uppercase mb-1">UPI ID (VPA)</label>
+              <input
+                type="text"
+                value={upiForm.upi_id}
+                onChange={(e) => setUpiForm({ ...upiForm, upi_id: e.target.value })}
+                className="w-full px-4 py-2 rounded-lg border border-stone-200 focus:ring-2 focus:ring-[#1A73E8] outline-none"
+                placeholder="e.g. 8940324030@upi"
+              />
+            </div>
+            <div className="flex gap-4 items-end">
+              <button
+                type="submit"
+                disabled={isUpdatingUpi}
+                className="bg-[#1A73E8] hover:bg-[#155ebb] text-white px-6 py-2 rounded-lg font-bold transition-colors shadow-lg shadow-[#1A73E8]/20 disabled:opacity-50 h-10 flex items-center justify-center min-w-[120px]"
+              >
+                {isUpdatingUpi ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> : 'Save Changes'}
+              </button>
+            </div>
+          </form>
+          {upiSuccess && (
+            <p className="mt-4 text-green-600 font-medium text-sm animate-in fade-in slide-in-from-top-2">{upiSuccess}</p>
           )}
         </div>
 
