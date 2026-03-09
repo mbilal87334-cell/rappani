@@ -254,7 +254,7 @@ function VisitorPanel({ products, settings }: { products: Product[], settings: R
     message += `\n*Total: ₹${cartTotalAmount}*\n\nPlease confirm!`;
 
     const encodedMsg = encodeURIComponent(message);
-    window.open(`https://wa.me/916384137974?text=${encodedMsg}`, '_blank');
+    window.open(`https://wa.me/${settings.whatsapp_1 || '916384137974'}?text=${encodedMsg}`, '_blank');
   };
 
   return (
@@ -463,11 +463,11 @@ function VisitorPanel({ products, settings }: { products: Product[], settings: R
                     <div>
                       <p className="text-sm text-stone-400 font-medium mb-1">{t.callUs}</p>
                       <div className="flex flex-col gap-2">
-                        <a href="https://wa.me/916384137974" target="_blank" rel="noopener noreferrer" className="text-white font-semibold text-lg hover:text-rose-400 transition-colors flex items-center gap-2">
-                          <MessageCircle className="w-4 h-4 text-[#25D366]" /> +91 6384137974
+                        <a href={`https://wa.me/${settings.whatsapp_1 || '916384137974'}`} target="_blank" rel="noopener noreferrer" className="text-white font-semibold text-lg hover:text-rose-400 transition-colors flex items-center gap-2">
+                          <MessageCircle className="w-4 h-4 text-[#25D366]" /> +{settings.whatsapp_1 || '91 6384137974'}
                         </a>
-                        <a href="https://wa.me/918940324030" target="_blank" rel="noopener noreferrer" className="text-white font-semibold text-lg hover:text-rose-400 transition-colors flex items-center gap-2">
-                          <MessageCircle className="w-4 h-4 text-[#25D366]" /> +91 8940324030
+                        <a href={`https://wa.me/${settings.whatsapp_2 || '918940324030'}`} target="_blank" rel="noopener noreferrer" className="text-white font-semibold text-lg hover:text-rose-400 transition-colors flex items-center gap-2">
+                          <MessageCircle className="w-4 h-4 text-[#25D366]" /> +{settings.whatsapp_2 || '91 8940324030'}
                         </a>
                       </div>
                     </div>
@@ -485,10 +485,10 @@ function VisitorPanel({ products, settings }: { products: Product[], settings: R
                 </div>
 
                 <div className="mt-12 pt-10 border-t border-stone-800 flex flex-wrap gap-4">
-                  <a href="https://wa.me/916384137974" target="_blank" rel="noopener noreferrer" className="bg-[#25D366] hover:bg-[#20bd5a] text-white px-6 py-4 rounded-full transition-transform hover:scale-105 shadow-lg shadow-[#25D366]/20 flex items-center gap-2 font-bold">
+                  <a href={`https://wa.me/${settings.whatsapp_1 || '916384137974'}`} target="_blank" rel="noopener noreferrer" className="bg-[#25D366] hover:bg-[#20bd5a] text-white px-6 py-4 rounded-full transition-transform hover:scale-105 shadow-lg shadow-[#25D366]/20 flex items-center gap-2 font-bold">
                     <MessageCircle className="w-6 h-6" /> WhatsApp 1
                   </a>
-                  <a href="https://wa.me/918940324030" target="_blank" rel="noopener noreferrer" className="bg-[#25D366] hover:bg-[#20bd5a] text-white px-6 py-4 rounded-full transition-transform hover:scale-105 shadow-lg shadow-[#25D366]/20 flex items-center gap-2 font-bold">
+                  <a href={`https://wa.me/${settings.whatsapp_2 || '918940324030'}`} target="_blank" rel="noopener noreferrer" className="bg-[#25D366] hover:bg-[#20bd5a] text-white px-6 py-4 rounded-full transition-transform hover:scale-105 shadow-lg shadow-[#25D366]/20 flex items-center gap-2 font-bold">
                     <MessageCircle className="w-6 h-6" /> WhatsApp 2
                   </a>
                   <a href="https://instagram.com/frds_call_me_rappani" target="_blank" rel="noopener noreferrer" className="bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] hover:opacity-90 text-white p-4 rounded-full transition-transform hover:scale-110 shadow-lg shadow-[#bc1888]/20">
@@ -686,6 +686,30 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
   const [passForm, setPassForm] = useState({ current: '', new: '', confirm: '' });
   const [passError, setPassError] = useState('');
   const [passSuccess, setPassSuccess] = useState('');
+
+  const [whatsappForm, setWhatsappForm] = useState({
+    whatsapp_1: settings.whatsapp_1 || '',
+    whatsapp_2: settings.whatsapp_2 || ''
+  });
+  const [isUpdatingWhatsapp, setIsUpdatingWhatsapp] = useState(false);
+  const [whatsappSuccess, setWhatsappSuccess] = useState('');
+
+  const handleWhatsappUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsUpdatingWhatsapp(true);
+    setWhatsappSuccess('');
+    try {
+      if (whatsappForm.whatsapp_1) await updateSetting('whatsapp_1', whatsappForm.whatsapp_1);
+      if (whatsappForm.whatsapp_2) await updateSetting('whatsapp_2', whatsappForm.whatsapp_2);
+      setSettings(prev => ({ ...prev, whatsapp_1: whatsappForm.whatsapp_1, whatsapp_2: whatsappForm.whatsapp_2 }));
+      setWhatsappSuccess('WhatsApp numbers updated successfully!');
+    } catch (err) {
+      console.error("Failed to update whatsapp numbers", err);
+    } finally {
+      setIsUpdatingWhatsapp(false);
+      setTimeout(() => setWhatsappSuccess(''), 3000);
+    }
+  };
 
   useEffect(() => {
     return () => {
@@ -1058,6 +1082,50 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
               </button>
             </div>
           </div>
+        </div>
+
+        {/* WhatsApp Management */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-stone-200 mb-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="bg-[#25D366]/10 p-2 rounded-xl text-[#25D366]">
+              <MessageCircle className="w-6 h-6" />
+            </div>
+            <h2 className="text-xl font-bold text-stone-900">Manage WhatsApp Numbers</h2>
+          </div>
+          <form onSubmit={handleWhatsappUpdate} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
+            <div>
+              <label className="block text-xs font-bold text-stone-500 uppercase mb-1">WhatsApp 1 (E.g. 916384137974)</label>
+              <input
+                type="text"
+                value={whatsappForm.whatsapp_1}
+                onChange={(e) => setWhatsappForm({ ...whatsappForm, whatsapp_1: e.target.value })}
+                className="w-full px-4 py-2 rounded-lg border border-stone-200 focus:ring-2 focus:ring-[#25D366] outline-none"
+                placeholder="Include country code, no + or spaces"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-stone-500 uppercase mb-1">WhatsApp 2</label>
+              <input
+                type="text"
+                value={whatsappForm.whatsapp_2}
+                onChange={(e) => setWhatsappForm({ ...whatsappForm, whatsapp_2: e.target.value })}
+                className="w-full px-4 py-2 rounded-lg border border-stone-200 focus:ring-2 focus:ring-[#25D366] outline-none"
+                placeholder="Secondary Number"
+              />
+            </div>
+            <div className="flex gap-4 items-end">
+              <button
+                type="submit"
+                disabled={isUpdatingWhatsapp}
+                className="bg-[#25D366] hover:bg-[#22c35e] text-white px-6 py-2 rounded-lg font-bold transition-colors shadow-lg shadow-[#25D366]/20 disabled:opacity-50 h-10 flex items-center justify-center min-w-[120px]"
+              >
+                {isUpdatingWhatsapp ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div> : 'Save Changes'}
+              </button>
+            </div>
+          </form>
+          {whatsappSuccess && (
+            <p className="mt-4 text-green-600 font-medium text-sm animate-in fade-in slide-in-from-top-2">{whatsappSuccess}</p>
+          )}
         </div>
 
         {showPasswordChange && (
