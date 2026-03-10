@@ -279,7 +279,11 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
       const data = await res.json();
       if (data.success) {
         setIsOtpSent(true);
-        alert(`SIMULATED SMS\n\nYour Rappani Store OTP is: ${data.mockOtp}`);
+        if (data.mockOtp) {
+          alert(`SIMULATED SMS\n\nYour Rappani Store OTP is: ${data.mockOtp}`);
+        } else {
+          alert(`OTP Sent to your mobile successfully! Please check your SMS.`);
+        }
       } else {
         setCheckoutError(data.error || "Failed to send OTP");
       }

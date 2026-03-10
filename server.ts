@@ -139,7 +139,7 @@ async function startServer() {
   });
 
   // OTP Validation Routes
-  app.post("/api/send-otp", (req, res) => {
+  app.post("/api/send-otp", async (req, res) => {
     const { phone } = req.body;
     if (!phone || phone.length !== 10) return res.status(400).json({ error: "Invalid phone number" });
 
@@ -148,9 +148,39 @@ async function startServer() {
     // Valid for 5 minutes
     otpStore.set(phone, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
 
-    console.log(`[SIMULATED SMS] OTP for ${phone} is ${otp}`);
-    // Simulate SMS by returning it to client (only for testing without real SMS API)
-    res.json({ success: true, mockOtp: otp });
+    const apiKey = process.env.FAST2SMS_API_KEY;
+
+    if (apiKey) {
+      try {
+        const response = await fetch("https://www.fast2sms.com/dev/bulkV2", {
+          method: "POST",
+          headers: {
+            "authorization": apiKey,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            variables_values: otp,
+            route: "otp",
+            numbers: phone,
+          })
+        });
+        const data = await response.json();
+        if (data.return) {
+          console.log(`[SMS SENT] OTP for ${phone} sent via Fast2SMS`);
+          res.json({ success: true, message: "OTP Sent successfully via SMS" });
+        } else {
+          console.error("[SMS ERROR] Fast2SMS error:", data);
+          res.status(500).json({ error: "Failed to send SMS via Gateway" });
+        }
+      } catch (e: any) {
+        console.error("[SMS ERROR] Fast2SMS request failed:", e);
+        res.status(500).json({ error: "SMS Gateway Error" });
+      }
+    } else {
+      console.log(`[SIMULATED SMS] OTP for ${phone} is ${otp}`);
+      // Simulate SMS by returning it to client (only for testing without real SMS API)
+      res.json({ success: true, mockOtp: otp, message: "No FAST2SMS Key. Simulated Mode." });
+    }
   });
 
   app.post("/api/verify-otp", (req, res) => {
