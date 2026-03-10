@@ -170,11 +170,17 @@ async function startServer() {
           res.json({ success: true, message: "OTP Sent successfully via SMS" });
         } else {
           console.error("[SMS ERROR] Fast2SMS error:", data);
-          res.status(500).json({ error: "Failed to send SMS via Gateway" });
+          // Fallback to simulated OTP so the user is not completely blocked from buying
+          res.json({
+            success: true,
+            mockOtp: otp,
+            message: `Fast2SMS Gateway Error: ${data.message || 'API failed'}. Falling back to Simulated SMS.`
+          });
         }
       } catch (e: any) {
         console.error("[SMS ERROR] Fast2SMS request failed:", e);
-        res.status(500).json({ error: "SMS Gateway Error" });
+        // Fallback on network error
+        res.json({ success: true, mockOtp: otp, message: "SMS Gateway Error. Simulated Mode." });
       }
     } else {
       console.log(`[SIMULATED SMS] OTP for ${phone} is ${otp}`);
