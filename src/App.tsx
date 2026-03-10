@@ -502,8 +502,8 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
       if (!upiId.includes('@')) {
         upiId = `${upiId}@upi`; // Prevent total failure if just number is typed
       }
-      // Added tr (transaction ref), tn (transaction note), and removed space in pn
-      const upiUrl = `upi://pay?pa=${upiId}&pn=RappaniStore&tr=RS${Date.now()}&tn=OrderPayment&am=${cartTotalAmount}&cu=INR`;
+      // Simplified URL: Removed 'tr' and 'tn' as personal UPI IDs often face bank rejections when these merchant parameters are present.
+      const upiUrl = `upi://pay?pa=${upiId}&pn=RappaniStore&am=${cartTotalAmount}&cu=INR`;
       window.location.href = upiUrl;
     }
   };
@@ -914,7 +914,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                 <div className="bg-white p-4 rounded-xl border border-stone-200 mb-4 flex flex-col items-center justify-center shadow-inner">
                   <p className="text-sm font-bold text-stone-600 mb-2">Scan QR to Pay (₹{cartTotalAmount})</p>
                   <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`upi://pay?pa=${(settings.upi_id || '8940324030@upi').trim()}&pn=RappaniStore&tn=OrderPayment&am=${cartTotalAmount}&cu=INR`)}`}
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`upi://pay?pa=${(settings.upi_id || '8940324030@upi').trim()}&pn=RappaniStore&am=${cartTotalAmount}&cu=INR`)}`}
                     alt="Scan to Pay"
                     className="w-32 h-32 rounded-lg"
                   />
