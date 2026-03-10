@@ -498,8 +498,13 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
     const success = await processCheckoutAndClearCart('GPay');
     if (success) {
+      let upiId = (settings.upi_id || '8940324030@upi').trim();
+      if (!upiId.includes('@')) {
+        upiId = `${upiId}@upi`; // Prevent total failure if just number is typed
+      }
       const formattedAmount = cartTotalAmount.toFixed(2);
-      const upiUrl = `upi://pay?pa=${(settings.upi_id || '8940324030@upi').trim()}&pn=Rappani%20Store&am=${formattedAmount}&cu=INR`;
+      // Added tr (transaction ref), tn (transaction note), and removed space in pn
+      const upiUrl = `upi://pay?pa=${upiId}&pn=RappaniStore&tr=RS${Date.now()}&tn=OrderPayment&am=${formattedAmount}&cu=INR`;
       window.location.href = upiUrl;
     }
   };
@@ -910,7 +915,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                 <div className="bg-white p-4 rounded-xl border border-stone-200 mb-4 flex flex-col items-center justify-center shadow-inner">
                   <p className="text-sm font-bold text-stone-600 mb-2">Scan QR to Pay (₹{cartTotalAmount})</p>
                   <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`upi://pay?pa=${(settings.upi_id || '8940324030@upi').trim()}&pn=Rappani%20Store&am=${cartTotalAmount.toFixed(2)}&cu=INR`)}`}
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`upi://pay?pa=${(settings.upi_id || '8940324030@upi').trim()}&pn=RappaniStore&tn=OrderPayment&am=${cartTotalAmount.toFixed(2)}&cu=INR`)}`}
                     alt="Scan to Pay"
                     className="w-32 h-32 rounded-lg"
                   />
