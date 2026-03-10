@@ -479,28 +479,27 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
     }
   };
 
-  const handleGPayCheckout = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleGPayCheckout = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
     if (!customerName || !customerPhone) {
-      e.preventDefault();
       setCheckoutError(t.enterDetails);
       return;
     }
     const phoneRegex = /^[0-9]{10}$/;
     if (!phoneRegex.test(customerPhone.trim())) {
-      e.preventDefault();
       setCheckoutError(t.invalidPhone);
       return;
     }
 
     if (!isPhoneVerified) {
-      e.preventDefault();
       setCheckoutError(t.unverifiedPhoneError);
       return;
     }
 
     const success = await processCheckoutAndClearCart('GPay');
-    if (!success) {
-      e.preventDefault();
+    if (success) {
+      const upiUrl = `upi://pay?pa=${(settings.upi_id || '8940324030@upi').trim()}&pn=Rappani%20Store&am=${cartTotalAmount}&cu=INR`;
+      window.location.href = upiUrl;
     }
   };
 
@@ -917,13 +916,12 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                   <p className="text-xs text-stone-400 mt-3 font-medium uppercase tracking-wider">{settings.upi_id || '8940324030@upi'}</p>
                 </div>
 
-                <a
+                <button
                   onClick={handleGPayCheckout}
-                  href={`upi://pay?pa=${(settings.upi_id || '8940324030@upi').trim()}&pn=Rappani%20Store&am=${cartTotalAmount}&cu=INR`}
                   className="w-full bg-[#1A73E8] hover:bg-[#155ebb] text-white py-4 rounded-2xl font-bold text-lg transition-all hover:scale-[1.02] shadow-xl shadow-[#1A73E8]/20 flex items-center justify-center gap-2 mb-3 cursor-pointer"
                 >
                   💳 {t.payGpay}
-                </a>
+                </button>
                 <button
                   onClick={handleWhatsAppCheckout}
                   className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-2xl font-bold text-lg transition-all hover:scale-[1.02] shadow-xl shadow-[#25D366]/20 flex items-center justify-center gap-2"
