@@ -500,8 +500,17 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
     // Hardcoded to force correct ID despite what is in the user's admin panel cache
     const upiUrl = `upi://pay?pa=6384137974@ptaxis&pn=RappaniStore&am=${cartTotalAmount}&cu=INR`;
 
-    // Open UPI intent
-    window.location.href = upiUrl;
+    try {
+      // Browsers often block window.location inside async blocks.
+      // Simulating a fresh click event creates a more reliable deep-link jump.
+      const anchor = document.createElement('a');
+      anchor.href = upiUrl;
+      anchor.target = '_blank';
+      anchor.click();
+    } catch (e) {
+      console.error("GPay jump failed", e);
+      window.location.href = upiUrl; // Fallback
+    }
 
     // Show manual confirmation step to prevent fake orders
     setShowGPayConfirm(true);
