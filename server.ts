@@ -159,8 +159,8 @@ async function startServer() {
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            variables_values: otp,
-            route: "otp",
+            message: `Your Rappani Store verification OTP is ${otp}`,
+            route: "q",
             numbers: phone,
           })
         });
