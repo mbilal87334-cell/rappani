@@ -480,38 +480,26 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
     }
   };
 
-  const handleGPayCheckout = async (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
+  const handleGPayCheckout = async (e: React.MouseEvent<HTMLAnchorElement>) => {
     if (!customerName || !customerPhone) {
+      e.preventDefault();
       setCheckoutError(t.enterDetails);
       return;
     }
     const phoneRegex = /^[0-9]{10}$/;
     if (!phoneRegex.test(customerPhone.trim())) {
+      e.preventDefault();
       setCheckoutError(t.invalidPhone);
       return;
     }
 
     if (!isPhoneVerified) {
+      e.preventDefault();
       setCheckoutError(t.unverifiedPhoneError);
       return;
     }
 
-    // Hardcoded to force correct ID despite what is in the user's admin panel cache
-    const upiUrl = `upi://pay?pa=6384137974@ptaxis&pn=RappaniStore&am=${cartTotalAmount}&cu=INR`;
-
-    try {
-      // Browsers often block window.location inside async blocks.
-      // Simulating a fresh click event creates a more reliable deep-link jump.
-      const anchor = document.createElement('a');
-      anchor.href = upiUrl;
-      anchor.target = '_blank';
-      anchor.click();
-    } catch (e) {
-      console.error("GPay jump failed", e);
-      window.location.href = upiUrl; // Fallback
-    }
-
+    setCheckoutError('');
     // Show manual confirmation step to prevent fake orders
     setShowGPayConfirm(true);
   };
@@ -936,12 +924,13 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                   <p className="text-xs text-stone-400 mt-3 font-medium uppercase tracking-wider">6384137974@ptaxis</p>
                 </div>
 
-                <button
+                <a
+                  href={`upi://pay?pa=6384137974@ptaxis&pn=RappaniStore&am=${cartTotalAmount}&cu=INR`}
                   onClick={handleGPayCheckout}
                   className="w-full bg-[#1A73E8] hover:bg-[#155ebb] text-white py-4 rounded-2xl font-bold text-lg transition-all hover:scale-[1.02] shadow-xl shadow-[#1A73E8]/20 flex items-center justify-center gap-2 mb-3 cursor-pointer"
                 >
                   💳 {t.payGpay}
-                </button>
+                </a>
 
                 {showGPayConfirm && (
                   <div className="bg-stone-100 p-4 rounded-xl border-2 border-dashed border-stone-300 flex flex-col items-center justify-center mb-4 transition-all animate-in fade-in slide-in-from-top-1 text-center shadow-inner">
