@@ -259,6 +259,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [showGPayConfirm, setShowGPayConfirm] = useState(false);
   const t = translations[lang];
 
   const handleSendOtp = async (e: React.MouseEvent) => {
@@ -496,15 +497,23 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
       return;
     }
 
-    const success = await processCheckoutAndClearCart('GPay');
+    let upiId = (settings.upi_id || '6384137974@ptaxis').trim();
+    if (!upiId.includes('@')) {
+      upiId = `${upiId}@ptaxis`; // Prevent total failure if just number is typed
+    }
+    const upiUrl = `upi://pay?pa=${upiId}&pn=RappaniStore&am=${cartTotalAmount}&cu=INR`;
+
+    // Open UPI intent
+    window.location.href = upiUrl;
+
+    // Show manual confirmation step to prevent fake orders
+    setShowGPayConfirm(true);
+  };
+
+  const handleGPayConfirm = async () => {
+    const success = await processCheckoutAndClearCart(`GPay Order`);
     if (success) {
-      let upiId = (settings.upi_id || '6384137974@ptaxis').trim();
-      if (!upiId.includes('@')) {
-        upiId = `${upiId}@ptaxis`; // Prevent total failure if just number is typed
-      }
-      // Simplified URL: Removed 'tr' and 'tn' as personal UPI IDs often face bank rejections when these merchant parameters are present.
-      const upiUrl = `upi://pay?pa=${upiId}&pn=RappaniStore&am=${cartTotalAmount}&cu=INR`;
-      window.location.href = upiUrl;
+      setShowGPayConfirm(false);
     }
   };
 
@@ -927,6 +936,20 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                 >
                   💳 {t.payGpay}
                 </button>
+
+                {showGPayConfirm && (
+                  <div className="bg-stone-100 p-4 rounded-xl border-2 border-dashed border-stone-300 flex flex-col items-center justify-center mb-4 transition-all animate-in fade-in slide-in-from-top-1 text-center shadow-inner">
+                    <p className="font-bold text-stone-800 mb-1">Did you successfully pay?</p>
+                    <p className="text-xs text-stone-500 mb-3 font-medium">Click confirm only after you see success in the app.</p>
+                    <button
+                      onClick={handleGPayConfirm}
+                      className="w-full bg-stone-800 text-white font-bold py-3 rounded-xl shadow-md cursor-pointer hover:bg-stone-900 focus:ring-4 focus:ring-stone-200"
+                    >
+                      ✅ I Have Paid (Confirm Order)
+                    </button>
+                    <button onClick={() => setShowGPayConfirm(false)} className="mt-3 text-xs text-stone-500 underline font-semibold">Cancel / Try again</button>
+                  </div>
+                )}
                 <button
                   onClick={handleWhatsAppCheckout}
                   className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-2xl font-bold text-lg transition-all hover:scale-[1.02] shadow-xl shadow-[#25D366]/20 flex items-center justify-center gap-2"
