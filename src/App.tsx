@@ -497,11 +497,8 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
       return;
     }
 
-    let upiId = (settings.upi_id || '6384137974@ptaxis').trim();
-    if (!upiId.includes('@')) {
-      upiId = `${upiId}@ptaxis`; // Prevent total failure if just number is typed
-    }
-    const upiUrl = `upi://pay?pa=${upiId}&pn=RappaniStore&am=${cartTotalAmount}&cu=INR`;
+    // Hardcoded to force correct ID despite what is in the user's admin panel cache
+    const upiUrl = `upi://pay?pa=6384137974@ptaxis&pn=RappaniStore&am=${cartTotalAmount}&cu=INR`;
 
     // Open UPI intent
     window.location.href = upiUrl;
@@ -633,7 +630,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
           </div>
 
           {/* Search and Filter */}
-          <div className="mb-12 flex flex-col md:flex-row gap-6 items-center justify-between bg-white p-6 rounded-3xl shadow-sm border border-stone-100">
+          <div className="mb-12 flex flex-col md:flex-row gap-6 items-center justify-between bg-white/95 backdrop-blur-md p-4 md:p-6 rounded-3xl shadow-lg border border-stone-200 sticky top-[80px] z-40">
             <div className="relative w-full md:max-w-md">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
               <input
@@ -923,11 +920,11 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                 <div className="bg-white p-4 rounded-xl border border-stone-200 mb-4 flex flex-col items-center justify-center shadow-inner">
                   <p className="text-sm font-bold text-stone-600 mb-2">Scan QR to Pay (₹{cartTotalAmount})</p>
                   <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`upi://pay?pa=${(settings.upi_id || '6384137974@ptaxis').trim()}&pn=RappaniStore&am=${cartTotalAmount}&cu=INR`)}`}
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`upi://pay?pa=6384137974@ptaxis&pn=RappaniStore&am=${cartTotalAmount}&cu=INR`)}`}
                     alt="Scan to Pay"
                     className="w-32 h-32 rounded-lg"
                   />
-                  <p className="text-xs text-stone-400 mt-3 font-medium uppercase tracking-wider">{settings.upi_id || '6384137974@ptaxis'}</p>
+                  <p className="text-xs text-stone-400 mt-3 font-medium uppercase tracking-wider">6384137974@ptaxis</p>
                 </div>
 
                 <button
