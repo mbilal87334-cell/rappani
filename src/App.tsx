@@ -396,7 +396,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
     }
   };
 
-  const cartTotalAmount = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+  const cartTotalAmount = Math.round(cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0));
 
   const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -469,7 +469,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
     let message = `Hi, I want to place an order:\n\n*Customer*: ${customerName}\n*Phone*: ${customerPhone}\n\n`;
     cart.forEach(item => {
-      message += `- ${item.product.name} (x${item.quantity}) = ₹${item.product.price * item.quantity}\n`;
+      message += `- ${item.product.name} (x${item.quantity}) = ₹${Math.round(item.product.price * item.quantity)}\n`;
     });
     message += `\n*Total: ₹${cartTotalAmount}*\n\nPayment Mode: WhatsApp Checkout\nDelivery: I will collect the items at the shop.\n\nPlease confirm!`;
 
@@ -675,9 +675,9 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                     <h3 className="text-xl font-bold text-stone-900 mb-2">{product.name}</h3>
                     <div className="flex items-center justify-between mt-4">
                       <div className="flex flex-col">
-                        <span className="text-2xl font-extrabold text-rose-500">₹{product.price}</span>
+                        <span className="text-2xl font-extrabold text-rose-500">₹{Math.round(product.price)}</span>
                         {product.originalPrice && product.originalPrice > product.price && (
-                          <span className="text-sm font-bold text-stone-400 line-through">₹{product.originalPrice}</span>
+                          <span className="text-sm font-bold text-stone-400 line-through">₹{Math.round(product.originalPrice)}</span>
                         )}
                       </div>
                       <button
@@ -833,7 +833,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                     <img src={item.product.image} alt={item.product.name} className="w-16 h-16 rounded-xl object-cover bg-white" referrerPolicy="no-referrer" />
                     <div className="flex-1">
                       <h4 className="font-bold text-stone-900 line-clamp-1">{item.product.name}</h4>
-                      <p className="font-extrabold text-rose-500 text-sm">₹{item.product.price} x {item.quantity}</p>
+                      <p className="font-extrabold text-rose-500 text-sm">₹{Math.round(item.product.price)} x {item.quantity}</p>
                     </div>
                     <div className="flex items-center gap-3 bg-white px-2 py-1 rounded-full shadow-sm border border-stone-100">
                       <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)} className="p-1 text-stone-400 hover:text-rose-500 transition-colors"><Minus className="w-4 h-4" /></button>
@@ -1804,9 +1804,9 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
                           </td>
                           <td className="p-4">
                             <div className="flex flex-col gap-1">
-                              <span className="font-bold text-stone-900 text-lg">₹{product.price}</span>
+                              <span className="font-bold text-stone-900 text-lg">₹{Math.round(product.price)}</span>
                               {product.originalPrice && product.originalPrice > product.price && (
-                                <span className="text-xs font-bold text-stone-400 line-through">₹{product.originalPrice}</span>
+                                <span className="text-xs font-bold text-stone-400 line-through">₹{Math.round(product.originalPrice)}</span>
                               )}
                               {product.stock !== undefined && (
                                 <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded shadow-sm inline-block self-start ${product.stock > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
@@ -1885,14 +1885,14 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
                                 <img src={item.product.image} alt={item.product.name} className="w-8 h-8 rounded object-cover" />
                                 <div>
                                   <p className="font-semibold text-stone-800 line-clamp-1 leading-tight">{item.product.name}</p>
-                                  <p className="text-xs text-stone-500">₹{item.product.price} x {item.quantity}</p>
+                                  <p className="text-xs text-stone-500">₹{Math.round(item.product.price)} x {item.quantity}</p>
                                 </div>
                               </div>
                             ))}
                           </div>
                         </td>
                         <td className="p-4">
-                          <span className="font-bold text-stone-900">₹{order.totalAmount}</span><br />
+                          <span className="font-bold text-stone-900">₹{Math.round(order.totalAmount)}</span><br />
                           <span className="text-[10px] uppercase bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded inline-block mt-1">{order.paymentMethod}</span>
                         </td>
                         <td className="p-4">
