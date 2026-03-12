@@ -425,7 +425,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
         customerName,
         customerPhone,
         paymentMethod,
-        totalAmount: cartTotalAmount,
+        totalAmount: Math.round(cartTotalAmount),
         items: cart
       };
       await checkoutCart(payload);
@@ -849,7 +849,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
               <div className="p-6 border-t border-stone-100 bg-stone-50">
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-lg font-bold text-stone-600">{t.total}</span>
-                  <span className="text-3xl font-extrabold text-stone-900">₹{cartTotalAmount}</span>
+                  <span className="text-3xl font-extrabold text-stone-900">₹{Math.round(cartTotalAmount)}</span>
                 </div>
                 <div className="bg-emerald-100 text-emerald-800 p-3 rounded-xl mb-6 text-xs sm:text-sm font-semibold flex items-start gap-2 border border-emerald-200">
                   <span className="mt-0.5">ℹ️</span>
@@ -915,7 +915,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                 </div>
 
                 <div className="bg-white p-4 rounded-xl border border-stone-200 mb-4 flex flex-col items-center justify-center shadow-inner">
-                  <p className="text-sm font-bold text-stone-600 mb-2">Scan QR to Pay (₹{cartTotalAmount})</p>
+                  <p className="text-sm font-bold text-stone-600 mb-2">Scan QR to Pay (₹{Math.round(cartTotalAmount)})</p>
                   <img
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`upi://pay?pa=6384137974@ptaxis&tn=RappaniStore&am=${Math.round(cartTotalAmount)}`)}`}
                     alt="Scan to Pay"
