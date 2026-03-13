@@ -602,31 +602,67 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
         )}
       </header>
 
-      {/* Hero Section */}
-      <section id="home" className="relative bg-stone-900 text-white overflow-hidden">
-        <div className="absolute inset-0">
-          <img src={settings.hero_image || "https://picsum.photos/seed/stationary/1920/1080?blur=2"} alt="Store Background" className="w-full h-full object-cover opacity-40" referrerPolicy="no-referrer" />
-          <div className="absolute inset-0 bg-gradient-to-r from-stone-900 via-stone-900/80 to-transparent"></div>
+      {/* Premium Hero Section */}
+      <section id="home" className="relative bg-[#0a0a0a] text-white overflow-hidden min-h-[90vh] flex items-center">
+        {/* Animated Background Orbs */}
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-rose-500/20 rounded-full blur-[120px] mix-blend-screen pointer-events-none animate-pulse duration-10000"></div>
+        <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[150px] mix-blend-screen pointer-events-none"></div>
+        
+        <div className="absolute inset-0 z-0">
+          <img src={settings.hero_image || "https://images.unsplash.com/photo-1583485088034-697b5a69f0bd?auto=format&fit=crop&q=80"} alt="Store Background" className="w-full h-full object-cover opacity-30 mix-blend-luminosity" referrerPolicy="no-referrer" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent"></div>
         </div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
-          <div className="max-w-2xl">
-            <span className="inline-block py-1 px-3 rounded-full bg-rose-500/20 text-rose-300 text-sm font-semibold tracking-wider mb-6 border border-rose-500/30">
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 w-full mt-10">
+          <div className="max-w-3xl">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-stone-300 text-sm font-bold tracking-widest mb-8 shadow-2xl shadow-rose-500/10 hover:bg-white/10 transition-colors uppercase cursor-default">
+              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
               {t.welcome}
-            </span>
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight mb-6 leading-tight">
-              {t.heroTitle1} <span className="text-rose-400">{t.heroTitle2}</span> {t.heroTitle3} <span className="text-rose-400">{t.heroTitle4}</span> {t.heroTitle5}
+            </div>
+            
+            <h2 className="text-5xl md:text-6xl lg:text-[5rem] font-black tracking-tighter mb-8 leading-[1.1]">
+              {t.heroTitle1} <br/> 
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-pink-500 to-orange-400">{t.heroTitle2}</span> {t.heroTitle3}{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400">{t.heroTitle4}</span><br/>
+              {t.heroTitle5}
             </h2>
-            <p className="text-lg md:text-xl text-stone-300 mb-10 max-w-xl leading-relaxed">
+            
+            <p className="text-lg md:text-xl text-stone-400 mb-12 max-w-xl leading-relaxed font-medium">
               {t.heroDesc}
             </p>
-            <div className="flex flex-wrap gap-4">
-              <a href="#products" className="bg-rose-500 hover:bg-rose-600 text-white px-8 py-4 rounded-full font-semibold text-lg transition-transform hover:scale-105 active:scale-95 shadow-lg shadow-rose-500/30 flex items-center gap-2">
-                <ShoppingBag className="w-5 h-5" /> {t.shopNow}
+            
+            <div className="flex flex-wrap gap-5 items-center">
+              <a href="#products" className="group relative bg-white text-stone-900 hover:text-rose-600 px-8 py-4 rounded-full font-extrabold text-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-3 overflow-hidden shadow-[0_0_40px_rgba(255,255,255,0.2)]">
+                <span className="absolute inset-0 bg-gradient-to-r from-rose-100 to-orange-100 opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                <ShoppingBag className="w-5 h-5 relative z-10" /> 
+                <span className="relative z-10">{t.shopNow}</span>
               </a>
-              <a href="#contact" className="bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white border border-white/20 px-8 py-4 rounded-full font-semibold text-lg transition-colors flex items-center gap-2">
-                <Phone className="w-5 h-5" /> {t.contactUs}
+              
+              <a href="#contact" className="group bg-white/5 hover:bg-white/10 backdrop-blur-md text-white border border-white/10 px-8 py-4 rounded-full font-bold text-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-3 shadow-xl">
+                <div className="bg-white/10 p-2 rounded-full group-hover:bg-rose-500/20 group-hover:text-rose-400 transition-colors">
+                  <Phone className="w-4 h-4" />
+                </div>
+                {t.contactUs}
               </a>
             </div>
+            
+            {/* Quick stats/features underneath */}
+            <div className="mt-16 pt-10 border-t border-white/10 grid grid-cols-2 md:grid-cols-3 gap-6 max-w-2xl opacity-80">
+              <div className="flex flex-col gap-1">
+                <h4 className="text-2xl font-black text-white">100%</h4>
+                <p className="text-xs text-stone-400 font-bold uppercase tracking-wider">Quality Assured</p>
+              </div>
+              <div className="flex flex-col gap-1">
+                <h4 className="text-2xl font-black text-white">Fast</h4>
+                <p className="text-xs text-stone-400 font-bold uppercase tracking-wider">Store Pickup</p>
+              </div>
+              <div className="flex flex-col gap-1 hidden md:flex">
+                <h4 className="text-2xl font-black text-white">Secure</h4>
+                <p className="text-xs text-stone-400 font-bold uppercase tracking-wider">UPI Payments</p>
+              </div>
+            </div>
+            
           </div>
         </div>
       </section>
