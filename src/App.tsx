@@ -676,26 +676,26 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
             <p className="text-stone-500 max-w-2xl mx-auto text-lg">{t.featuredDesc}</p>
           </div>
 
-          {/* Search and Filter Premium */}
-          <div className="mb-14 flex flex-col md:flex-row gap-4 items-center justify-between bg-white/70 backdrop-blur-2xl p-3 md:p-4 rounded-[2rem] shadow-xl shadow-stone-200/50 border border-white sticky top-[90px] z-40">
+          {/* Search and Filter Compact Premium */}
+          <div className="mb-8 flex flex-col md:flex-row gap-3 items-center justify-between bg-white/70 backdrop-blur-2xl p-2 md:p-3 rounded-3xl shadow-lg shadow-stone-200/50 border border-white sticky top-[85px] z-40">
             <div className="relative w-full md:max-w-md group">
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400 group-focus-within:text-rose-500 transition-colors" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 group-focus-within:text-rose-500 transition-colors" />
               <input
                 type="text"
                 placeholder={t.searchPlaceholder}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-14 pr-6 py-3.5 bg-white border border-stone-100 rounded-full focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 transition-all outline-none text-stone-800 font-medium shadow-sm"
+                className="w-full pl-10 pr-4 py-2 bg-white border border-stone-100 rounded-full focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 transition-all outline-none text-stone-800 text-sm font-medium shadow-sm"
               />
             </div>
-            <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto scrollbar-hide">
+            <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0 w-full md:w-auto scrollbar-hide">
               {categories.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-6 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap ${selectedCategory === cat
-                    ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30 scale-105'
-                    : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                  className={`px-5 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap ${selectedCategory === cat
+                    ? 'bg-rose-500 text-white shadow-md shadow-rose-500/30 scale-105'
+                    : 'bg-stone-50 text-stone-600 hover:bg-stone-200 border border-stone-100'
                     }`}
                 >
                   {getCategoryName(cat)}
