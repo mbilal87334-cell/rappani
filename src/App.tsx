@@ -378,7 +378,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
       }
       return [...prev, { product, quantity: 1 }];
     });
-    setIsCartOpen(true);
+    // We do NOT open the cart immediately (setIsCartOpen) for a smoother inline "Add" experience
   };
 
   const updateQuantity = (id: string, overrideQuantity: number) => {
@@ -706,8 +706,10 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
           {filteredProducts.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredProducts.map((product) => (
-                <div key={product.id} className="bg-white rounded-[2rem] overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-rose-500/10 transition-all duration-500 border border-stone-100/80 group hover:-translate-y-1 flex flex-col">
+              {filteredProducts.map((product) => {
+                const cartItem = cart.find(item => item.product.id === product.id);
+                return (
+                 <div key={product.id} className="bg-white rounded-[2rem] overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-rose-500/10 transition-all duration-500 border border-stone-100/80 group hover:-translate-y-1 flex flex-col">
                   <div className="aspect-[4/3] overflow-hidden relative bg-stone-50 p-4">
                     <img src={product.image} alt={product.name} className="w-full h-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-700 ease-out" referrerPolicy="no-referrer" />
                     <div className="absolute top-4 left-4 flex flex-col gap-2">
@@ -730,21 +732,37 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                           <span className="text-xs font-bold text-stone-400 line-through decoration-rose-500/50">₹{Math.round(product.originalPrice)}</span>
                         )}
                       </div>
-                      <button
-                        onClick={() => addToCart(product)}
-                        disabled={product.stock !== undefined && product.stock <= 0}
-                        className={`w-12 h-12 flex items-center justify-center rounded-2xl transition-all shadow-md active:scale-90 relative overflow-hidden ${product.stock !== undefined && product.stock <= 0 ? 'bg-stone-100 text-stone-400 cursor-not-allowed shadow-none' : 'bg-stone-900 hover:bg-rose-500 text-white group-hover:shadow-rose-500/30 group-hover:rotate-12'}`}
-                      >
-                        {product.stock !== undefined && product.stock <= 0 ? (
-                          <X className="w-5 h-5" />
-                        ) : (
-                          <Plus className="w-6 h-6 relative z-10" />
-                        )}
-                      </button>
+                      
+                      {cartItem ? (
+                        <div className="flex items-center gap-1.5 bg-rose-50 rounded-[1.25rem] p-1.5 border border-rose-100/50 shadow-inner">
+                          <button onClick={() => updateQuantity(product.id, cartItem.quantity - 1)} className="w-9 h-9 flex items-center justify-center bg-white rounded-2xl text-rose-500 shadow-sm hover:bg-rose-100 active:scale-90 transition-all">
+                            <Minus className="w-4 h-4 font-bold" />
+                          </button>
+                          <span className="w-6 text-center text-sm font-black text-rose-600">
+                            {cartItem.quantity}
+                          </span>
+                          <button onClick={() => updateQuantity(product.id, cartItem.quantity + 1)} disabled={product.stock !== undefined && cartItem.quantity >= product.stock} className="w-9 h-9 flex items-center justify-center bg-gradient-to-tr from-rose-500 to-rose-400 rounded-2xl text-white shadow-md shadow-rose-500/20 hover:from-rose-600 hover:to-rose-500 active:scale-90 transition-all disabled:opacity-50 disabled:grayscale">
+                            <Plus className="w-4 h-4 font-bold" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => addToCart(product)}
+                          disabled={product.stock !== undefined && product.stock <= 0}
+                          className={`w-12 h-12 flex items-center justify-center rounded-[1.25rem] transition-all shadow-md active:scale-90 relative overflow-hidden ${product.stock !== undefined && product.stock <= 0 ? 'bg-stone-100 text-stone-400 cursor-not-allowed shadow-none' : 'bg-stone-900 hover:bg-rose-500 text-white group-hover:shadow-rose-500/30 group-hover:rotate-12'}`}
+                        >
+                          {product.stock !== undefined && product.stock <= 0 ? (
+                            <X className="w-5 h-5" />
+                          ) : (
+                            <Plus className="w-6 h-6 relative z-10" />
+                          )}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
-              ))}
+               );
+              })}
             </div>
           ) : (
             <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-stone-200">
@@ -856,15 +874,37 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
         </div>
       </footer>
 
-      {/* Back to Top */}
-      {showBackToTop && (
-        <button
-          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-          className="fixed bottom-8 right-8 bg-rose-500 text-white p-4 rounded-full shadow-2xl shadow-rose-500/40 hover:bg-rose-600 transition-all hover:scale-110 active:scale-95 z-50 animate-in fade-in zoom-in duration-300"
+      {/* Floating Action Buttons */}
+      <div className="fixed bottom-6 right-6 lg:bottom-10 lg:right-10 flex flex-col items-end gap-4 z-40">
+        
+        {/* Back to Top */}
+        {showBackToTop && (
+          <button
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="bg-stone-900 text-white p-3.5 rounded-full shadow-xl hover:bg-rose-500 transition-all hover:scale-110 active:scale-95 animate-in fade-in zoom-in duration-300 border border-white/10"
+          >
+            <ArrowUp className="w-5 h-5" />
+          </button>
+        )}
+
+        {/* WhatsApp Chat Button */}
+        <a
+          href={`https://wa.me/${settings.whatsapp_1 || '916384137974'}?text=Hi Rappani Store! 🛍️`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-[#25D366] text-white p-4 rounded-full shadow-[0_8px_30px_rgba(37,211,102,0.4)] hover:bg-[#20bd5a] transition-all hover:scale-110 active:scale-95 group flex items-center justify-center relative border-2 border-white/20"
         >
-          <ArrowUp className="w-6 h-6" />
-        </button>
-      )}
+          <MessageCircle className="w-7 h-7" />
+          <span className="absolute right-full mr-4 bg-white/95 backdrop-blur-md text-stone-800 text-xs font-black py-2.5 px-4 rounded-[1.25rem] shadow-xl opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all pointer-events-none whitespace-nowrap border border-stone-100">
+            Chat with us! 👋
+          </span>
+          {/* Notification Badge */}
+          <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-red-500 border-2 border-white"></span>
+          </span>
+        </a>
+      </div>
 
       {/* Premium Cart Drawer */}
       {isCartOpen && (
