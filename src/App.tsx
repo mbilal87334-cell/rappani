@@ -479,30 +479,33 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
     }
   };
 
-  const handleGPayCheckout = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleGPayCheckout = async (e: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>) => {
+    e.preventDefault();
     if (!customerName || !customerPhone) {
-      e.preventDefault();
       setCheckoutError(t.enterDetails);
       return;
     }
     const phoneRegex = /^[0-9]{10}$/;
     if (!phoneRegex.test(customerPhone.trim())) {
-      e.preventDefault();
       setCheckoutError(t.invalidPhone);
       return;
     }
 
     if (!isPhoneVerified) {
-      e.preventDefault();
       setCheckoutError(t.unverifiedPhoneError);
       return;
     }
 
     setCheckoutError('');
-    // Delay the UI update slightly to allow the native deep-link browser navigation to trigger before React re-renders the DOM
-    setTimeout(() => {
-      setShowGPayConfirm(true);
-    }, 800);
+    
+    try {
+      await navigator.clipboard.writeText('mohammedazzam200512@okaxis');
+      alert(`✅ UPI ID Copied!\n\nPlease open any UPI App (GPay/Paytm/PhonePe), paste this ID, and complete the payment of ₹${Math.round(cartTotalAmount)}`);
+    } catch (err) {
+      console.log('Clipboard copy failed');
+    }
+
+    setShowGPayConfirm(true);
   };
 
   const handleGPayConfirm = async () => {
@@ -925,13 +928,15 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                   <p className="text-xs text-stone-400 mt-3 font-medium uppercase tracking-wider">mohammedazzam200512@okaxis</p>
                 </div>
 
-                <a
-                  href={`upi://pay?pa=mohammedazzam200512@okaxis&pn=MOHAMMED%20AZZAM%20M&tr=RAPTXN12345&tn=RappaniStore&am=${Math.round(cartTotalAmount)}&cu=INR`}
+                <button
                   onClick={handleGPayCheckout}
-                  className="w-full bg-[#1A73E8] hover:bg-[#155ebb] text-white py-4 rounded-2xl font-bold text-lg transition-all hover:scale-[1.02] shadow-xl shadow-[#1A73E8]/20 flex items-center justify-center gap-2 mb-3 cursor-pointer"
+                  className="w-full bg-stone-800 hover:bg-stone-900 text-white py-3 rounded-2xl font-bold text-lg transition-all hover:scale-[1.02] shadow-xl shadow-stone-900/20 flex flex-col items-center justify-center gap-1 mb-3 cursor-pointer"
                 >
-                  💳 {t.payGpay}
-                </a>
+                  <div className="flex items-center gap-2">
+                    📋 Copy UPI ID & Pay
+                  </div>
+                  <span className="text-[10px] font-medium opacity-70">Faster & 100% Secure • Avoids App Block</span>
+                </button>
 
                 {showGPayConfirm && (
                   <div className="bg-stone-100 p-4 rounded-xl border-2 border-dashed border-stone-300 flex flex-col items-center justify-center mb-4 transition-all animate-in fade-in slide-in-from-top-1 text-center shadow-inner">
