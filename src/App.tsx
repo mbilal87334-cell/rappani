@@ -526,62 +526,63 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
   return (
     <div className="min-h-screen bg-stone-50 font-sans text-stone-900">
-      {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-50">
+      {/* Enhanced Premium Header */}
+      <header className="fixed w-full top-0 z-50 transition-all duration-300 bg-white/70 backdrop-blur-xl border-b border-white/20 shadow-[0_4px_30px_rgba(0,0,0,0.05)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-20">
             <div className="flex items-center gap-3">
-              <div className="bg-rose-500 p-2.5 rounded-xl text-white shadow-md">
+              <div className="bg-gradient-to-br from-rose-400 to-orange-500 p-2.5 rounded-2xl text-white shadow-lg shadow-rose-500/30 ring-1 ring-white/50">
                 <Store className="w-6 h-6" />
               </div>
-              <div>
-                <h1 className="text-xl md:text-2xl font-bold text-stone-900 leading-tight">{t.storeName}</h1>
-                <p className="text-xs font-medium text-rose-500 tracking-wider uppercase">{t.tagline}</p>
+              <div className="flex flex-col">
+                <h1 className="text-xl md:text-2xl font-black text-stone-900 tracking-tight leading-none mb-1">{t.storeName}</h1>
+                <p className="text-[10px] font-bold text-rose-500 tracking-[0.2em] uppercase">{t.tagline}</p>
               </div>
             </div>
 
             {/* Desktop Nav */}
-            <nav className="hidden md:flex items-center gap-8">
-              <a href="#home" className="text-sm font-semibold text-stone-600 hover:text-rose-500 transition-colors">{t.home}</a>
-              <a href="#products" className="text-sm font-semibold text-stone-600 hover:text-rose-500 transition-colors">{t.products}</a>
-              <a href="#contact" className="text-sm font-semibold text-stone-600 hover:text-rose-500 transition-colors">{t.contact}</a>
+            <nav className="hidden md:flex items-center gap-1 bg-white/50 p-1.5 rounded-full border border-stone-100 shadow-sm">
+              <a href="#home" className="text-xs font-bold px-4 py-2 rounded-full text-stone-600 hover:text-rose-600 hover:bg-rose-50 transition-all">{t.home}</a>
+              <a href="#products" className="text-xs font-bold px-4 py-2 rounded-full text-stone-600 hover:text-rose-600 hover:bg-rose-50 transition-all">{t.products}</a>
+              <a href="#contact" className="text-xs font-bold px-4 py-2 rounded-full text-stone-600 hover:text-rose-600 hover:bg-rose-50 transition-all">{t.contact}</a>
+            </nav>
 
-              {/* Language Toggle */}
-              <button onClick={toggleLanguage} className="flex items-center gap-2 text-sm font-bold text-rose-600 bg-rose-50 px-3 py-1.5 rounded-full hover:bg-rose-100 transition-colors border border-rose-200">
-                <Globe className="w-4 h-4" /> {lang === 'en' ? 'தமிழ்' : 'English'}
+            <div className="hidden md:flex items-center gap-4">
+              <button onClick={toggleLanguage} className="flex items-center gap-2 text-xs font-black text-rose-600 bg-rose-50 px-4 py-2 rounded-full hover:bg-rose-100 transition-all border border-rose-100 uppercase tracking-widest shadow-sm">
+                <Globe className="w-3.5 h-3.5" /> {lang === 'en' ? 'தமிழ்' : 'English'}
               </button>
 
-              <button onClick={() => setIsCartOpen(true)} className="relative p-2 text-stone-600 hover:text-rose-500 transition-colors">
+              <button onClick={() => setIsCartOpen(true)} className="relative p-2.5 bg-stone-100 text-stone-600 hover:text-rose-500 hover:bg-stone-200 rounded-full transition-all shadow-sm">
                 <ShoppingCart className="w-5 h-5" />
                 {cartItemsCount > 0 && (
-                  <span className="absolute top-0 right-0 bg-rose-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center translate-x-1/4 -translate-y-1/4">
+                  <span className="absolute top-0 right-0 bg-rose-500 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center translate-x-1/4 -translate-y-1/4 shadow-md ring-2 ring-white">
                     {cartItemsCount}
                   </span>
                 )}
               </button>
 
-              <Link to="/admin" className="flex items-center gap-2 text-sm font-semibold bg-stone-900 text-white px-4 py-2 rounded-full hover:bg-stone-800 transition-colors">
-                <Lock className="w-4 h-4" /> {t.adminLogin}
+              <Link to="/admin" className="flex items-center gap-2 text-xs font-bold bg-[#1a1a1a] text-white px-5 py-2.5 rounded-full hover:bg-black transition-all shadow-md active:scale-95 border border-stone-800">
+                <Lock className="w-3.5 h-3.5" /> {t.adminLogin}
               </Link>
-            </nav>
+            </div>
 
             {/* Mobile Menu Button */}
-            <div className="md:hidden flex items-center gap-4">
-              <button onClick={toggleLanguage} className="flex items-center gap-1 text-xs font-bold text-rose-600 bg-rose-50 px-2 py-1 rounded-full border border-rose-200">
+            <div className="md:hidden flex items-center gap-3">
+              <button onClick={toggleLanguage} className="flex items-center gap-1 text-[10px] font-black text-rose-600 bg-rose-50 px-3 py-1.5 rounded-full border border-rose-100 uppercase tracking-widest">
                 <Globe className="w-3 h-3" /> {lang === 'en' ? 'தமிழ்' : 'EN'}
               </button>
 
-              <button onClick={() => setIsCartOpen(true)} className="relative p-2 text-stone-600">
-                <ShoppingCart className="w-5 h-5" />
+              <button onClick={() => setIsCartOpen(true)} className="relative p-2 bg-stone-100 rounded-full text-stone-600">
+                <ShoppingCart className="w-4 h-4" />
                 {cartItemsCount > 0 && (
-                  <span className="absolute top-1 right-1 bg-rose-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center -translate-y-1/2 translate-x-1/2">
+                  <span className="absolute top-0 right-0 bg-rose-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center translate-x-1/4 -translate-y-1/4 shadow border border-white">
                     {cartItemsCount}
                   </span>
                 )}
               </button>
 
-              <button className="p-2 text-stone-600" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-                {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              <button className="p-2 bg-stone-100 rounded-full text-stone-800" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+                {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
             </div>
           </div>
@@ -589,13 +590,13 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
         {/* Mobile Nav */}
         {isMenuOpen && (
-          <div className="md:hidden bg-white border-t border-stone-100 absolute w-full shadow-lg">
-            <div className="px-4 pt-2 pb-6 space-y-1 flex flex-col">
-              <a href="#home" className="block px-3 py-3 text-base font-medium text-stone-700 hover:bg-stone-50 rounded-lg" onClick={() => setIsMenuOpen(false)}>{t.home}</a>
-              <a href="#products" className="block px-3 py-3 text-base font-medium text-stone-700 hover:bg-stone-50 rounded-lg" onClick={() => setIsMenuOpen(false)}>{t.products}</a>
-              <a href="#contact" className="block px-3 py-3 text-base font-medium text-stone-700 hover:bg-stone-50 rounded-lg" onClick={() => setIsMenuOpen(false)}>{t.contact}</a>
-              <Link to="/admin" className="mt-4 flex items-center justify-center gap-2 text-base font-medium bg-stone-900 text-white px-4 py-3 rounded-xl" onClick={() => setIsMenuOpen(false)}>
-                <Lock className="w-5 h-5" /> {t.adminLogin}
+          <div className="md:hidden absolute w-full top-20 left-0 bg-white/95 backdrop-blur-xl border-b border-stone-100 shadow-xl border-t">
+            <div className="px-4 py-4 space-y-2 flex flex-col p-4">
+              <a href="#home" className="block px-4 py-3 text-sm font-bold text-stone-700 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-colors" onClick={() => setIsMenuOpen(false)}>{t.home}</a>
+              <a href="#products" className="block px-4 py-3 text-sm font-bold text-stone-700 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-colors" onClick={() => setIsMenuOpen(false)}>{t.products}</a>
+              <a href="#contact" className="block px-4 py-3 text-sm font-bold text-stone-700 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-colors" onClick={() => setIsMenuOpen(false)}>{t.contact}</a>
+              <Link to="/admin" className="mt-2 flex items-center justify-center gap-2 text-sm font-bold bg-[#1a1a1a] text-white px-4 py-3.5 rounded-xl shadow-md" onClick={() => setIsMenuOpen(false)}>
+                <Lock className="w-4 h-4" /> {t.adminLogin}
               </Link>
             </div>
           </div>
@@ -675,16 +676,16 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
             <p className="text-stone-500 max-w-2xl mx-auto text-lg">{t.featuredDesc}</p>
           </div>
 
-          {/* Search and Filter */}
-          <div className="mb-12 flex flex-col md:flex-row gap-6 items-center justify-between bg-white/95 backdrop-blur-md p-4 md:p-6 rounded-3xl shadow-lg border border-stone-200 sticky top-[80px] z-40">
-            <div className="relative w-full md:max-w-md">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
+          {/* Search and Filter Premium */}
+          <div className="mb-14 flex flex-col md:flex-row gap-4 items-center justify-between bg-white/70 backdrop-blur-2xl p-3 md:p-4 rounded-[2rem] shadow-xl shadow-stone-200/50 border border-white sticky top-[90px] z-40">
+            <div className="relative w-full md:max-w-md group">
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400 group-focus-within:text-rose-500 transition-colors" />
               <input
                 type="text"
                 placeholder={t.searchPlaceholder}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-stone-50 border-none rounded-2xl focus:ring-2 focus:ring-rose-500 transition-all outline-none text-stone-800"
+                className="w-full pl-14 pr-6 py-3.5 bg-white border border-stone-100 rounded-full focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 transition-all outline-none text-stone-800 font-medium shadow-sm"
               />
             </div>
             <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto scrollbar-hide">
@@ -704,40 +705,40 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
           </div>
 
           {filteredProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredProducts.map((product) => (
-                <div key={product.id} className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-stone-100 group">
-                  <div className="aspect-square overflow-hidden relative bg-stone-100">
-                    <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
+                <div key={product.id} className="bg-white rounded-[2rem] overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-rose-500/10 transition-all duration-500 border border-stone-100/80 group hover:-translate-y-1 flex flex-col">
+                  <div className="aspect-[4/3] overflow-hidden relative bg-stone-50 p-4">
+                    <img src={product.image} alt={product.name} className="w-full h-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-700 ease-out" referrerPolicy="no-referrer" />
                     <div className="absolute top-4 left-4 flex flex-col gap-2">
-                      <div className="bg-rose-500 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-md inline-block self-start">
-                        {getCategoryName(product.category)}
+                      <div className="bg-white/90 backdrop-blur-sm shadow-sm text-stone-700 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-stone-100 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span> {getCategoryName(product.category)}
                       </div>
                       {product.originalPrice && product.originalPrice > product.price && (
-                        <div className="bg-emerald-500 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-md inline-block self-start animate-bounce">
-                          {t.offer}
+                        <div className="bg-gradient-to-r from-emerald-400 to-teal-500 text-white px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-1 animate-pulse">
+                           {t.offer}
                         </div>
                       )}
                     </div>
                   </div>
-                  <div className="p-6">
-                    <h3 className="text-xl font-bold text-stone-900 mb-2">{product.name}</h3>
-                    <div className="flex items-center justify-between mt-4">
+                  <div className="p-6 flex flex-col flex-1 relative bg-white border-t border-stone-50">
+                    <h3 className="text-lg font-black text-stone-800 mb-1 line-clamp-2 leading-tight group-hover:text-rose-600 transition-colors">{product.name}</h3>
+                    <div className="mt-auto pt-4 flex items-end justify-between">
                       <div className="flex flex-col">
-                        <span className="text-2xl font-extrabold text-rose-500">₹{Math.round(product.price)}</span>
+                        <span className="text-2xl font-black text-stone-900 tracking-tight">₹{Math.round(product.price)}</span>
                         {product.originalPrice && product.originalPrice > product.price && (
-                          <span className="text-sm font-bold text-stone-400 line-through">₹{Math.round(product.originalPrice)}</span>
+                          <span className="text-xs font-bold text-stone-400 line-through decoration-rose-500/50">₹{Math.round(product.originalPrice)}</span>
                         )}
                       </div>
                       <button
                         onClick={() => addToCart(product)}
                         disabled={product.stock !== undefined && product.stock <= 0}
-                        className={`px-4 py-2 rounded-full text-sm font-semibold transition-colors flex items-center gap-2 ${product.stock !== undefined && product.stock <= 0 ? 'bg-stone-300 text-stone-500 cursor-not-allowed' : 'bg-stone-900 hover:bg-stone-800 text-white'}`}
+                        className={`w-12 h-12 flex items-center justify-center rounded-2xl transition-all shadow-md active:scale-90 relative overflow-hidden ${product.stock !== undefined && product.stock <= 0 ? 'bg-stone-100 text-stone-400 cursor-not-allowed shadow-none' : 'bg-stone-900 hover:bg-rose-500 text-white group-hover:shadow-rose-500/30 group-hover:rotate-12'}`}
                       >
                         {product.stock !== undefined && product.stock <= 0 ? (
-                          <>{t.outOfStock}</>
+                          <X className="w-5 h-5" />
                         ) : (
-                          <><Plus className="w-4 h-4" /> {t.addToCart}</>
+                          <Plus className="w-6 h-6 relative z-10" />
                         )}
                       </button>
                     </div>
@@ -757,53 +758,55 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
         </div>
       </section>
 
-      {/* Contact Section */}
-      <section id="contact" className="py-20 bg-white border-t border-stone-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-stone-900 rounded-3xl overflow-hidden shadow-2xl">
+      {/* Premium Contact Section */}
+      <section id="contact" className="py-24 bg-stone-50 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-rose-500/5 rounded-full blur-[100px] pointer-events-none"></div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="bg-white rounded-[3rem] overflow-hidden shadow-2xl shadow-stone-200/50 border border-stone-100">
             <div className="grid lg:grid-cols-2">
-              <div className="p-10 md:p-16 flex flex-col justify-center">
-                <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">{t.getInTouch}</h2>
-                <p className="text-stone-400 mb-10 text-lg">{t.contactDesc}</p>
+              <div className="p-10 md:p-20 flex flex-col justify-center relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-rose-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                <h2 className="text-4xl md:text-5xl font-black text-[#1a1a1a] mb-6 tracking-tight relative z-10">{t.getInTouch}</h2>
+                <p className="text-stone-500 mb-12 text-lg font-medium leading-relaxed relative z-10">{t.contactDesc}</p>
 
-                <div className="space-y-6">
-                  <div className="flex items-start gap-4">
-                    <div className="bg-rose-500/20 p-3 rounded-full text-rose-400">
+                <div className="space-y-8 relative z-10">
+                  <div className="flex items-start gap-5 group">
+                    <div className="bg-stone-50 group-hover:bg-rose-500 group-hover:text-white p-4 rounded-2xl text-stone-600 transition-all duration-300 shadow-sm border border-stone-100">
                       <Phone className="w-6 h-6" />
                     </div>
                     <div>
-                      <p className="text-sm text-stone-400 font-medium mb-1">{t.callUs}</p>
-                      <div className="flex flex-col gap-2">
-                        <a href={`https://wa.me/${settings.whatsapp_1 || '916384137974'}`} target="_blank" rel="noopener noreferrer" className="text-white font-semibold text-lg hover:text-rose-400 transition-colors flex items-center gap-2">
-                          <MessageCircle className="w-4 h-4 text-[#25D366]" /> +{settings.whatsapp_1 || '91 6384137974'}
+                      <p className="text-xs text-stone-400 font-bold uppercase tracking-widest mb-1.5">{t.callUs}</p>
+                      <div className="flex flex-col gap-1.5">
+                        <a href={`https://wa.me/${settings.whatsapp_1 || '916384137974'}`} target="_blank" rel="noopener noreferrer" className="text-stone-800 font-black text-xl hover:text-rose-500 transition-colors flex items-center gap-2">
+                          <MessageCircle className="w-5 h-5 text-[#25D366]" /> +{settings.whatsapp_1 || '91 6384137974'}
                         </a>
-                        <a href={`https://wa.me/${settings.whatsapp_2 || '918940324030'}`} target="_blank" rel="noopener noreferrer" className="text-white font-semibold text-lg hover:text-rose-400 transition-colors flex items-center gap-2">
-                          <MessageCircle className="w-4 h-4 text-[#25D366]" /> +{settings.whatsapp_2 || '91 8940324030'}
+                        <a href={`https://wa.me/${settings.whatsapp_2 || '918940324030'}`} target="_blank" rel="noopener noreferrer" className="text-stone-800 font-black text-xl hover:text-rose-500 transition-colors flex items-center gap-2">
+                          <MessageCircle className="w-5 h-5 text-[#25D366]" /> +{settings.whatsapp_2 || '91 8940324030'}
                         </a>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-4">
-                    <div className="bg-rose-500/20 p-3 rounded-full text-rose-400">
+                  <div className="flex items-start gap-5 group">
+                    <div className="bg-stone-50 group-hover:bg-rose-500 group-hover:text-white p-4 rounded-2xl text-stone-600 transition-all duration-300 shadow-sm border border-stone-100">
                       <Mail className="w-6 h-6" />
                     </div>
                     <div>
-                      <p className="text-sm text-stone-400 font-medium mb-1">{t.emailUs}</p>
-                      <a href="mailto:rappaniazzam@gmail.com" className="text-white font-semibold text-lg hover:text-rose-400 transition-colors">rappaniazzam@gmail.com</a>
+                      <p className="text-xs text-stone-400 font-bold uppercase tracking-widest mb-1.5">{t.emailUs}</p>
+                      <a href="mailto:rappaniazzam@gmail.com" className="text-stone-800 font-black text-xl hover:text-rose-500 transition-colors">rappaniazzam@gmail.com</a>
                     </div>
                   </div>
                 </div>
 
-                <div className="mt-12 pt-10 border-t border-stone-800 flex flex-wrap gap-4">
-                  <a href={`https://wa.me/${settings.whatsapp_1 || '916384137974'}`} target="_blank" rel="noopener noreferrer" className="bg-[#25D366] hover:bg-[#20bd5a] text-white px-6 py-4 rounded-full transition-transform hover:scale-105 shadow-lg shadow-[#25D366]/20 flex items-center gap-2 font-bold">
-                    <MessageCircle className="w-6 h-6" /> WhatsApp 1
+                <div className="mt-14 pt-10 border-t border-stone-100 flex flex-wrap gap-4 relative z-10">
+                  <a href={`https://wa.me/${settings.whatsapp_1 || '916384137974'}`} target="_blank" rel="noopener noreferrer" className="bg-stone-50 hover:bg-[#25D366] text-stone-700 hover:text-white px-8 py-4 rounded-full transition-all hover:scale-105 active:scale-95 shadow-sm hover:shadow-[#25D366]/30 flex items-center gap-3 font-bold border border-stone-200 hover:border-transparent group">
+                    <MessageCircle className="w-5 h-5 text-[#25D366] group-hover:text-white" /> Link 1
                   </a>
-                  <a href={`https://wa.me/${settings.whatsapp_2 || '918940324030'}`} target="_blank" rel="noopener noreferrer" className="bg-[#25D366] hover:bg-[#20bd5a] text-white px-6 py-4 rounded-full transition-transform hover:scale-105 shadow-lg shadow-[#25D366]/20 flex items-center gap-2 font-bold">
-                    <MessageCircle className="w-6 h-6" /> WhatsApp 2
+                  <a href={`https://wa.me/${settings.whatsapp_2 || '918940324030'}`} target="_blank" rel="noopener noreferrer" className="bg-stone-50 hover:bg-[#25D366] text-stone-700 hover:text-white px-8 py-4 rounded-full transition-all hover:scale-105 active:scale-95 shadow-sm hover:shadow-[#25D366]/30 flex items-center gap-3 font-bold border border-stone-200 hover:border-transparent group">
+                    <MessageCircle className="w-5 h-5 text-[#25D366] group-hover:text-white" /> Link 2
                   </a>
-                  <a href="https://instagram.com/frds_call_me_rappani" target="_blank" rel="noopener noreferrer" className="bg-gradient-to-tr from-[#f09433] via-[#e6683c] to-[#bc1888] hover:opacity-90 text-white p-4 rounded-full transition-transform hover:scale-110 shadow-lg shadow-[#bc1888]/20">
-                    <Instagram className="w-6 h-6" />
+                  <a href="https://instagram.com/frds_call_me_rappani" target="_blank" rel="noopener noreferrer" className="bg-stone-50 hover:bg-gradient-to-tr hover:from-[#f09433] hover:via-[#e6683c] hover:to-[#bc1888] text-stone-600 hover:text-white p-4 rounded-full transition-all hover:scale-110 shadow-sm hover:shadow-[#bc1888]/30 border border-stone-200 hover:border-transparent">
+                    <Instagram className="w-5 h-5" />
                   </a>
                 </div>
               </div>
@@ -812,16 +815,23 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                 href="https://maps.app.goo.gl/QwQ3ePTo52WKz6A79?g_st=aw"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="relative h-64 lg:h-auto bg-stone-800 block cursor-pointer group overflow-hidden"
+                className="relative min-h-[400px] lg:h-auto bg-stone-100 block cursor-pointer group overflow-hidden p-6"
               >
-                <img src={settings.location_image || "https://picsum.photos/seed/storefront/800/800"} alt="Store Location" className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-500" referrerPolicy="no-referrer" />
-                <div className="absolute inset-0 bg-gradient-to-t from-stone-900 via-transparent to-transparent lg:bg-gradient-to-l group-hover:bg-stone-900/10 transition-colors"></div>
-                <div className="absolute bottom-8 left-8 right-8 bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-2xl group-hover:bg-white/20 transition-colors">
-                  <div className="flex items-center gap-3 text-white mb-2">
-                    <MapPin className="w-5 h-5 text-rose-400" />
-                    <h3 className="font-bold text-lg">{t.addressTitle}</h3>
+                <div className="absolute inset-4 rounded-[2rem] overflow-hidden shadow-inner">
+                  <img src={settings.location_image || "https://picsum.photos/seed/storefront/800/800"} alt="Store Location" className="w-full h-full object-cover opacity-90 group-hover:scale-110 transition-transform duration-1000 ease-out" referrerPolicy="no-referrer" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a]/90 via-[#1a1a1a]/40 to-transparent"></div>
+                  <div className="absolute bottom-8 left-8 right-8 bg-white/10 backdrop-blur-xl border border-white/20 p-6 rounded-3xl group-hover:bg-white/20 transition-all group-hover:-translate-y-2 duration-500">
+                    <div className="flex items-center gap-3 text-white mb-3">
+                      <div className="bg-rose-500 p-2 rounded-full shadow-lg shadow-rose-500/40">
+                         <MapPin className="w-5 h-5 text-white" />
+                      </div>
+                      <h3 className="font-black text-xl">{t.addressTitle}</h3>
+                    </div>
+                    <p className="text-stone-200 text-sm font-medium leading-relaxed">{t.addressDesc}</p>
+                    <div className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-white bg-white/20 px-4 py-2 rounded-full backdrop-blur-md">
+                      Get Directions ↗
+                    </div>
                   </div>
-                  <p className="text-stone-300 text-sm whitespace-pre-line">{t.addressDesc}</p>
                 </div>
               </a>
             </div>
@@ -829,16 +839,19 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-stone-950 text-stone-400 py-12 border-t border-stone-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <Store className="w-6 h-6 text-rose-400" />
-            <h2 className="text-xl font-bold tracking-tight text-white">{t.storeName}</h2>
+      {/* Premium Footer */}
+      <footer className="bg-[#0a0a0a] text-stone-400 py-16 border-t border-white/5 relative overflow-hidden">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl h-64 bg-rose-500/5 rounded-full blur-[100px] pointer-events-none"></div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+          <div className="flex items-center justify-center gap-3 mb-8">
+            <div className="bg-rose-500/10 p-3 rounded-2xl border border-rose-500/20">
+               <Store className="w-8 h-8 text-rose-500" />
+            </div>
+            <h2 className="text-2xl font-black tracking-tight text-white">{t.storeName}</h2>
           </div>
-          <p className="mb-8">&copy; {new Date().getFullYear()} {t.rights}</p>
-          <div className="flex items-center justify-center gap-2 text-[10px] text-stone-600 uppercase tracking-widest">
-            <Database className="w-3 h-3" /> {t.storageStatus}
+          <p className="mb-10 font-medium text-stone-500">&copy; {new Date().getFullYear()} {t.rights}</p>
+          <div className="flex items-center justify-center gap-2 text-[10px] text-stone-600 font-bold uppercase tracking-[0.2em]">
+            <Database className="w-3.5 h-3.5" /> {t.storageStatus}
           </div>
         </div>
       </footer>
