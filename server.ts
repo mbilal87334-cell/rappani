@@ -403,7 +403,7 @@ async function seedInitialData() {
       await Setting.create({ key: 'admin_password', value: 'rappani123' });
     }
     // Forcibly update UPI ID to ensure synchronization between code and database
-    await Setting.updateOne({ key: 'upi_id' }, { value: '6384137974@ptaxis' }, { upsert: true });
+    await Setting.updateOne({ key: 'upi_id' }, { value: 'mohammedazzam200512@okaxis' }, { upsert: true });
   } catch (err) {
     console.error("Seeding error:", err);
   }

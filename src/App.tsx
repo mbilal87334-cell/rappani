@@ -918,15 +918,15 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                 <div className="bg-white p-4 rounded-xl border border-stone-200 mb-4 flex flex-col items-center justify-center shadow-inner">
                   <p className="text-sm font-bold text-stone-600 mb-2">Scan QR to Pay (₹{Math.round(cartTotalAmount)})</p>
                   <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`upi://pay?pa=6384137974@ptaxis&pn=Kathija Beevi&am=${Math.round(cartTotalAmount)}&cu=INR`)}`}
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`upi://pay?pa=mohammedazzam200512@okaxis&pn=Mohammed Azzam M&am=${Math.round(cartTotalAmount)}&cu=INR`)}`}
                     alt="Scan to Pay"
                     className="w-32 h-32 rounded-lg"
                   />
-                  <p className="text-xs text-stone-400 mt-3 font-medium uppercase tracking-wider">6384137974@ptaxis</p>
+                  <p className="text-xs text-stone-400 mt-3 font-medium uppercase tracking-wider">mohammedazzam200512@okaxis</p>
                 </div>
 
                 <a
-                  href={`upi://pay?pa=6384137974@ptaxis&pn=Kathija%20Beevi&am=${Math.round(cartTotalAmount)}&cu=INR`}
+                  href={`upi://pay?pa=mohammedazzam200512@okaxis&pn=Mohammed%20Azzam%20M&am=${Math.round(cartTotalAmount)}&cu=INR`}
                   onClick={handleGPayCheckout}
                   className="w-full bg-[#1A73E8] hover:bg-[#155ebb] text-white py-4 rounded-2xl font-bold text-lg transition-all hover:scale-[1.02] shadow-xl shadow-[#1A73E8]/20 flex items-center justify-center gap-2 mb-3 cursor-pointer"
                 >
