@@ -244,19 +244,51 @@ const translations = {
 
 // --- Visitor Panel ---
 function VisitorPanel({ products, settings, setProducts }: { products: Product[], settings: Record<string, string>, setProducts: React.Dispatch<React.SetStateAction<Product[]>> }) {
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('rappani_cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('rappani_cart', JSON.stringify(cart));
+    } catch (e) {
+      console.error("Failed to save cart to localStorage", e);
+    }
+  }, [cart]);
+
+  const [customerName, setCustomerName] = useState(() => localStorage.getItem('rappani_customer_name') || '');
+  const [customerPhone, setCustomerPhone] = useState(() => localStorage.getItem('rappani_customer_phone') || '');
+  const [isPhoneVerified, setIsPhoneVerified] = useState(() => localStorage.getItem('rappani_is_verified') === 'true');
+
+  useEffect(() => {
+    localStorage.setItem('rappani_customer_name', customerName);
+  }, [customerName]);
+
+  useEffect(() => {
+    localStorage.setItem('rappani_customer_phone', customerPhone);
+  }, [customerPhone]);
+
+  useEffect(() => {
+    localStorage.setItem('rappani_is_verified', String(isPhoneVerified));
+  }, [isPhoneVerified]);
+
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [lang, setLang] = useState<'en' | 'ta'>('en');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [showBackToTop, setShowBackToTop] = useState(false);
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerName, setCustomerName] = useState(() => localStorage.getItem('rappani_customer_name') || '');
+  const [customerPhone, setCustomerPhone] = useState(() => localStorage.getItem('rappani_customer_phone') || '');
   const [checkoutError, setCheckoutError] = useState('');
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [otpInput, setOtpInput] = useState('');
-  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [isPhoneVerified, setIsPhoneVerified] = useState(() => localStorage.getItem('rappani_is_verified') === 'true');
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [showGPayConfirm, setShowGPayConfirm] = useState(false);
