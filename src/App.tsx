@@ -817,163 +817,205 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
         </button>
       )}
 
-      {/* Cart Drawer */}
+      {/* Premium Cart Drawer */}
       {isCartOpen && (
         <div className="fixed inset-0 z-[100] flex justify-end">
-          <div className="absolute inset-0 bg-stone-900/50 backdrop-blur-sm" onClick={() => setIsCartOpen(false)}></div>
-          <div className="relative w-full max-w-md bg-white h-full flex flex-col shadow-2xl animate-in slide-in-from-right duration-300">
-            <div className="p-6 border-b border-stone-100 flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-stone-900 flex items-center gap-2">
-                <ShoppingCart className="w-6 h-6 text-rose-500" /> {t.cart} ({cartItemsCount})
+          <div className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm transition-opacity" onClick={() => setIsCartOpen(false)}></div>
+          <div className="relative w-full max-w-[420px] bg-[#fdfdfd] h-full flex flex-col shadow-2xl animate-in slide-in-from-right duration-500 sm:rounded-l-[2rem] overflow-hidden border-l border-white/20">
+            {/* Header */}
+            <div className="px-6 py-5 bg-white/90 backdrop-blur-xl border-b border-stone-100 flex items-center justify-between sticky top-0 z-20">
+              <h2 className="text-xl font-extrabold text-stone-800 flex items-center gap-3">
+                <div className="bg-rose-100 p-2.5 rounded-xl shadow-inner shadow-rose-200">
+                  <ShoppingCart className="w-5 h-5 text-rose-500" /> 
+                </div>
+                {t.cart} <span className="bg-stone-800 text-white text-[10px] px-2.5 py-1 rounded-full">{cartItemsCount} Items</span>
               </h2>
-              <button onClick={() => setIsCartOpen(false)} className="p-2 text-stone-400 hover:text-stone-600 transition-colors">
-                <X className="w-6 h-6" />
+              <button onClick={() => setIsCartOpen(false)} className="p-2.5 bg-stone-100 text-stone-500 hover:text-stone-800 hover:bg-stone-200 rounded-full transition-all shadow-sm border border-stone-200/50">
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
+            <div className="flex-1 overflow-y-auto hidden-scrollbar flex flex-col relative z-0">
               {cart.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center text-center text-stone-400">
-                  <div className="bg-stone-50 w-24 h-24 rounded-full flex items-center justify-center mb-4">
-                    <ShoppingBag className="w-10 h-10 text-stone-300" />
+                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-stone-400 h-full min-h-[50vh]">
+                  <div className="bg-white w-32 h-32 rounded-full flex items-center justify-center mb-6 shadow-sm border border-stone-100 relative">
+                    <div className="absolute inset-0 bg-rose-500/10 rounded-full animate-ping opacity-75"></div>
+                    <ShoppingBag className="w-12 h-12 text-stone-200 relative z-10" />
                   </div>
-                  <p className="text-lg font-bold text-stone-600 mb-2">{t.emptyCart}</p>
-                  <button onClick={() => setIsCartOpen(false)} className="text-rose-500 font-semibold">{t.shopNow}</button>
+                  <h3 className="text-xl font-extrabold text-stone-700 mb-2">{t.emptyCart}</h3>
+                  <p className="text-sm mb-6 text-stone-400">Looks like you haven't added anything yet.</p>
+                  <button onClick={() => setIsCartOpen(false)} className="bg-rose-500 text-white px-8 py-3 rounded-full font-bold shadow-xl shadow-rose-500/30 hover:bg-rose-600 transition-all hover:-translate-y-1 active:scale-95">Start Shopping</button>
                 </div>
               ) : (
-                cart.map(item => (
-                  <div key={item.product.id} className="flex gap-4 bg-stone-50 p-4 rounded-2xl border border-stone-100 items-center">
-                    <img src={item.product.image} alt={item.product.name} className="w-16 h-16 rounded-xl object-cover bg-white" referrerPolicy="no-referrer" />
-                    <div className="flex-1">
-                      <h4 className="font-bold text-stone-900 line-clamp-1">{item.product.name}</h4>
-                      <p className="font-extrabold text-rose-500 text-sm">₹{Math.round(item.product.price)} x {item.quantity}</p>
-                    </div>
-                    <div className="flex items-center gap-3 bg-white px-2 py-1 rounded-full shadow-sm border border-stone-100">
-                      <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)} className="p-1 text-stone-400 hover:text-rose-500 transition-colors"><Minus className="w-4 h-4" /></button>
-                      <span className="font-bold text-stone-900 text-sm min-w-[1rem] text-center">{item.quantity}</span>
-                      <button onClick={() => updateQuantity(item.product.id, item.quantity + 1)} className="p-1 text-stone-400 hover:text-rose-500 transition-colors"><Plus className="w-4 h-4" /></button>
+                <div className="p-4 sm:p-6 flex flex-col gap-4">
+                  <div className="bg-gradient-to-r from-emerald-500 to-teal-500 p-4 rounded-2xl text-white shadow-lg shadow-emerald-500/20 flex gap-3 items-center mb-2">
+                    <div className="bg-white/20 p-2.5 rounded-full backdrop-blur-sm text-lg leading-none flex items-center justify-center shadow-inner">✨</div>
+                    <div>
+                      <h4 className="font-bold text-sm tracking-wide">Fast Dispatch Available</h4>
+                      <p className="text-[11px] text-white/90 font-medium">Clear payment to confirm your items.</p>
                     </div>
                   </div>
-                ))
+                  
+                  <div className="space-y-3">
+                  {cart.map(item => (
+                    <div key={item.product.id} className="flex gap-4 bg-white p-3.5 rounded-2xl shadow-sm border border-stone-100/80 items-center justify-between group hover:shadow-md transition-all hover:border-stone-200">
+                      <div className="flex gap-3 items-center">
+                        <div className="w-[4.5rem] h-[4.5rem] p-1 rounded-xl bg-stone-50 border border-stone-100 relative shrink-0">
+                          <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover rounded-lg group-hover:scale-105 transition-transform duration-300" referrerPolicy="no-referrer" />
+                        </div>
+                        <div className="flex flex-col max-w-[140px]">
+                          <h4 className="font-bold text-stone-800 text-sm line-clamp-2 leading-tight mb-1">{item.product.name}</h4>
+                          <p className="font-black text-rose-500 text-sm tracking-tight">₹{Math.round(item.product.price)}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 bg-stone-50 p-1 rounded-xl border border-stone-200/60 shadow-inner shrink-0">
+                        <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)} className="p-2 text-stone-500 hover:text-rose-500 hover:bg-white hover:shadow-sm rounded-lg transition-all active:scale-90"><Minus className="w-3.5 h-3.5" /></button>
+                        <span className="font-bold text-stone-800 text-xs min-w-[20px] text-center">{item.quantity}</span>
+                        <button onClick={() => updateQuantity(item.product.id, item.quantity + 1)} className="p-2 text-stone-500 hover:text-emerald-500 hover:bg-white hover:shadow-sm rounded-lg transition-all active:scale-90"><Plus className="w-3.5 h-3.5" /></button>
+                      </div>
+                    </div>
+                  ))}
+                  </div>
+                </div>
               )}
             </div>
 
+            {/* Sticky Bottom Checkout Footer */}
             {cart.length > 0 && (
-              <div className="p-6 border-t border-stone-100 bg-stone-50">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-lg font-bold text-stone-600">{t.total}</span>
-                  <span className="text-3xl font-extrabold text-stone-900">₹{Math.round(cartTotalAmount)}</span>
-                </div>
-                <div className="bg-emerald-100 text-emerald-800 p-3 rounded-xl mb-6 text-xs sm:text-sm font-semibold flex items-start gap-2 border border-emerald-200">
-                  <span className="mt-0.5">ℹ️</span>
-                  <p>{t.paymentInfo}</p>
-                </div>
+              <div className="bg-white border-t border-stone-100 shadow-[0_-10px_40px_-5px_rgba(0,0,0,0.08)] z-20 shrink-0 relative flex flex-col max-h-[60vh]">
+                <div className="p-5 sm:p-6 overflow-y-auto hidden-scrollbar pb-6">
+                  
+                  <div className="flex items-end justify-between mb-5">
+                    <span className="text-stone-500 font-bold uppercase tracking-widest text-[11px] flex items-center gap-1.5"><ShoppingBag className="w-3.5 h-3.5" /> Total Amount</span>
+                    <span className="text-3xl font-black text-stone-900 tracking-tight relative group cursor-default">
+                      <span className="absolute -inset-1 bg-rose-500/10 rounded-lg blur-md opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                      <span className="relative">₹{Math.round(cartTotalAmount)}</span>
+                    </span>
+                  </div>
 
-                {/* Customer Details for Checkout */}
-                <div className="bg-white p-4 rounded-xl border border-stone-200 mb-4 shadow-sm">
-                  <h4 className="text-sm font-bold text-stone-900 mb-3">{t.enterDetails}</h4>
-                  <div className="space-y-3">
-                    <div>
-                      <input
-                        type="text"
-                        placeholder={t.nameLabel}
-                        value={customerName}
-                        onChange={(e) => setCustomerName(e.target.value)}
-                        className={`w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-rose-500 ${checkoutError && !customerName ? 'border-red-400' : 'border-stone-200'}`}
-                      />
-                    </div>
-                    <div>
-                      <input
-                        type="tel"
-                        placeholder={t.phoneLabel}
-                        value={customerPhone}
-                        onChange={(e) => {
-                          setCustomerPhone(e.target.value.replace(/[^0-9]/g, ''));
-                          setIsPhoneVerified(false);
-                          setIsOtpSent(false);
-                        }}
-                        disabled={isPhoneVerified}
-                        maxLength={10}
-                        className={`w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-rose-500 ${checkoutError && (!customerPhone || !isPhoneVerified) ? 'border-red-400' : 'border-stone-200'} ${isPhoneVerified ? 'bg-stone-100 text-stone-500 opacity-70 cursor-not-allowed' : ''}`}
-                      />
+                  {/* Customer Details Form */}
+                  <div className="bg-stone-50 p-4 rounded-2xl border border-stone-200/60 mb-5 relative overflow-hidden transition-all shadow-sm">
+                    <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500"></div>
+                    <div className="space-y-3 pl-1.5">
+                      <div className="relative group">
+                        <input
+                          type="text"
+                          placeholder={t.nameLabel}
+                          value={customerName}
+                          onChange={(e) => setCustomerName(e.target.value)}
+                          className={`w-full px-4 py-3 bg-white border rounded-xl text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-stone-800 placeholder:text-stone-400 placeholder:font-medium ${checkoutError && !customerName ? 'border-red-400 bg-red-50/50' : 'border-stone-200 group-hover:border-stone-300'}`}
+                        />
+                      </div>
+                      <div className="relative group">
+                        <input
+                          type="tel"
+                          placeholder={t.phoneLabel}
+                          value={customerPhone}
+                          onChange={(e) => {
+                            setCustomerPhone(e.target.value.replace(/[^0-9]/g, ''));
+                            setIsPhoneVerified(false);
+                            setIsOtpSent(false);
+                          }}
+                          disabled={isPhoneVerified}
+                          maxLength={10}
+                          className={`w-full px-4 py-3 bg-white border rounded-xl text-sm font-bold tracking-widest outline-none transition-all focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-stone-800 placeholder:text-stone-400 placeholder:font-medium placeholder:tracking-normal ${checkoutError && (!customerPhone || !isPhoneVerified) ? 'border-red-400 bg-red-50/50' : 'border-stone-200 group-hover:border-stone-300'} ${isPhoneVerified ? 'bg-stone-100 text-stone-400 border-dashed cursor-not-allowed' : ''}`}
+                        />
 
-                      {!isPhoneVerified && !isOtpSent && customerPhone.length === 10 && (
-                        <button onClick={handleSendOtp} disabled={isSendingOtp} className="mt-2 text-xs bg-stone-800 hover:bg-stone-900 text-white px-3 py-1.5 rounded-md font-bold transition-colors shadow-sm">
-                          {isSendingOtp ? '...' : t.sendOtp}
-                        </button>
-                      )}
-
-                      {isOtpSent && !isPhoneVerified && (
-                        <div className="flex gap-2 items-center mt-2 animate-in fade-in slide-in-from-top-1">
-                          <input
-                            type="text"
-                            maxLength={4}
-                            value={otpInput}
-                            onChange={e => setOtpInput(e.target.value.replace(/[^0-9]/g, ''))}
-                            placeholder={t.enterOtp}
-                            className="w-32 px-3 py-1.5 border border-stone-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-rose-500"
-                          />
-                          <button onClick={handleVerifyOtp} disabled={isVerifyingOtp} className="text-sm bg-rose-500 hover:bg-rose-600 text-white px-3 py-1.5 rounded-md font-bold transition-colors shadow-sm">
-                            {isVerifyingOtp ? '...' : t.verifyOtp}
+                        {!isPhoneVerified && !isOtpSent && customerPhone.length === 10 && (
+                          <button onClick={handleSendOtp} disabled={isSendingOtp} className="mt-2.5 w-full text-xs bg-stone-900 hover:bg-stone-800 text-white py-3 rounded-xl font-extrabold uppercase tracking-widest transition-all shadow-md active:scale-95 flex justify-center items-center gap-2">
+                            {isSendingOtp ? 'SENDING...' : t.sendOtp}
                           </button>
-                        </div>
-                      )}
+                        )}
 
-                      {isPhoneVerified && (
-                        <p className="text-xs text-emerald-600 font-bold mt-1.5">{t.phoneVerified}</p>
-                      )}
+                        {isOtpSent && !isPhoneVerified && (
+                          <div className="flex gap-2 items-center mt-2.5 animate-in fade-in slide-in-from-top-2">
+                            <input
+                              type="text"
+                              maxLength={4}
+                              value={otpInput}
+                              onChange={e => setOtpInput(e.target.value.replace(/[^0-9]/g, ''))}
+                              placeholder="OTP"
+                              className="w-full px-4 py-3 bg-white border border-stone-300 rounded-xl text-lg font-black tracking-[0.3em] text-center outline-none focus:ring-4 focus:ring-rose-500/20 focus:border-rose-500"
+                            />
+                            <button onClick={handleVerifyOtp} disabled={isVerifyingOtp} className="whitespace-nowrap bg-rose-500 hover:bg-rose-600 text-white px-6 py-3 rounded-xl font-extrabold text-[11px] uppercase tracking-widest transition-all shadow-md active:scale-95 shrink-0 flex items-center justify-center">
+                              {isVerifyingOtp ? '...' : t.verifyOtp}
+                            </button>
+                          </div>
+                        )}
+
+                        {isPhoneVerified && (
+                          <p className="text-[11px] text-emerald-600 font-extrabold mt-2 flex items-center gap-1.5 bg-emerald-50 py-2 px-3 rounded-xl border border-emerald-100 w-max tracking-wide uppercase"><ShieldCheck className="w-4 h-4"/> Verified Identity</p>
+                        )}
+                      </div>
                     </div>
+                    {checkoutError && <p className="text-[11px] text-red-600 bg-red-50 font-bold mt-3 p-2.5 rounded-xl border border-red-100 flex gap-2 items-center tracking-wide"><ShieldCheck className="w-4 h-4 shrink-0 text-red-500" /> {checkoutError}</p>}
                   </div>
-                  {checkoutError && <p className="text-xs text-red-500 font-medium mt-2">{checkoutError}</p>}
-                </div>
 
-                <div className="bg-white p-4 rounded-xl border border-stone-200 mb-4 flex flex-col items-center justify-center shadow-inner">
-                  <p className="text-sm font-bold text-stone-600 mb-2">Scan QR to Pay (₹{Math.round(cartTotalAmount)})</p>
-                  <img
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`upi://pay?pa=mohammedazzam200512@okaxis&pn=MOHAMMED AZZAM M&tr=RAPTXN12345&tn=RappaniStore&am=${Math.round(cartTotalAmount)}&cu=INR`)}`}
-                    alt="Scan to Pay"
-                    className="w-32 h-32 rounded-lg"
-                  />
-                  <p className="text-xs text-stone-400 mt-3 font-medium uppercase tracking-wider">mohammedazzam200512@okaxis</p>
-                </div>
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="col-span-2 bg-stone-100 p-4 rounded-2xl border border-stone-200 flex items-center gap-4 relative overflow-hidden group">
+                      <div className="absolute inset-0 bg-gradient-to-tr from-stone-200/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                      <div className="bg-white p-1.5 rounded-xl shadow-sm border border-stone-200 shrink-0 relative z-10">
+                        <img
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`upi://pay?pa=mohammedazzam200512@okaxis&pn=MOHAMMED AZZAM M&tr=RAPTXN12345&tn=RappaniStore&am=${Math.round(cartTotalAmount)}&cu=INR`)}`}
+                          alt="Scan to Pay"
+                          className="w-14 h-14 rounded-lg mix-blend-multiply"
+                        />
+                      </div>
+                      <div className="relative z-10 overflow-hidden">
+                        <p className="text-[10px] font-black text-stone-500 mb-0.5 uppercase tracking-widest">Verify & Scan</p>
+                        <p className="text-[11px] text-stone-800 font-bold tracking-wider truncate">mohammedazzam200512@okaxis</p>
+                      </div>
+                    </div>
 
-                <button
-                  onClick={handleGPayCheckout}
-                  className="w-full bg-stone-800 hover:bg-stone-900 text-white py-3 rounded-2xl font-bold text-lg transition-all hover:scale-[1.02] shadow-xl shadow-stone-900/20 flex flex-col items-center justify-center gap-1 mb-3 cursor-pointer"
-                >
-                  <div className="flex items-center gap-2">
-                    📋 Copy UPI ID & Pay
-                  </div>
-                  <span className="text-[10px] font-medium opacity-70">Faster & 100% Secure • Avoids App Block</span>
-                </button>
-
-                {showGPayConfirm && (
-                  <div className="bg-stone-100 p-4 rounded-xl border-2 border-dashed border-stone-300 flex flex-col items-center justify-center mb-4 transition-all animate-in fade-in slide-in-from-top-1 text-center shadow-inner">
-                    <p className="font-bold text-stone-800 mb-1">Enter 12-digit UPI Ref/UTR No.</p>
-                    <p className="text-xs text-stone-500 mb-3 font-medium">To verify your payment quickly, please enter the reference number shown in your UPI app after paying.</p>
-                    <input 
-                      type="text" 
-                      placeholder="e.g. 401234567890" 
-                      maxLength={12}
-                      value={utrNumber}
-                      onChange={(e) => setUtrNumber(e.target.value.replace(/[^0-9]/g, ''))}
-                      className="w-full text-center tracking-widest font-mono p-3 rounded-xl border border-stone-300 mb-3 focus:outline-none focus:ring-2 focus:ring-stone-400" 
-                    />
                     <button
-                      onClick={handleGPayConfirm}
-                      className="w-full bg-stone-800 text-white font-bold py-3 rounded-xl shadow-md cursor-pointer hover:bg-stone-900 focus:ring-4 focus:ring-stone-200"
+                      onClick={handleGPayCheckout}
+                      className="col-span-2 bg-[#202124] hover:bg-black text-white py-4 rounded-2xl font-extrabold text-[15px] transition-all hover:shadow-xl hover:shadow-[#202124]/30 active:scale-[0.98] flex flex-col items-center justify-center gap-0.5 cursor-pointer relative overflow-hidden group"
                     >
-                      ✅ I Have Paid (Confirm Order)
+                      <div className="absolute inset-0 flex">
+                        <div className="w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-[200%] group-hover:translate-x-[200%] transition-transform duration-1000 ease-in-out"></div>
+                      </div>
+                      <div className="flex items-center gap-2 relative z-10">
+                         📋 COPY UPI ID & PAY
+                      </div>
+                      <span className="text-[9px] font-bold text-stone-400 uppercase tracking-[0.2em] relative z-10">100% Secure • Bank Bypass</span>
                     </button>
-                    <button onClick={() => setShowGPayConfirm(false)} className="mt-3 text-xs text-stone-500 underline font-semibold">Cancel / Try again</button>
+                    
+                    <button
+                      onClick={handleWhatsAppCheckout}
+                      className="col-span-2 bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-2xl font-extrabold text-[15px] transition-all hover:shadow-xl hover:shadow-[#25D366]/30 active:scale-[0.98] flex items-center justify-center gap-2 relative overflow-hidden group"
+                    >
+                      <div className="absolute inset-0 flex">
+                        <div className="w-1/2 h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[200%] group-hover:translate-x-[200%] transition-transform duration-1000 ease-in-out"></div>
+                      </div>
+                      <MessageCircle className="w-5 h-5 fill-white/20 relative z-10" /> <span className="relative z-10 uppercase tracking-wide">Buy through WhatsApp</span>
+                    </button>
                   </div>
-                )}
-                <button
-                  onClick={handleWhatsAppCheckout}
-                  className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-2xl font-bold text-lg transition-all hover:scale-[1.02] shadow-xl shadow-[#25D366]/20 flex items-center justify-center gap-2"
-                >
-                  <MessageCircle className="w-6 h-6" /> {t.checkoutWhatsapp}
-                </button>
+
+                  {showGPayConfirm && (
+                    <div className="mt-2 bg-[#1C1C1E] p-5 sm:p-6 rounded-2xl border border-stone-800 flex flex-col items-center justify-center transition-all animate-in zoom-in-95 duration-300 text-center shadow-2xl relative overflow-hidden">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl translate-x-12 -translate-y-12 pointer-events-none"></div>
+                      <p className="font-extrabold text-white text-sm mb-2 flex items-center gap-2 uppercase tracking-wide"><ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0"/> Secure Verification</p>
+                      <p className="text-[11px] text-stone-400 mb-5 font-medium px-2 leading-relaxed tracking-wide">Please copy and paste the 12-digit UPI Reference / UTR Number from your banking app to confirm the order.</p>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. 412345678901" 
+                        maxLength={12}
+                        value={utrNumber}
+                        onChange={(e) => setUtrNumber(e.target.value.replace(/[^0-9]/g, ''))}
+                        className="w-full text-center tracking-[0.25em] font-mono p-4 bg-black/50 text-emerald-400 rounded-xl border border-stone-700 mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-black placeholder:text-stone-700 text-lg shadow-inner" 
+                      />
+                      <button
+                        onClick={handleGPayConfirm}
+                        className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-black py-4 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all active:scale-95 flex items-center justify-center gap-2 text-sm uppercase tracking-widest relative overflow-hidden group"
+                      >
+                         <span className="relative z-10 flex items-center gap-2">Confirm Payment <ShieldCheck className="w-4 h-4"/></span>
+                         <div className="absolute inset-0 bg-white/20 w-full h-full -translate-x-full group-hover:translate-x-full transition-transform duration-500 ease-in-out blur-md"></div>
+                      </button>
+                      <button onClick={() => setShowGPayConfirm(false)} className="mt-4 text-[11px] text-stone-500 hover:text-white uppercase font-bold tracking-[0.1em] transition-colors p-2">Close / Go Back</button>
+                    </div>
+                  )}
+                  
+                </div>
               </div>
             )}
           </div>
