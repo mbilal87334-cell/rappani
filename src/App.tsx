@@ -260,6 +260,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [showGPayConfirm, setShowGPayConfirm] = useState(false);
+  const [utrNumber, setUtrNumber] = useState('');
   const t = translations[lang];
 
   const handleSendOtp = async (e: React.MouseEvent) => {
@@ -509,9 +510,17 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
   };
 
   const handleGPayConfirm = async () => {
-    const success = await processCheckoutAndClearCart(`GPay Order`);
+    const utrRegex = /^[0-9]{12}$/;
+    if (!utrRegex.test(utrNumber.trim())) {
+      setCheckoutError('Please enter a valid 12-digit UTR/Ref No. from your bank app.');
+      return;
+    }
+    
+    setCheckoutError('');
+    const success = await processCheckoutAndClearCart(`GPay Order (UTR: ${utrNumber})`);
     if (success) {
       setShowGPayConfirm(false);
+      setUtrNumber('');
     }
   };
 
@@ -940,8 +949,16 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
                 {showGPayConfirm && (
                   <div className="bg-stone-100 p-4 rounded-xl border-2 border-dashed border-stone-300 flex flex-col items-center justify-center mb-4 transition-all animate-in fade-in slide-in-from-top-1 text-center shadow-inner">
-                    <p className="font-bold text-stone-800 mb-1">Did you successfully pay?</p>
-                    <p className="text-xs text-stone-500 mb-3 font-medium">Click confirm only after you see success in the app.</p>
+                    <p className="font-bold text-stone-800 mb-1">Enter 12-digit UPI Ref/UTR No.</p>
+                    <p className="text-xs text-stone-500 mb-3 font-medium">To verify your payment quickly, please enter the reference number shown in your UPI app after paying.</p>
+                    <input 
+                      type="text" 
+                      placeholder="e.g. 401234567890" 
+                      maxLength={12}
+                      value={utrNumber}
+                      onChange={(e) => setUtrNumber(e.target.value.replace(/[^0-9]/g, ''))}
+                      className="w-full text-center tracking-widest font-mono p-3 rounded-xl border border-stone-300 mb-3 focus:outline-none focus:ring-2 focus:ring-stone-400" 
+                    />
                     <button
                       onClick={handleGPayConfirm}
                       className="w-full bg-stone-800 text-white font-bold py-3 rounded-xl shadow-md cursor-pointer hover:bg-stone-900 focus:ring-4 focus:ring-stone-200"
