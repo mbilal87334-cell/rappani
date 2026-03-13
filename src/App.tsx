@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
-import { Phone, Mail, Instagram, MessageCircle, MapPin, Lock, LogOut, Plus, Edit, Trash2, Store, ShoppingBag, Menu, X, Camera, Aperture, Globe, Database, Search, ArrowUp, Package, LayoutGrid, ShoppingCart, Minus } from 'lucide-react';
+import { Phone, Mail, Instagram, MessageCircle, MapPin, Lock, LogOut, Plus, Edit, Trash2, Store, ShoppingBag, Menu, X, Camera, Aperture, Globe, Database, Search, ArrowUp, Package, LayoutGrid, ShoppingCart, Minus, Image, ShieldCheck } from 'lucide-react';
 
 // --- Types ---
 interface Product {
@@ -1110,6 +1110,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const locationImageRef = useRef<HTMLInputElement>(null);
   const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
 
@@ -1240,6 +1241,12 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
   const triggerCamera = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
+    }
+  };
+
+  const triggerGallery = () => {
+    if (galleryInputRef.current) {
+      galleryInputRef.current.click();
     }
   };
 
@@ -1784,6 +1791,13 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
                       onChange={handleFileChange}
                       className="hidden"
                     />
+                    <input
+                      type="file"
+                      ref={galleryInputRef}
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
                     {isUploading && (
                       <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center z-10 rounded-lg top-6">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-rose-500 mb-2"></div>
@@ -1794,15 +1808,15 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
                       <div className="flex flex-col gap-3">
                         <div className="flex gap-2">
                           <input type="text" value={currentProduct.image} onChange={e => setCurrentProduct({ ...currentProduct, image: e.target.value })} className="flex-1 w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-rose-500 outline-none" placeholder="Image URL or take photo" required />
-                          <button type="button" onClick={triggerCamera} className="bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-lg flex items-center justify-center transition-colors shadow-md" title="Take Photo">
-                            <Camera className="w-5 h-5" />
-                          </button>
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <button type="button" onClick={triggerCamera} className="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 border-2 border-dashed border-rose-200 transition-all">
-                            <Camera className="w-5 h-5" /> Camera
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                          <button type="button" onClick={triggerGallery} className="w-full bg-blue-50 hover:bg-blue-100 text-blue-600 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 border-2 border-dashed border-blue-200 transition-all">
+                            <Image className="w-5 h-5" /> Gallery
                           </button>
-                          <button type="button" onClick={startCamera} className="w-full bg-stone-50 hover:bg-stone-100 text-stone-600 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 border-2 border-dashed border-stone-200 transition-all">
+                          <button type="button" onClick={triggerCamera} className="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 border-2 border-dashed border-rose-200 transition-all">
+                            <Camera className="w-5 h-5" /> Camera App
+                          </button>
+                          <button type="button" onClick={startCamera} className="w-full bg-stone-50 hover:bg-stone-100 text-stone-600 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 border-2 border-dashed border-stone-200 transition-all col-span-2 md:col-span-1">
                             <Aperture className="w-5 h-5" /> Live View
                           </button>
                         </div>
