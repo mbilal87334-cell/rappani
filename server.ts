@@ -149,6 +149,7 @@ async function startServer() {
     otpStore.set(phone, { otp, expiresAt: Date.now() + 5 * 60 * 1000 });
 
     const apiKey = process.env.FAST2SMS_API_KEY;
+    console.log(`[OTP] Request to send OTP to ${phone}. Using Mock: ${!apiKey}`);
 
     if (apiKey) {
       try {
@@ -165,6 +166,7 @@ async function startServer() {
           })
         });
         const data = await response.json();
+        console.log(`[OTP] Fast2SMS Response:`, data);
         if (data.return) {
           console.log(`[SMS SENT] OTP for ${phone} sent via Fast2SMS`);
           res.json({ success: true, message: "OTP Sent successfully via SMS" });
@@ -191,16 +193,28 @@ async function startServer() {
 
   app.post("/api/verify-otp", (req, res) => {
     const { phone, otp } = req.body;
+    console.log(`[OTP] Verification request for ${phone} with OTP ${otp}`);
+
     const record = otpStore.get(phone);
 
-    if (!record) return res.status(400).json({ error: "No OTP assigned to this number" });
+    if (!record) {
+      console.warn(`[OTP] No record found for ${phone}`);
+      return res.status(400).json({ error: "No OTP assigned to this number" });
+    }
+    
     if (record.expiresAt < Date.now()) {
+      console.warn(`[OTP] Expired for ${phone}`);
       otpStore.delete(phone);
       return res.status(400).json({ error: "OTP Expired" });
     }
-    if (record.otp !== otp) return res.status(400).json({ error: "Invalid OTP" });
+
+    if (record.otp !== String(otp).trim()) {
+      console.warn(`[OTP] Incorrect OTP for ${phone}. Expected: ${record.otp}, Got: ${otp}`);
+      return res.status(400).json({ error: "Invalid OTP" });
+    }
 
     // OTP matches correctly
+    console.log(`[OTP] Successfully verified ${phone}`);
     otpStore.delete(phone);
     res.json({ success: true });
   });
@@ -260,7 +274,14 @@ async function startServer() {
 
   app.post("/api/checkout", async (req, res) => {
     try {
+      console.log(`[SERVER] Checkout hit. Body:`, JSON.stringify(req.body));
       const { items, customerName, customerPhone, paymentMethod, totalAmount } = req.body;
+
+      // SERVER-SIDE SAFEGUARD: Ignore WhatsApp orders if they somehow reach here
+      if (paymentMethod && paymentMethod.toLowerCase().includes('whatsapp')) {
+        console.warn(`[SERVER] Ignoring WhatsApp checkout request for ${customerName}. Not saving to DB.`);
+        return res.json({ success: true, message: "WhatsApp inquiry received (not booked as order)" });
+      }
 
       const orderId = Date.now().toString();
       await Order.create({
@@ -282,8 +303,18 @@ async function startServer() {
         );
       }
       res.json({ success: true, orderId });
-    } catch (err) {
+    } catch (err: any) {
       console.error("[SERVER] Checkout error:", err);
+      res.status(500).json({ success: false, error: err?.message || "Server error" });
+    }
+  });
+
+  app.get("/api/orders/check-first/:phone", async (req, res) => {
+    try {
+      const { phone } = req.params;
+      const count = await Order.countDocuments({ customerPhone: phone });
+      res.json({ isFirstOrder: count === 0 });
+    } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });
     }
   });
@@ -302,6 +333,16 @@ async function startServer() {
       const { id } = req.params;
       const { status } = req.body;
       await Order.updateOne({ id }, { status });
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+ 
+  app.delete("/api/orders/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await Order.deleteOne({ id });
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });

@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
-import { Phone, Mail, Instagram, MessageCircle, MapPin, Lock, LogOut, Plus, Edit, Trash2, Store, ShoppingBag, Menu, X, Camera, Aperture, Globe, Database, Search, ArrowUp, Package, LayoutGrid, ShoppingCart, Minus, Image, ShieldCheck } from 'lucide-react';
+import { Phone, Mail, Instagram, MessageCircle, MapPin, Lock, LogOut, Plus, Edit, Trash2, Store, ShoppingBag, Menu, X, Camera, Aperture, Globe, Database, Search, ArrowUp, Package, LayoutGrid, ShoppingCart, Minus, Image, ShieldCheck, Gift, Sparkles, Sticker, Rocket, Coffee, Eye, Star, TrendingUp, CheckCircle2, Info } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+
 
 // --- Types ---
 interface Product {
@@ -109,6 +111,12 @@ async function deleteProduct(id: string) {
   return res.json();
 }
 
+async function deleteOrder(id: string) {
+  const res = await fetch(`${API_BASE}/orders/${id}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error("Failed to delete order");
+  return res.json();
+}
+
 async function uploadImage(dataUrl: string) {
   // Convert DataURL to Blob
   const res = await fetch(dataUrl);
@@ -182,11 +190,25 @@ const translations = {
     verifyOtp: "Verify OTP",
     enterOtp: "Enter 4-digit OTP",
     phoneVerified: "✔ Phone Verified",
-    unverifiedPhoneError: "Please verify your phone number using OTP."
+    unverifiedPhoneError: "Please verify your phone number using OTP.",
+    productDetails: "Product Details",
+    clickToSee: "Click to see more details",
+    stockAvailable: "Stock Available",
+    shareProduct: "Share on WhatsApp",
+    viewProduct: "View",
+    deliveryFee: "Delivery Fee",
+    freeDelivery: "Free Delivery (1st Order)",
+    distanceToStore: "Distance to Store",
+    tooFarError: "We deliver only within 3KM. You are too far.",
+    calculatingLocation: "Checking location...",
+    locationBlocked: "Allow location access for delivery.",
+    refreshLocation: "Refresh Location",
   },
+
   ta: {
-    storeName: "ரப்பானி",
+    storeName: "ரப்பாணி",
     tagline: "ஸ்டேஷனரி & ஃபேன்ஸி ஸ்டோர்",
+    title: "ரப்பாணி ஸ்டேஷனரி & ஃபேன்ஸி ஸ்டோர்",
     home: "முகப்பு",
     products: "பொருட்கள்",
     contact: "தொடர்புக்கு",
@@ -238,9 +260,38 @@ const translations = {
     verifyOtp: "OTP-ஐ சரிபார்",
     enterOtp: "4-இலக்க OTP",
     phoneVerified: "✔ சரிபார்க்கப்பட்டது",
-    unverifiedPhoneError: "OTP மூலம் உங்கள் எண்ணை சரிபார்க்கவும்."
+    unverifiedPhoneError: "OTP மூலம் உங்கள் எண்ணை சரிபார்க்கவும்.",
+    productDetails: "பொருள் விவரங்கள்",
+    clickToSee: "கூடுதல் விவரங்களைப் பார்க்க தட்டவும்",
+    stockAvailable: "இருப்பு உள்ளது",
+    shareProduct: "WhatsApp-ல் பகிர",
+    viewProduct: "பார்க்க",
+    deliveryFee: "டெலிவரி கட்டணம்",
+    freeDelivery: "இலவச டெலிவரி (முதல் ஆர்டர்)",
+    distanceToStore: "கடைக்கும் உங்களுக்குமான தூரம்",
+    tooFarError: "கடையிலிருந்து 3கிமீ சுற்றளவிற்குள் மட்டுமே டெலிவரி செய்யப்படும். நீங்கள் தூரமாக உள்ளீர்கள்.",
+    calculatingLocation: "இருப்பிடத்தை சரிபார்க்கிறது...",
+    locationBlocked: "டெலிவரி கட்டணத்தை கணக்கிட லொகேஷன் அனுமதியை வழங்கவும்.",
+    refreshLocation: "லொகேஷனை புதுப்பி",
   }
+
 };
+
+// --- Store Coordinates ---
+const STORE_LAT = 8.7012438;
+const STORE_LON = 77.7110061;
+
+function getDistanceInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
 
 // --- Visitor Panel ---
 function VisitorPanel({ products, settings, setProducts }: { products: Product[], settings: Record<string, string>, setProducts: React.Dispatch<React.SetStateAction<Product[]>> }) {
@@ -265,35 +316,78 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
   const [customerPhone, setCustomerPhone] = useState(() => localStorage.getItem('rappani_customer_phone') || '');
   const [isPhoneVerified, setIsPhoneVerified] = useState(() => localStorage.getItem('rappani_is_verified') === 'true');
 
+  const [isFirstOrder, setIsFirstOrder] = useState<boolean | null>(null);
+  const [userLocation, setUserLocation] = useState<{lat: number, lon: number} | null>(null);
+  const [distance, setDistance] = useState<number | null>(null);
+  const [locationStatus, setLocationStatus] = useState<'idle' | 'checking' | 'blocked' | 'done'>('idle');
+
   useEffect(() => {
     localStorage.setItem('rappani_customer_name', customerName);
   }, [customerName]);
 
   useEffect(() => {
     localStorage.setItem('rappani_customer_phone', customerPhone);
+    // When phone changes and is 10 digits, check if first order
+    if (customerPhone.length === 10) {
+      fetch(`${API_BASE}/orders/check-first/${customerPhone}`)
+        .then(res => res.json())
+        .then(data => setIsFirstOrder(data.isFirstOrder))
+        .catch(err => console.error("Error checking first order", err));
+    } else {
+      setIsFirstOrder(null);
+    }
   }, [customerPhone]);
 
   useEffect(() => {
     localStorage.setItem('rappani_is_verified', String(isPhoneVerified));
   }, [isPhoneVerified]);
 
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [lang, setLang] = useState<'en' | 'ta'>('en');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [showBackToTop, setShowBackToTop] = useState(false);
-  const [customerName, setCustomerName] = useState(() => localStorage.getItem('rappani_customer_name') || '');
-  const [customerPhone, setCustomerPhone] = useState(() => localStorage.getItem('rappani_customer_phone') || '');
   const [checkoutError, setCheckoutError] = useState('');
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [otpInput, setOtpInput] = useState('');
-  const [isPhoneVerified, setIsPhoneVerified] = useState(() => localStorage.getItem('rappani_is_verified') === 'true');
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [showGPayConfirm, setShowGPayConfirm] = useState(false);
   const [utrNumber, setUtrNumber] = useState('');
+  const [mockOtp, setMockOtp] = useState<string | null>(null);
   const t = translations[lang];
+
+  const refreshLocation = () => {
+    setLocationStatus('checking');
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          setUserLocation({ lat, lon });
+          const d = getDistanceInKm(STORE_LAT, STORE_LON, lat, lon);
+          setDistance(d);
+          setLocationStatus('done');
+        },
+        (err) => {
+          console.error("Location error:", err);
+          setLocationStatus('blocked');
+        },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+      );
+    } else {
+      setLocationStatus('blocked');
+    }
+  };
+
+  useEffect(() => {
+    if (isCartOpen && locationStatus === 'idle') {
+      refreshLocation();
+    }
+  }, [isCartOpen, locationStatus]);
+
 
   const handleSendOtp = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -314,8 +408,11 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
       if (data.success) {
         setIsOtpSent(true);
         if (data.mockOtp) {
+          setMockOtp(data.mockOtp);
+          // Still alert as fallback
           alert(`SIMULATED SMS\n\nYour Rappani Store OTP is: ${data.mockOtp}`);
         } else {
+          setMockOtp(null);
           alert(`OTP Sent to your mobile successfully! Please check your SMS.`);
         }
       } else {
@@ -342,7 +439,8 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
       const data = await res.json();
       if (data.success) {
         setIsPhoneVerified(true);
-        setIsOtpSent(false); // Hide OTP form
+        setIsOtpSent(false); 
+        setMockOtp(null); // Clear mock OTP
       } else {
         setCheckoutError(data.error || "Invalid OTP");
       }
@@ -378,7 +476,17 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
     setLang(lang === 'en' ? 'ta' : 'en');
   };
 
-  const categories = ['All', 'Offers', 'Stationary', 'Fancy', 'Toys', 'Sports Items', 'Snacks'];
+
+  const categories = [
+    { id: 'All', icon: <LayoutGrid className="w-5 h-5" /> },
+    { id: 'Offers', icon: <Sparkles className="w-5 h-5" /> },
+    { id: 'Stationary', icon: <Edit className="w-5 h-5" /> },
+    { id: 'Fancy', icon: <Gift className="w-5 h-5" /> },
+    { id: 'Toys', icon: <Rocket className="w-5 h-5" /> },
+    { id: 'Sports Items', icon: <TrendingUp className="w-5 h-5" /> },
+    { id: 'Snacks', icon: <Coffee className="w-5 h-5" /> }
+  ];
+
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -431,6 +539,9 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
   const cartTotalAmount = Math.round(cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0));
 
+  const deliveryFee = (isFirstOrder === true) ? 0 : 30;
+  const finalTotal = Math.round(cartTotalAmount + deliveryFee);
+
   const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
   const processCheckoutAndClearCart = async (paymentMethod: string) => {
@@ -452,12 +563,22 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
     }
 
     setCheckoutError('');
+    console.log(`[CHECKOUT] processCheckoutAndClearCart called for: ${paymentMethod}`);
+    
+    // Explicitly block WhatsApp from being saved to the database (Robust check)
+    if (paymentMethod.toLowerCase().includes('whatsapp')) {
+      console.warn(`[CHECKOUT] WhatsApp mode detected (${paymentMethod}). NOT saving to server.`);
+      setCart([]);
+      setTimeout(() => setIsCartOpen(false), 500);
+      return true;
+    }
+
     try {
       const payload = {
         customerName,
         customerPhone,
         paymentMethod,
-        totalAmount: Math.round(cartTotalAmount),
+        totalAmount: finalTotal,
         items: cart
       };
       await checkoutCart(payload);
@@ -499,17 +620,30 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
       return;
     }
 
+    if (distance !== null && distance > 3) {
+      setCheckoutError(t.tooFarError);
+      return;
+    }
+
     let message = `Hi, I want to place an order:\n\n*Customer*: ${customerName}\n*Phone*: ${customerPhone}\n\n`;
     cart.forEach(item => {
       message += `- ${item.product.name} (x${item.quantity}) = ₹${Math.round(item.product.price * item.quantity)}\n`;
     });
-    message += `\n*Total: ₹${cartTotalAmount}*\n\nPayment Mode: WhatsApp Checkout\nDelivery: I will collect the items at the shop.\n\nPlease confirm!`;
+    message += `\n*Cart Total: ₹${cartTotalAmount}*`;
+    message += `\n*Delivery Fee: ₹${deliveryFee}* ${deliveryFee === 0 ? '(1st Order FREE)' : ''}`;
+    message += `\n*Final Total: ₹${finalTotal}*`;
+    message += `\n\nPayment Mode: WhatsApp Checkout\nDelivery: Please deliver to my location.\n\nPlease confirm!`;
 
     const encodedMsg = encodeURIComponent(message);
-    const success = await processCheckoutAndClearCart('WhatsApp');
-    if (success) {
-      window.open(`https://wa.me/${settings.whatsapp_1 || '916384137974'}?text=${encodedMsg}`, '_blank');
-    }
+    console.log(`[CHECKOUT] WhatsApp clicked. ONLY opening WhatsApp. NO DB call.`);
+    
+    // Open WhatsApp without booking the order in the system
+    window.open(`https://wa.me/${settings.whatsapp_1 || '916384137974'}?text=${encodedMsg}`, '_blank');
+    
+    // Optional: Clear cart locally so user knows it's sent, but don't save to DB
+    // If you want to keep the items in cart for WhatsApp, comment out the next 2 lines
+    setCart([]);
+    setTimeout(() => setIsCartOpen(false), 500);
   };
 
   const handleGPayCheckout = async (e: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>) => {
@@ -526,6 +660,11 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
     if (!isPhoneVerified) {
       setCheckoutError(t.unverifiedPhoneError);
+      return;
+    }
+
+    if (distance !== null && distance > 3) {
+      setCheckoutError(t.tooFarError);
       return;
     }
 
@@ -549,6 +688,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
     }
     
     setCheckoutError('');
+    console.log(`[CHECKOUT] GPay Confirm clicked. This WILL save to DB.`);
     const success = await processCheckoutAndClearCart(`GPay Order (UTR: ${utrNumber})`);
     if (success) {
       setShowGPayConfirm(false);
@@ -558,6 +698,23 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
   return (
     <div className="min-h-screen bg-stone-50 font-sans text-stone-900">
+      {/* Dynamic Announcement Bar */}
+      <div className="bg-stone-900 text-white py-2 overflow-hidden relative z-[60]">
+        <div className="flex whitespace-nowrap animate-marquee">
+          <div className="flex items-center gap-8 px-4">
+             <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+               <Sparkles className="w-3 h-3 text-rose-400" /> New Arrivals in Stationary Section • Free Pickup Available • Premium Fancy Items now in stock!
+             </span>
+             <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+               <Rocket className="w-3 h-3 text-blue-400" /> Shop online and collect in store for 10% discount on select items!
+             </span>
+             <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+               <Sparkles className="w-3 h-3 text-rose-400" /> New Arrivals in Stationary Section • Free Pickup Available • Premium Fancy Items now in stock!
+             </span>
+          </div>
+        </div>
+      </div>
+
       {/* Enhanced Premium Header */}
       <header className="fixed w-full top-0 z-50 transition-all duration-300 bg-white/70 backdrop-blur-xl border-b border-white/20 shadow-[0_4px_30px_rgba(0,0,0,0.05)]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -621,190 +778,241 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
         </div>
 
         {/* Mobile Nav */}
-        {isMenuOpen && (
-          <div className="md:hidden absolute w-full top-20 left-0 bg-white/95 backdrop-blur-xl border-b border-stone-100 shadow-xl border-t">
-            <div className="px-4 py-4 space-y-2 flex flex-col p-4">
-              <a href="#home" className="block px-4 py-3 text-sm font-bold text-stone-700 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-colors" onClick={() => setIsMenuOpen(false)}>{t.home}</a>
-              <a href="#products" className="block px-4 py-3 text-sm font-bold text-stone-700 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-colors" onClick={() => setIsMenuOpen(false)}>{t.products}</a>
-              <a href="#contact" className="block px-4 py-3 text-sm font-bold text-stone-700 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-colors" onClick={() => setIsMenuOpen(false)}>{t.contact}</a>
-              <Link to="/admin" className="mt-2 flex items-center justify-center gap-2 text-sm font-bold bg-[#1a1a1a] text-white px-4 py-3.5 rounded-xl shadow-md" onClick={() => setIsMenuOpen(false)}>
-                <Lock className="w-4 h-4" /> {t.adminLogin}
-              </Link>
-            </div>
-          </div>
-        )}
+        <AnimatePresence>
+          {isMenuOpen && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="md:hidden absolute w-full top-20 left-0 bg-white border-b border-stone-100 shadow-xl overflow-hidden"
+            >
+              <div className="px-4 py-6 space-y-2 flex flex-col">
+                <a href="#home" className="block px-4 py-3 text-sm font-bold text-stone-700 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-colors" onClick={() => setIsMenuOpen(false)}>{t.home}</a>
+                <a href="#products" className="block px-4 py-3 text-sm font-bold text-stone-700 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-colors" onClick={() => setIsMenuOpen(false)}>{t.products}</a>
+                <a href="#contact" className="block px-4 py-3 text-sm font-bold text-stone-700 hover:bg-rose-50 hover:text-rose-600 rounded-xl transition-colors" onClick={() => setIsMenuOpen(false)}>{t.contact}</a>
+                <Link to="/admin" className="mt-2 flex items-center justify-center gap-2 text-sm font-bold bg-stone-900 text-white px-4 py-4 rounded-xl shadow-md" onClick={() => setIsMenuOpen(false)}>
+                  <Lock className="w-4 h-4" /> {t.adminLogin}
+                </Link>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
 
+      <main>
       {/* Premium Hero Section */}
-      <section id="home" className="relative bg-[#0a0a0a] text-white overflow-hidden min-h-[90vh] flex items-center">
+      <section id="home" className="relative bg-[#0a0a0a] text-white overflow-hidden min-h-[95vh] flex items-center">
         {/* Animated Background Orbs */}
-        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-rose-500/20 rounded-full blur-[120px] mix-blend-screen pointer-events-none animate-pulse duration-10000"></div>
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-rose-500/10 rounded-full blur-[120px] mix-blend-screen pointer-events-none animate-pulse duration-10000"></div>
         <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[150px] mix-blend-screen pointer-events-none"></div>
         
         <div className="absolute inset-0 z-0">
-          <img src={settings.hero_image || "https://images.unsplash.com/photo-1583485088034-697b5a69f0bd?auto=format&fit=crop&q=80"} alt="Store Background" className="w-full h-full object-cover opacity-30 mix-blend-luminosity" referrerPolicy="no-referrer" />
+          <img src={settings.hero_image || "https://images.unsplash.com/photo-1583485088034-697b5a69f0bd?auto=format&fit=crop&q=80"} alt="Store Background" className="w-full h-full object-cover opacity-20 mix-blend-luminosity" referrerPolicy="no-referrer" />
           <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent"></div>
           <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent"></div>
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 w-full mt-10">
-          <div className="max-w-3xl">
+          <motion.div 
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="max-w-3xl"
+          >
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-stone-300 text-sm font-bold tracking-widest mb-8 shadow-2xl shadow-rose-500/10 hover:bg-white/10 transition-colors uppercase cursor-default">
-              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
               {t.welcome}
             </div>
             
-            <h2 className="text-5xl md:text-6xl lg:text-[5rem] font-black tracking-tighter mb-8 leading-[1.1]">
+            <h2 className="text-6xl md:text-7xl lg:text-[6rem] font-black tracking-tighter mb-8 leading-[0.95] drop-shadow-2xl">
               {t.heroTitle1} <br/> 
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-pink-500 to-orange-400">{t.heroTitle2}</span> {t.heroTitle3}{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400">{t.heroTitle4}</span><br/>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-pink-500 to-orange-400 italic">{t.heroTitle2}</span> {t.heroTitle3}{" "}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 italic">{t.heroTitle4}</span><br/>
               {t.heroTitle5}
             </h2>
             
-            <p className="text-lg md:text-xl text-stone-400 mb-12 max-w-xl leading-relaxed font-medium">
+            <p className="text-xl md:text-2xl text-stone-400 mb-12 max-w-xl leading-relaxed font-medium">
               {t.heroDesc}
             </p>
             
             <div className="flex flex-wrap gap-5 items-center">
-              <a href="#products" className="group relative bg-white text-stone-900 hover:text-rose-600 px-8 py-4 rounded-full font-extrabold text-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-3 overflow-hidden shadow-[0_0_40px_rgba(255,255,255,0.2)]">
+              <a href="#products" className="group relative bg-white text-stone-900 hover:text-rose-600 px-10 py-5 rounded-full font-black text-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-3 overflow-hidden shadow-2xl shadow-rose-500/10">
                 <span className="absolute inset-0 bg-gradient-to-r from-rose-100 to-orange-100 opacity-0 group-hover:opacity-100 transition-opacity"></span>
-                <ShoppingBag className="w-5 h-5 relative z-10" /> 
+                <ShoppingBag className="w-6 h-6 relative z-10" /> 
                 <span className="relative z-10">{t.shopNow}</span>
               </a>
               
-              <a href="#contact" className="group bg-white/5 hover:bg-white/10 backdrop-blur-md text-white border border-white/10 px-8 py-4 rounded-full font-bold text-lg transition-all hover:scale-105 active:scale-95 flex items-center gap-3 shadow-xl">
-                <div className="bg-white/10 p-2 rounded-full group-hover:bg-rose-500/20 group-hover:text-rose-400 transition-colors">
-                  <Phone className="w-4 h-4" />
+              <a href="#contact" className="group bg-white/5 hover:bg-white/10 backdrop-blur-md text-white border border-white/10 px-10 py-5 rounded-full font-bold text-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-3 shadow-xl">
+                <div className="bg-white/10 p-2.5 rounded-full group-hover:bg-rose-500 group-hover:text-white transition-all">
+                  <Phone className="w-5 h-5" />
                 </div>
                 {t.contactUs}
               </a>
             </div>
             
-            {/* Quick stats/features underneath */}
-            <div className="mt-16 pt-10 border-t border-white/10 grid grid-cols-2 md:grid-cols-3 gap-6 max-w-2xl opacity-80">
+            {/* Quick stats */}
+            <div className="mt-20 pt-10 border-t border-white/10 grid grid-cols-2 md:grid-cols-3 gap-8 max-w-2xl">
               <div className="flex flex-col gap-1">
-                <h4 className="text-2xl font-black text-white">100%</h4>
-                <p className="text-xs text-stone-400 font-bold uppercase tracking-wider">Quality Assured</p>
+                <h4 className="text-3xl font-black text-white">100%</h4>
+                <p className="text-xs text-stone-500 font-black uppercase tracking-[0.2em]">Quality Assured</p>
               </div>
               <div className="flex flex-col gap-1">
-                <h4 className="text-2xl font-black text-white">Fast</h4>
-                <p className="text-xs text-stone-400 font-bold uppercase tracking-wider">Store Pickup</p>
+                <h4 className="text-3xl font-black text-white">Fast</h4>
+                <p className="text-xs text-stone-500 font-black uppercase tracking-[0.2em]">Store Pickup</p>
               </div>
               <div className="flex flex-col gap-1 hidden md:flex">
-                <h4 className="text-2xl font-black text-white">Secure</h4>
-                <p className="text-xs text-stone-400 font-bold uppercase tracking-wider">UPI Payments</p>
+                <h4 className="text-3xl font-black text-white">Secure</h4>
+                <p className="text-xs text-stone-500 font-black uppercase tracking-[0.2em]">UPI Payments</p>
               </div>
             </div>
-            
-          </div>
+          </motion.div>
         </div>
       </section>
-
       {/* Products Section */}
-      <section id="products" className="py-20 bg-stone-50">
+      <section id="products" className="py-24 bg-stone-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-stone-900 mb-4">{t.featuredProducts}</h2>
-            <p className="text-stone-500 max-w-2xl mx-auto text-lg">{t.featuredDesc}</p>
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-black text-stone-900 mb-6 tracking-tight">{t.featuredProducts}</h2>
+            <p className="text-stone-500 max-w-2xl mx-auto text-lg font-medium tracking-wide">{t.featuredDesc}</p>
           </div>
 
-          {/* Search and Filter Compact Premium */}
-          <div className="mb-8 flex flex-col md:flex-row gap-3 items-center justify-between bg-white/70 backdrop-blur-2xl p-2 md:p-3 rounded-3xl shadow-lg shadow-stone-200/50 border border-white sticky top-[85px] z-40">
-            <div className="relative w-full md:max-w-md group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400 group-focus-within:text-rose-500 transition-colors" />
+          {/* New Category Bar with Icons */}
+          <div className="mb-14 flex flex-col gap-6 bg-white/70 backdrop-blur-2xl p-4 md:p-6 rounded-[2.5rem] shadow-xl shadow-stone-200/50 border border-white sticky top-[100px] z-40">
+            <div className="relative w-full group">
+              <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-300 group-focus-within:text-rose-500 transition-colors" />
               <input
                 type="text"
                 placeholder={t.searchPlaceholder}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-white border border-stone-100 rounded-full focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 transition-all outline-none text-stone-800 text-sm font-medium shadow-sm"
+                className="w-full pl-14 pr-6 py-4 bg-stone-50/50 border border-stone-100 rounded-full focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 transition-all outline-none text-stone-800 text-lg font-bold shadow-inner"
               />
             </div>
-            <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0 w-full md:w-auto scrollbar-hide">
+            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide px-1">
               {categories.map((cat) => (
                 <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-5 py-2 rounded-full text-xs font-bold transition-all whitespace-nowrap ${selectedCategory === cat
-                    ? 'bg-rose-500 text-white shadow-md shadow-rose-500/30 scale-105'
-                    : 'bg-stone-50 text-stone-600 hover:bg-stone-200 border border-stone-100'
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`flex flex-col items-center gap-3 px-6 py-4 rounded-[2rem] transition-all min-w-[110px] border group relative overflow-hidden ${selectedCategory === cat.id
+                    ? 'bg-stone-900 border-stone-800 text-white shadow-2xl scale-105'
+                    : 'bg-white border-stone-100 text-stone-500 hover:border-rose-200 hover:text-rose-600'
                     }`}
                 >
-                  {getCategoryName(cat)}
+                   <div className={`p-4 rounded-2xl transition-colors ${selectedCategory === cat.id ? 'bg-white/10 text-white' : 'bg-stone-50 text-stone-400 group-hover:bg-rose-50 group-hover:text-rose-500'}`}>
+                    {cat.icon}
+                   </div>
+                   <span className="text-[10px] font-black uppercase tracking-widest">{getCategoryName(cat.id)}</span>
+                   {selectedCategory === cat.id && (
+                     <motion.div layoutId="activeCat" className="absolute bottom-0 left-0 right-0 h-1 bg-rose-500" />
+                   )}
                 </button>
               ))}
             </div>
           </div>
 
-          {filteredProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredProducts.map((product) => {
-                const cartItem = cart.find(item => item.product.id === product.id);
-                return (
-                 <div key={product.id} className="bg-white rounded-[2rem] overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-rose-500/10 transition-all duration-500 border border-stone-100/80 group hover:-translate-y-1 flex flex-col">
-                  <div className="aspect-[4/3] overflow-hidden relative bg-stone-50 p-4">
-                    <img src={product.image} alt={product.name} className="w-full h-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-700 ease-out" referrerPolicy="no-referrer" />
-                    <div className="absolute top-4 left-4 flex flex-col gap-2">
-                      <div className="bg-white/90 backdrop-blur-sm shadow-sm text-stone-700 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-stone-100 flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span> {getCategoryName(product.category)}
+          <AnimatePresence mode="popLayout">
+            {filteredProducts.length > 0 ? (
+              <motion.div 
+                layout
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
+              >
+                {filteredProducts.map((product, idx) => {
+                  const cartItem = cart.find(item => item.product.id === product.id);
+                  return (
+                   <motion.div 
+                    layout
+                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ duration: 0.4, delay: Math.min(idx * 0.05, 0.4) }}
+                    key={product.id} 
+                    className="bg-white rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-rose-500/10 transition-all duration-500 border border-stone-100 group flex flex-col relative h-full"
+                   >
+                    <div className="aspect-[4/5] overflow-hidden relative bg-stone-50 p-8 flex items-center justify-center">
+                      <img 
+                        src={product.image} 
+                        alt={product.name} 
+                        className="w-full h-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-1000 ease-out cursor-pointer" 
+                        referrerPolicy="no-referrer"
+                        onClick={() => setSelectedProduct(product)}
+                      />
+                      
+                      <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+                        <button 
+                          onClick={() => setSelectedProduct(product)}
+                          className="w-12 h-12 bg-white shadow-2xl rounded-2xl flex items-center justify-center text-stone-600 hover:text-rose-500 hover:scale-110 transition-all border border-stone-100"
+                        >
+                          <Eye className="w-6 h-6" />
+                        </button>
                       </div>
-                      {product.originalPrice && product.originalPrice > product.price && (
-                        <div className="bg-gradient-to-r from-emerald-400 to-teal-500 text-white px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-1 animate-pulse">
-                           {t.offer}
+
+                      <div className="absolute top-6 left-6 flex flex-col gap-2">
+                        <div className="bg-white/90 backdrop-blur-sm shadow-sm text-stone-700 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-stone-100 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span> {getCategoryName(product.category)}
                         </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="p-6 flex flex-col flex-1 relative bg-white border-t border-stone-50">
-                    <h3 className="text-lg font-black text-stone-800 mb-1 line-clamp-2 leading-tight group-hover:text-rose-600 transition-colors">{product.name}</h3>
-                    <div className="mt-auto pt-4 flex items-end justify-between">
-                      <div className="flex flex-col">
-                        <span className="text-2xl font-black text-stone-900 tracking-tight">₹{Math.round(product.price)}</span>
                         {product.originalPrice && product.originalPrice > product.price && (
-                          <span className="text-xs font-bold text-stone-400 line-through decoration-rose-500/50">₹{Math.round(product.originalPrice)}</span>
+                          <div className="bg-emerald-500 text-white px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-1.5 animate-pulse">
+                             <Sparkles className="w-3 h-3" /> {t.offer}
+                          </div>
                         )}
                       </div>
-                      
-                      {cartItem ? (
-                        <div className="flex items-center gap-1.5 bg-rose-50 rounded-[1.25rem] p-1.5 border border-rose-100/50 shadow-inner">
-                          <button onClick={() => updateQuantity(product.id, cartItem.quantity - 1)} className="w-9 h-9 flex items-center justify-center bg-white rounded-2xl text-rose-500 shadow-sm hover:bg-rose-100 active:scale-90 transition-all">
-                            <Minus className="w-4 h-4 font-bold" />
-                          </button>
-                          <span className="w-6 text-center text-sm font-black text-rose-600">
-                            {cartItem.quantity}
-                          </span>
-                          <button onClick={() => updateQuantity(product.id, cartItem.quantity + 1)} disabled={product.stock !== undefined && cartItem.quantity >= product.stock} className="w-9 h-9 flex items-center justify-center bg-gradient-to-tr from-rose-500 to-rose-400 rounded-2xl text-white shadow-md shadow-rose-500/20 hover:from-rose-600 hover:to-rose-500 active:scale-90 transition-all disabled:opacity-50 disabled:grayscale">
-                            <Plus className="w-4 h-4 font-bold" />
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          onClick={() => addToCart(product)}
-                          disabled={product.stock !== undefined && product.stock <= 0}
-                          className={`w-12 h-12 flex items-center justify-center rounded-[1.25rem] transition-all shadow-md active:scale-90 relative overflow-hidden ${product.stock !== undefined && product.stock <= 0 ? 'bg-stone-100 text-stone-400 cursor-not-allowed shadow-none' : 'bg-stone-900 hover:bg-rose-500 text-white group-hover:shadow-rose-500/30 group-hover:rotate-12'}`}
-                        >
-                          {product.stock !== undefined && product.stock <= 0 ? (
-                            <X className="w-5 h-5" />
-                          ) : (
-                            <Plus className="w-6 h-6 relative z-10" />
-                          )}
-                        </button>
-                      )}
                     </div>
-                  </div>
+
+                    <div className="p-8 flex flex-col flex-1 relative bg-white border-t border-stone-50">
+                      <h3 className="text-xl font-black text-stone-800 mb-2 line-clamp-2 leading-tight group-hover:text-rose-600 transition-colors uppercase tracking-tight">{product.name}</h3>
+                      <div className="mt-auto pt-6 flex items-end justify-between border-t border-stone-50">
+                        <div className="flex flex-col">
+                          <span className="text-3xl font-black text-stone-900 tracking-tighter">₹{Math.round(product.price)}</span>
+                          {product.originalPrice && product.originalPrice > product.price && (
+                            <span className="text-xs font-bold text-stone-400 line-through decoration-rose-500/50 tracking-wide">₹{Math.round(product.originalPrice)}</span>
+                          )}
+                        </div>
+                        
+                        {cartItem ? (
+                          <div className="flex items-center gap-2 bg-stone-50 rounded-2xl p-1.5 border border-stone-100 shadow-inner">
+                            <button onClick={() => updateQuantity(product.id, cartItem.quantity - 1)} className="w-10 h-10 flex items-center justify-center bg-white rounded-xl text-stone-500 shadow-sm hover:text-rose-500 hover:bg-rose-50 active:scale-90 transition-all border border-stone-100">
+                              <Minus className="w-4 h-4 font-bold" />
+                            </button>
+                            <span className="w-8 text-center text-sm font-black text-stone-800">
+                              {cartItem.quantity}
+                            </span>
+                            <button onClick={() => updateQuantity(product.id, cartItem.quantity + 1)} disabled={product.stock !== undefined && cartItem.quantity >= product.stock} className="w-10 h-10 flex items-center justify-center bg-stone-900 rounded-xl text-white shadow-xl hover:bg-stone-800 active:scale-90 transition-all disabled:opacity-50">
+                              <Plus className="w-4 h-4 font-bold" />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => addToCart(product)}
+                            disabled={product.stock !== undefined && product.stock <= 0}
+                            className={`w-14 h-14 flex items-center justify-center rounded-2xl transition-all shadow-xl active:scale-90 relative overflow-hidden ${product.stock !== undefined && product.stock <= 0 ? 'bg-stone-100 text-stone-300 cursor-not-allowed' : 'bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/20 group-hover:rotate-6'}`}
+                          >
+                            {product.stock !== undefined && product.stock <= 0 ? (
+                              <X className="w-6 h-6" />
+                            ) : (
+                              <Plus className="w-8 h-8 relative z-10" />
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                   </motion.div>
+                   );
+                })}
+              </motion.div>
+            ) : (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center py-32 bg-white rounded-[3rem] border border-dashed border-stone-200"
+              >
+                <div className="bg-stone-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Search className="w-10 h-10 text-stone-300" />
                 </div>
-               );
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-stone-200">
-              <div className="bg-stone-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Search className="w-8 h-8 text-stone-300" />
-              </div>
-              <h3 className="text-xl font-bold text-stone-900 mb-2">{t.noProducts}</h3>
-              <p className="text-stone-500">Try adjusting your search or filter to find what you're looking for.</p>
-            </div>
-          )}
+                <h3 className="text-2xl font-black text-stone-900 mb-2">{t.noProducts}</h3>
+                <p className="text-stone-500 font-medium tracking-wide">Try adjusting your search or filter.</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </section>
 
@@ -905,6 +1113,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
           </div>
         </div>
       </footer>
+      </main>
 
       {/* Floating Action Buttons */}
       <div className="fixed bottom-6 right-6 lg:bottom-10 lg:right-10 flex flex-col items-end gap-4 z-40">
@@ -1006,11 +1215,61 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
               <div className="bg-white border-t border-stone-100 shadow-[0_-10px_40px_-5px_rgba(0,0,0,0.08)] z-20 shrink-0 relative flex flex-col max-h-[60vh]">
                 <div className="p-5 sm:p-6 overflow-y-auto hidden-scrollbar pb-6">
                   
+                  {/* Delivery Info Section */}
+                  <div className="bg-stone-50/50 p-4 rounded-2xl border border-stone-100 mb-5 space-y-3">
+                    <div className="flex justify-between items-start text-[10px] font-black tracking-widest text-stone-400">
+                      <div className="flex flex-col gap-1.5 uppercase">
+                        {distance !== null ? (
+                          <div className="flex items-center gap-2">
+                             <span className={`flex items-center gap-1.5 ${distance > 3 ? 'text-red-500' : 'text-stone-600'}`}>
+                              <MapPin className="w-3.5 h-3.5" /> 
+                              {distance.toFixed(1)}KM {t.distanceToStore}
+                            </span>
+                             <button 
+                                onClick={refreshLocation}
+                                className="bg-stone-100 hover:bg-stone-200 p-1.5 rounded-lg text-stone-500 transition-all active:scale-95"
+                                title={t.refreshLocation}
+                              >
+                                <Aperture className={`w-3.5 h-3.5 ${locationStatus === 'checking' ? 'animate-spin text-rose-500' : ''}`} />
+                              </button>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col gap-2">
+                            <span className="flex items-center gap-1.5 text-stone-400">
+                              {locationStatus === 'checking' ? (
+                                <><div className="w-3 h-3 border-2 border-stone-300 border-t-stone-500 rounded-full animate-spin" /> {t.calculatingLocation}</>
+                              ) : (
+                                <><Info className="w-3.5 h-3.5 text-amber-500" /> {t.locationBlocked}</>
+                              )}
+                            </span>
+                            {locationStatus !== 'checking' && (
+                              <button 
+                                onClick={refreshLocation}
+                                className="bg-stone-900 hover:bg-stone-800 text-white px-3 py-2 rounded-xl flex items-center gap-2 text-[10px] uppercase font-black transition-all shadow-md active:scale-95 w-max"
+                              >
+                                <Aperture className="w-3.5 h-3.5" /> {t.refreshLocation}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      {distance !== null && distance > 3 && (
+                        <span className="text-red-500 font-black animate-pulse px-2 py-1 bg-red-50 rounded-lg border border-red-100">OVER LIMIT</span>
+                      )}
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-[11px] font-bold text-stone-500 uppercase tracking-widest">{t.deliveryFee}</span>
+                      <span className={`font-black text-sm ${deliveryFee === 0 ? 'text-emerald-500' : 'text-stone-900'}`}>
+                        {deliveryFee === 0 ? t.freeDelivery : `₹${deliveryFee}`}
+                      </span>
+                    </div>
+                  </div>
+
                   <div className="flex items-end justify-between mb-5">
                     <span className="text-stone-500 font-bold uppercase tracking-widest text-[11px] flex items-center gap-1.5"><ShoppingBag className="w-3.5 h-3.5" /> Total Amount</span>
                     <span className="text-3xl font-black text-stone-900 tracking-tight relative group cursor-default">
                       <span className="absolute -inset-1 bg-rose-500/10 rounded-lg blur-md opacity-0 group-hover:opacity-100 transition-opacity"></span>
-                      <span className="relative">₹{Math.round(cartTotalAmount)}</span>
+                      <span className="relative">₹{finalTotal}</span>
                     </span>
                   </div>
 
@@ -1033,9 +1292,15 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                           placeholder={t.phoneLabel}
                           value={customerPhone}
                           onChange={(e) => {
-                            setCustomerPhone(e.target.value.replace(/[^0-9]/g, ''));
-                            setIsPhoneVerified(false);
-                            setIsOtpSent(false);
+                            const val = e.target.value.replace(/[^0-9]/g, '');
+                            if (val !== customerPhone) {
+                              setCustomerPhone(val);
+                              setIsPhoneVerified(false);
+                              if (val.length !== 10) {
+                                setIsOtpSent(false);
+                                setMockOtp(null);
+                              }
+                            }
                           }}
                           disabled={isPhoneVerified}
                           maxLength={10}
@@ -1048,21 +1313,41 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                           </button>
                         )}
 
-                        {isOtpSent && !isPhoneVerified && (
-                          <div className="flex gap-2 items-center mt-2.5 animate-in fade-in slide-in-from-top-2">
-                            <input
-                              type="text"
-                              maxLength={4}
-                              value={otpInput}
-                              onChange={e => setOtpInput(e.target.value.replace(/[^0-9]/g, ''))}
-                              placeholder="OTP"
-                              className="w-full px-4 py-3 bg-white border border-stone-300 rounded-xl text-lg font-black tracking-[0.3em] text-center outline-none focus:ring-4 focus:ring-rose-500/20 focus:border-rose-500"
-                            />
-                            <button onClick={handleVerifyOtp} disabled={isVerifyingOtp} className="whitespace-nowrap bg-rose-500 hover:bg-rose-600 text-white px-6 py-3 rounded-xl font-extrabold text-[11px] uppercase tracking-widest transition-all shadow-md active:scale-95 shrink-0 flex items-center justify-center">
-                              {isVerifyingOtp ? '...' : t.verifyOtp}
-                            </button>
-                          </div>
-                        )}
+                         {isOtpSent && !isPhoneVerified && (
+                           <div className="flex flex-col gap-2 mt-2.5 animate-in fade-in slide-in-from-top-2">
+                             {mockOtp && (
+                               <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl mb-1">
+                                  <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                                    <Sparkles className="w-3.5 h-3.5" /> Test Mode: Enter this OTP
+                                  </p>
+                                  <div className="flex gap-2">
+                                     {mockOtp.split('').map((digit, i) => (
+                                       <span key={i} className="flex-1 bg-white border border-amber-300 py-2 rounded-lg text-center font-black text-amber-600 text-lg shadow-sm">{digit}</span>
+                                     ))}
+                                  </div>
+                               </div>
+                             )}
+                             <div className="flex gap-2 items-center">
+                               <input
+                                 type="text"
+                                 maxLength={4}
+                                 value={otpInput}
+                                 onChange={e => setOtpInput(e.target.value.replace(/[^0-9]/g, ''))}
+                                 placeholder="Enter 4-digit OTP"
+                                 className="w-full px-4 py-3 bg-white border border-stone-300 rounded-xl text-lg font-black tracking-[0.3em] text-center outline-none focus:ring-4 focus:ring-rose-500/20 focus:border-rose-500 shadow-inner"
+                               />
+                               <button onClick={handleVerifyOtp} disabled={isVerifyingOtp} className="whitespace-nowrap bg-stone-900 hover:bg-stone-800 text-white px-6 py-3 rounded-xl font-extrabold text-[11px] uppercase tracking-widest transition-all shadow-md active:scale-95 shrink-0 flex items-center justify-center min-w-[100px] border border-stone-800">
+                                 {isVerifyingOtp ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t.verifyOtp}
+                               </button>
+                             </div>
+                             <button 
+                               onClick={() => { setIsOtpSent(false); setMockOtp(null); }} 
+                               className="text-[10px] text-stone-400 font-bold uppercase tracking-widest hover:text-rose-500 transition-colors self-center p-2"
+                             >
+                               Wrong number? Change it
+                             </button>
+                           </div>
+                         )}
 
                         {isPhoneVerified && (
                           <p className="text-[11px] text-emerald-600 font-extrabold mt-2 flex items-center gap-1.5 bg-emerald-50 py-2 px-3 rounded-xl border border-emerald-100 w-max tracking-wide uppercase"><ShieldCheck className="w-4 h-4"/> Verified Identity</p>
@@ -1135,13 +1420,152 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                       <button onClick={() => setShowGPayConfirm(false)} className="mt-4 text-[11px] text-stone-500 hover:text-white uppercase font-bold tracking-[0.1em] transition-colors p-2">Close / Go Back</button>
                     </div>
                   )}
-                  
                 </div>
               </div>
             )}
           </div>
         </div>
       )}
+      {/* Product Detail Modal */}
+      <AnimatePresence>
+        {selectedProduct && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6 lg:p-8">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedProduct(null)}
+              className="absolute inset-0 bg-stone-950/80 backdrop-blur-xl"
+            />
+            
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-4xl bg-white rounded-[3rem] shadow-2xl overflow-hidden flex flex-col md:grid md:grid-cols-2 max-h-[90vh]"
+            >
+              <button 
+                onClick={() => setSelectedProduct(null)}
+                className="absolute top-6 right-6 w-12 h-12 bg-stone-100 hover:bg-rose-100 text-stone-500 hover:text-rose-600 rounded-full flex items-center justify-center transition-all z-20 shadow-sm border border-stone-200"
+              >
+                <X className="w-6 h-6" />
+              </button>
+
+              <div className="h-full bg-stone-50 flex items-center justify-center p-8 md:p-12 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-tr from-rose-500/5 to-transparent"></div>
+                <img 
+                  src={selectedProduct.image} 
+                  alt={selectedProduct.name} 
+                  className="w-full h-full object-contain mix-blend-multiply relative z-10 drop-shadow-2xl hover:scale-105 transition-transform duration-700"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+
+              <div className="p-8 md:p-12 flex flex-col h-full overflow-y-auto">
+                <div className="flex items-center gap-3 mb-6">
+                  <span className="px-4 py-1.5 bg-rose-50 text-rose-600 rounded-full text-xs font-black uppercase tracking-widest border border-rose-100">
+                    {getCategoryName(selectedProduct.category)}
+                  </span>
+                  {selectedProduct.stock !== undefined && selectedProduct.stock > 0 ? (
+                    <span className="px-4 py-1.5 bg-emerald-50 text-emerald-600 rounded-full text-xs font-black uppercase tracking-widest border border-emerald-100 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> {t.stockAvailable}
+                    </span>
+                  ) : (
+                    <span className="px-4 py-1.5 bg-red-50 text-red-600 rounded-full text-xs font-black uppercase tracking-widest border border-red-100">
+                      {t.outOfStock}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1 mb-2">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Star key={s} className={`w-4 h-4 ${s <= 4 ? 'text-amber-400 fill-amber-400' : 'text-stone-200 fill-stone-200'}`} />
+                  ))}
+                  <span className="text-xs font-bold text-stone-400 ml-2">(4.8/5)</span>
+                  <span className="ml-auto bg-stone-900 text-white text-[9px] font-black uppercase px-2 py-1 rounded flex items-center gap-1 leading-none tracking-tighter">
+                     <TrendingUp className="w-3 h-3 text-rose-400" /> Best Seller
+                  </span>
+                </div>
+
+                <h2 className="text-3xl md:text-4xl font-black text-stone-900 mb-6 leading-tight">{selectedProduct.name}</h2>
+                
+                <div className="flex items-end gap-3 mb-10 pb-10 border-b border-stone-100">
+                  <span className="text-5xl font-black text-stone-900 tracking-tighter">₹{Math.round(selectedProduct.price)}</span>
+                  {selectedProduct.originalPrice && selectedProduct.originalPrice > selectedProduct.price && (
+                    <div className="flex flex-col mb-1">
+                      <span className="text-base text-stone-400 line-through decoration-rose-500 font-bold tracking-tight">₹{Math.round(selectedProduct.originalPrice)}</span>
+                      <span className="text-emerald-500 text-xs font-black uppercase tracking-widest">
+                        Save {Math.round(((selectedProduct.originalPrice - selectedProduct.price) / selectedProduct.originalPrice) * 100)}% OFF
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-auto flex flex-col gap-4">
+                  {cart.find(c => c.product.id === selectedProduct.id) ? (
+                     <div className="flex items-center justify-between bg-stone-50 p-6 rounded-3xl border border-stone-100 shadow-inner">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">In your cart</span>
+                          <span className="text-stone-800 font-black text-xl">{cart.find(c => c.product.id === selectedProduct.id)?.quantity} Items</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                           <button onClick={() => updateQuantity(selectedProduct.id, (cart.find(c => c.product.id === selectedProduct.id)?.quantity || 1) - 1)} className="w-12 h-12 flex items-center justify-center bg-white rounded-2xl text-rose-500 shadow-sm hover:bg-rose-50 transition-all border border-stone-100">
+                              <Minus className="w-5 h-5 font-bold" />
+                           </button>
+                           <button onClick={() => updateQuantity(selectedProduct.id, (cart.find(c => c.product.id === selectedProduct.id)?.quantity || 1) + 1)} disabled={selectedProduct.stock !== undefined && (cart.find(c => c.product.id === selectedProduct.id)?.quantity || 0) >= selectedProduct.stock} className="w-12 h-12 flex items-center justify-center bg-stone-900 rounded-2xl text-white shadow-xl hover:bg-stone-800 transition-all disabled:opacity-50">
+                              <Plus className="w-5 h-5 font-bold" />
+                           </button>
+                        </div>
+                     </div>
+                  ) : (
+                    <button 
+                      onClick={() => addToCart(selectedProduct)}
+                      disabled={selectedProduct.stock !== undefined && selectedProduct.stock <= 0}
+                      className="w-full bg-rose-500 hover:bg-rose-600 text-white py-6 rounded-[2rem] font-black text-xl shadow-2xl shadow-rose-500/30 transition-all active:scale-[0.98] flex items-center justify-center gap-4 disabled:opacity-50"
+                    >
+                      <ShoppingCart className="w-6 h-6" /> {t.addToCart}
+                    </button>
+                  )}
+
+                  <a 
+                    href={`https://wa.me/${settings.whatsapp_1 || '916384137974'}?text=Hi, I'm interested in: ${selectedProduct.name}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full bg-stone-50 hover:bg-[#25D366] text-stone-600 hover:text-white py-5 rounded-[2rem] font-bold text-base transition-all flex items-center justify-center gap-3 border border-stone-200 hover:border-transparent group"
+                  >
+                    <MessageCircle className="w-5 h-5 text-[#25D366] group-hover:text-white" /> {t.shareProduct}
+                  </a>
+
+                  {/* Related Products */}
+                  <div className="mt-10 pt-10 border-t border-stone-100">
+                    <h3 className="text-sm font-black text-stone-900 uppercase tracking-widest mb-6 flex items-center gap-2">
+                       <Sparkles className="w-4 h-4 text-rose-500" /> You might also like
+                    </h3>
+                    <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                      {products
+                        .filter(p => p.category === selectedProduct.category && p.id !== selectedProduct.id)
+                        .slice(0, 4)
+                        .map(p => (
+                          <div 
+                            key={p.id} 
+                            onClick={() => setSelectedProduct(p)}
+                            className="min-w-[140px] group cursor-pointer"
+                          >
+                            <div className="aspect-square bg-stone-50 rounded-2xl p-4 mb-3 border border-stone-100 group-hover:border-rose-200 transition-all overflow-hidden flex items-center justify-center">
+                              <img src={p.image} alt={p.name} className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500 mix-blend-multiply" />
+                            </div>
+                            <h4 className="text-xs font-bold text-stone-800 line-clamp-1 group-hover:text-rose-500 transition-colors uppercase tracking-tight">{p.name}</h4>
+                            <p className="text-xs font-black text-stone-900 mt-0.5">₹{Math.round(p.price)}</p>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -1175,6 +1599,21 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
       fetchOrders().then(setOrders).catch(console.error).finally(() => setIsLoadingOrders(false));
     }
   }, [isAuthenticated, adminTab]);
+
+  const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
+  
+  const handleDeleteOrder = async (orderId: string) => {
+    if (!window.confirm("Are you sure you want to delete this order?")) return;
+    setDeletingOrderId(orderId);
+    try {
+      await deleteOrder(orderId);
+      setOrders(prev => prev.filter(o => o.id !== orderId));
+    } catch (err) {
+      console.error("Failed to delete order", err);
+    } finally {
+      setDeletingOrderId(null);
+    }
+  };
 
   const handleMarkDelivered = async (orderId: string) => {
     try {
@@ -2095,7 +2534,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
                           <span className="font-bold text-stone-900">₹{Math.round(order.totalAmount)}</span><br />
                           <span className="text-[10px] uppercase bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded inline-block mt-1">{order.paymentMethod}</span>
                         </td>
-                        <td className="p-4">
+                        <td className="p-4 flex flex-col gap-2">
                           {order.status === 'Pending' ? (
                             <button
                               onClick={() => handleMarkDelivered(order.id)}
@@ -2104,10 +2543,17 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
                               Mark Delivered
                             </button>
                           ) : (
-                            <span className="bg-stone-200 text-stone-600 px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1">
+                            <span className="bg-stone-200 text-stone-600 px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1 justify-center">
                               ✓ Completed
                             </span>
                           )}
+                          <button
+                            onClick={() => handleDeleteOrder(order.id)}
+                            disabled={deletingOrderId === order.id}
+                            className="text-red-400 hover:text-red-600 text-[10px] font-bold uppercase tracking-widest text-center"
+                          >
+                            {deletingOrderId === order.id ? 'Deleting...' : 'Delete Order'}
+                          </button>
                         </td>
                       </tr>
                     ))}
