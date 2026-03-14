@@ -876,38 +876,53 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
             <p className="text-stone-500 max-w-2xl mx-auto text-lg font-medium tracking-wide">{t.featuredDesc}</p>
           </div>
 
-          {/* New Category Bar with Icons */}
-          <div className="mb-14 flex flex-col gap-6 bg-white/70 backdrop-blur-2xl p-4 md:p-6 rounded-[2.5rem] shadow-xl shadow-stone-200/50 border border-white sticky top-[100px] z-40">
+          {/* Dynamic Search & Category Bar */}
+          <div className={`mb-10 flex flex-col gap-4 bg-white/80 backdrop-blur-2xl p-3 md:p-4 rounded-[2rem] shadow-xl shadow-stone-200/40 border border-white sticky top-[80px] z-40 transition-all duration-500 ${searchQuery ? 'max-w-2xl mx-auto' : ''}`}>
             <div className="relative w-full group">
-              <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-300 group-focus-within:text-rose-500 transition-colors" />
+              <Search className={`absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${searchQuery ? 'text-rose-500' : 'text-stone-300 group-focus-within:text-rose-500'}`} />
               <input
                 type="text"
                 placeholder={t.searchPlaceholder}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-14 pr-6 py-4 bg-stone-50/50 border border-stone-100 rounded-full focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 transition-all outline-none text-stone-800 text-lg font-bold shadow-inner"
+                className="w-full pl-12 pr-10 py-3 bg-stone-50/50 border border-stone-100 rounded-full focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 transition-all outline-none text-stone-800 text-base font-bold shadow-inner"
               />
-            </div>
-            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide px-1">
-              {categories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`flex flex-col items-center gap-3 px-6 py-4 rounded-[2rem] transition-all min-w-[110px] border group relative overflow-hidden ${selectedCategory === cat.id
-                    ? 'bg-stone-900 border-stone-800 text-white shadow-2xl scale-105'
-                    : 'bg-white border-stone-100 text-stone-500 hover:border-rose-200 hover:text-rose-600'
-                    }`}
+              {searchQuery && (
+                <button 
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-300 hover:text-stone-500 transition-colors"
                 >
-                   <div className={`p-4 rounded-2xl transition-colors ${selectedCategory === cat.id ? 'bg-white/10 text-white' : 'bg-stone-50 text-stone-400 group-hover:bg-rose-50 group-hover:text-rose-500'}`}>
-                    {cat.icon}
-                   </div>
-                   <span className="text-[10px] font-black uppercase tracking-widest">{getCategoryName(cat.id)}</span>
-                   {selectedCategory === cat.id && (
-                     <motion.div layoutId="activeCat" className="absolute bottom-0 left-0 right-0 h-1 bg-rose-500" />
-                   )}
+                  <X className="w-4 h-4" />
                 </button>
-              ))}
+              )}
             </div>
+
+            <AnimatePresence>
+              {!searchQuery && (
+                <motion.div 
+                  initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                  animate={{ height: 'auto', opacity: 1, marginTop: 8 }}
+                  exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                  className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide px-1"
+                >
+                  {categories.map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setSelectedCategory(cat.id)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all border whitespace-nowrap group relative overflow-hidden ${selectedCategory === cat.id
+                        ? 'bg-stone-900 border-stone-800 text-white shadow-lg'
+                        : 'bg-white border-stone-100 text-stone-500 hover:border-rose-200 hover:text-rose-600'
+                        }`}
+                    >
+                      <div className={`p-1.5 rounded-lg transition-colors ${selectedCategory === cat.id ? 'text-white' : 'text-stone-400 group-hover:text-rose-500'}`}>
+                        {React.cloneElement(cat.icon as React.ReactElement, { size: 14 })}
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-widest">{getCategoryName(cat.id)}</span>
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           <AnimatePresence mode="popLayout">
