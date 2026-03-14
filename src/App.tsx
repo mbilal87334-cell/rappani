@@ -203,6 +203,10 @@ const translations = {
     calculatingLocation: "Checking location...",
     locationBlocked: "Allow location access for delivery.",
     refreshLocation: "Refresh Location",
+    deliveryMethod: "Delivery Method",
+    homeDelivery: "Home Delivery",
+    shopPickup: "Shop Pickup",
+    enterAddress: "Enter Full Delivery Address",
   },
 
   ta: {
@@ -273,6 +277,10 @@ const translations = {
     calculatingLocation: "இருப்பிடத்தை சரிபார்க்கிறது...",
     locationBlocked: "டெலிவரி கட்டணத்தை கணக்கிட லொகேஷன் அனுமதியை வழங்கவும்.",
     refreshLocation: "லொகேஷனை புதுப்பி",
+    deliveryMethod: "டெலிவரி முறை",
+    homeDelivery: "Home Delivery (வீட்டிற்கே வரும்)",
+    shopPickup: "Shop Pickup (கடைக்கு வந்து வாங்கிக்கொள்ளலாம்)",
+    enterAddress: "முழு வீட்டு முகவரியை உள்ளிடவும்",
   }
 
 };
@@ -320,6 +328,9 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
   const [userLocation, setUserLocation] = useState<{lat: number, lon: number} | null>(null);
   const [distance, setDistance] = useState<number | null>(null);
   const [locationStatus, setLocationStatus] = useState<'idle' | 'checking' | 'blocked' | 'done'>('idle');
+
+  const [deliveryMethod, setDeliveryMethod] = useState<'home' | 'pickup'>('pickup');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
 
   useEffect(() => {
     localStorage.setItem('rappani_customer_name', customerName);
@@ -375,7 +386,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
           console.error("Location error:", err);
           setLocationStatus('blocked');
         },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
       );
     } else {
       setLocationStatus('blocked');
@@ -539,7 +550,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
   const cartTotalAmount = Math.round(cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0));
 
-  const deliveryFee = (isFirstOrder === true) ? 0 : 30;
+  const deliveryFee = (deliveryMethod === 'pickup' || isFirstOrder === true) ? 0 : 30;
   const finalTotal = Math.round(cartTotalAmount + deliveryFee);
 
   const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -562,6 +573,17 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
       return false;
     }
 
+    if (deliveryMethod === 'home') {
+      if (!deliveryAddress.trim()) {
+        setCheckoutError(t.enterAddress);
+        return false;
+      }
+      if (distance !== null && distance > 3) {
+        setCheckoutError(t.tooFarError);
+        return false;
+      }
+    }
+
     setCheckoutError('');
     console.log(`[CHECKOUT] processCheckoutAndClearCart called for: ${paymentMethod}`);
     
@@ -579,7 +601,9 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
         customerPhone,
         paymentMethod,
         totalAmount: finalTotal,
-        items: cart
+        items: cart,
+        deliveryMethod,
+        deliveryAddress: deliveryMethod === 'home' ? deliveryAddress : 'Shop Pickup'
       };
       await checkoutCart(payload);
 
@@ -620,9 +644,15 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
       return;
     }
 
-    if (distance !== null && distance > 3) {
-      setCheckoutError(t.tooFarError);
-      return;
+    if (deliveryMethod === 'home') {
+      if (!deliveryAddress.trim()) {
+        setCheckoutError(t.enterAddress);
+        return;
+      }
+      if (distance !== null && distance > 3) {
+        setCheckoutError(t.tooFarError);
+        return;
+      }
     }
 
     let message = `Hi, I want to place an order:\n\n*Customer*: ${customerName}\n*Phone*: ${customerPhone}\n\n`;
@@ -632,7 +662,11 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
     message += `\n*Cart Total: ₹${cartTotalAmount}*`;
     message += `\n*Delivery Fee: ₹${deliveryFee}* ${deliveryFee === 0 ? '(1st Order FREE)' : ''}`;
     message += `\n*Final Total: ₹${finalTotal}*`;
-    message += `\n\nPayment Mode: WhatsApp Checkout\nDelivery: Please deliver to my location.\n\nPlease confirm!`;
+    message += `\n\nMethod: ${deliveryMethod === 'home' ? 'Home Delivery' : 'Shop Pickup'}`;
+    if (deliveryMethod === 'home') {
+      message += `\nAddress: ${deliveryAddress}`;
+    }
+    message += `\n\nPlease confirm!`;
 
     const encodedMsg = encodeURIComponent(message);
     console.log(`[CHECKOUT] WhatsApp clicked. ONLY opening WhatsApp. NO DB call.`);
@@ -663,9 +697,15 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
       return;
     }
 
-    if (distance !== null && distance > 3) {
-      setCheckoutError(t.tooFarError);
-      return;
+    if (deliveryMethod === 'home') {
+      if (!deliveryAddress.trim()) {
+        setCheckoutError(t.enterAddress);
+        return;
+      }
+      if (distance !== null && distance > 3) {
+        setCheckoutError(t.tooFarError);
+        return;
+      }
     }
 
     setCheckoutError('');
@@ -1230,7 +1270,32 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
               <div className="bg-white border-t border-stone-100 shadow-[0_-10px_40px_-5px_rgba(0,0,0,0.08)] z-20 shrink-0 relative flex flex-col max-h-[60vh]">
                 <div className="p-5 sm:p-6 overflow-y-auto hidden-scrollbar pb-6">
                   
+                  {/* Delivery Method Selector */}
+                  <div className="mb-5">
+                    <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-2.5 ml-1">{t.deliveryMethod}</p>
+                    <div className="grid grid-cols-2 gap-2 p-1.5 bg-stone-100 rounded-2xl border border-stone-200">
+                      <button 
+                        onClick={() => setDeliveryMethod('pickup')}
+                        className={`flex flex-col items-center gap-1 py-3 rounded-xl transition-all ${deliveryMethod === 'pickup' ? 'bg-white text-stone-900 shadow-md ring-1 ring-stone-200' : 'text-stone-500 hover:text-stone-700'}`}
+                      >
+                        <Store className="w-4 h-4" />
+                        <span className="text-[10px] font-black uppercase tracking-tighter leading-none">{t.shopPickup}</span>
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setDeliveryMethod('home');
+                          if (locationStatus === 'idle') refreshLocation();
+                        }}
+                        className={`flex flex-col items-center gap-1 py-3 rounded-xl transition-all ${deliveryMethod === 'home' ? 'bg-white text-stone-900 shadow-md ring-1 ring-stone-200' : 'text-stone-500 hover:text-stone-700'}`}
+                      >
+                        <Rocket className="w-4 h-4" />
+                        <span className="text-[10px] font-black uppercase tracking-tighter leading-none">{t.homeDelivery}</span>
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Delivery Info Section */}
+                  {deliveryMethod === 'home' && (
                   <div className="bg-stone-50/50 p-4 rounded-2xl border border-stone-100 mb-5 space-y-3">
                     <div className="flex justify-between items-start text-[10px] font-black tracking-widest text-stone-400">
                       <div className="flex flex-col gap-1.5 uppercase">
@@ -1278,7 +1343,15 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                         {deliveryFee === 0 ? t.freeDelivery : `₹${deliveryFee}`}
                       </span>
                     </div>
+                    
+                    <textarea 
+                      placeholder={t.enterAddress}
+                      value={deliveryAddress}
+                      onChange={(e) => setDeliveryAddress(e.target.value)}
+                      className={`w-full px-4 py-3 bg-white border rounded-xl text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 text-stone-800 placeholder:text-stone-400 placeholder:font-medium mb-1 resize-none h-20 ${checkoutError && !deliveryAddress ? 'border-red-400 bg-red-50/50' : 'border-stone-200'}`}
+                    />
                   </div>
+                  )}
 
                   <div className="flex items-end justify-between mb-5">
                     <span className="text-stone-500 font-bold uppercase tracking-widest text-[11px] flex items-center gap-1.5"><ShoppingBag className="w-3.5 h-3.5" /> Total Amount</span>
