@@ -989,13 +989,14 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                         exit={{ opacity: 0, scale: 0.9 }}
                         transition={{ duration: 0.4, delay: Math.min(idx * 0.05, 0.4) }}
                         key={product.id}
-                        className="bg-white rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-rose-500/10 transition-all duration-500 border border-stone-100 group flex flex-col relative h-full"
+                        className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:shadow-stone-200/50 transition-all duration-500 border border-stone-100 group flex flex-col relative h-full"
                       >
-                        <div className="aspect-[4/5] overflow-hidden relative bg-white p-8 flex items-center justify-center border-b border-stone-100/50 shadow-[inset_0_-10px_30px_rgba(0,0,0,0.02)]">
+                        <div className="aspect-[4/5] sm:aspect-square overflow-hidden relative bg-[#fafaf9] p-6 flex items-center justify-center border-b border-stone-100/60">
+                          <div className="absolute inset-3 sm:inset-4 border border-stone-200/60 rounded-xl pointer-events-none z-10"></div>
                           <img
                             src={getPremiumImageUrl(product.image)}
                             alt={product.name}
-                            className="w-full h-full object-contain mix-blend-multiply contrast-[1.15] brightness-[1.05] saturate-[1.1] group-hover:scale-110 transition-transform duration-1000 ease-out cursor-pointer drop-shadow-sm"
+                            className="w-full h-full object-contain mix-blend-multiply drop-shadow-md group-hover:scale-105 transition-transform duration-700 ease-out cursor-pointer relative z-0"
                             referrerPolicy="no-referrer"
                             onClick={() => setSelectedProduct(product)}
                           />
@@ -1021,9 +1022,9 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                           </div>
                         </div>
 
-                        <div className="p-8 flex flex-col flex-1 relative bg-white border-t border-stone-50">
-                          <h3 className="text-xl font-black text-stone-800 mb-2 line-clamp-2 leading-tight group-hover:text-rose-600 transition-colors uppercase tracking-tight">{product.name}</h3>
-                          <div className="mt-auto pt-6 flex items-end justify-between border-t border-stone-50">
+                        <div className="p-6 flex flex-col flex-1 relative bg-white">
+                          <h3 className="text-lg font-bold text-stone-800 mb-2 line-clamp-2 leading-relaxed group-hover:text-rose-600 transition-colors tracking-tight">{product.name}</h3>
+                          <div className="mt-auto pt-5 flex items-end justify-between border-t border-stone-100">
                             <div className="flex flex-col">
                               <span className="text-3xl font-black text-stone-900 tracking-tighter">₹{Math.round(product.price)}</span>
                               {product.originalPrice && product.originalPrice > product.price && (
@@ -1253,8 +1254,8 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                     {cart.map(item => (
                       <div key={item.product.id} className="flex gap-4 bg-white p-3.5 rounded-2xl shadow-sm border border-stone-100/80 items-center justify-between group hover:shadow-md transition-all hover:border-stone-200">
                         <div className="flex gap-3 items-center">
-                          <div className="w-[4.5rem] h-[4.5rem] p-1.5 rounded-xl bg-white border border-stone-100 shadow-sm relative shrink-0">
-                            <img src={getPremiumImageUrl(item.product.image)} alt={item.product.name} className="w-full h-full object-contain mix-blend-multiply contrast-[1.15] brightness-[1.05] saturate-[1.1] rounded-lg group-hover:scale-105 transition-transform duration-300" referrerPolicy="no-referrer" />
+                          <div className="w-[4.5rem] h-[4.5rem] p-2 rounded-xl bg-[#fafaf9] border border-stone-200/60 shadow-sm relative shrink-0 flex items-center justify-center">
+                            <img src={getPremiumImageUrl(item.product.image)} alt={item.product.name} className="w-full h-full object-contain mix-blend-multiply drop-shadow-sm group-hover:scale-105 transition-transform duration-300" referrerPolicy="no-referrer" />
                           </div>
                           <div className="flex flex-col max-w-[140px]">
                             <h4 className="font-bold text-stone-800 text-sm line-clamp-2 leading-tight mb-1">{item.product.name}</h4>
@@ -1547,12 +1548,12 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                 <X className="w-6 h-6" />
               </button>
 
-              <div className="h-full bg-white flex items-center justify-center p-8 md:p-12 relative overflow-hidden xl:border-r border-stone-100">
-                <div className="absolute inset-0 bg-gradient-to-tr from-stone-100/30 to-transparent"></div>
+              <div className="h-full bg-[#fafaf9] flex items-center justify-center p-8 md:p-14 relative overflow-hidden xl:border-r border-stone-100">
+                <div className="absolute inset-6 md:inset-8 border border-stone-200/80 rounded-2xl pointer-events-none z-20"></div>
                 <img
                   src={getPremiumImageUrl(selectedProduct.image)}
                   alt={selectedProduct.name}
-                  className="w-full h-full object-contain mix-blend-multiply contrast-[1.15] brightness-[1.05] saturate-[1.1] relative z-10 drop-shadow-2xl hover:scale-105 transition-transform duration-700"
+                  className="w-full h-full object-contain mix-blend-multiply drop-shadow-xl relative z-10 hover:scale-105 transition-transform duration-700"
                   referrerPolicy="no-referrer"
                 />
               </div>
@@ -1647,8 +1648,8 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                             onClick={() => setSelectedProduct(p)}
                             className="min-w-[140px] group cursor-pointer"
                           >
-                            <div className="aspect-square bg-white rounded-2xl p-4 mb-3 border border-stone-100 shadow-sm group-hover:border-rose-200 transition-all overflow-hidden flex items-center justify-center">
-                              <img src={getPremiumImageUrl(p.image)} alt={p.name} className="w-full h-full object-contain mix-blend-multiply contrast-[1.15] brightness-[1.05] saturate-[1.1] group-hover:scale-110 transition-transform duration-500" />
+                            <div className="aspect-square bg-[#fafaf9] rounded-xl p-3 mb-3 border border-stone-200/60 shadow-sm group-hover:border-stone-300 transition-all overflow-hidden flex items-center justify-center relative">
+                              <img src={getPremiumImageUrl(p.image)} alt={p.name} className="w-full h-full object-contain mix-blend-multiply drop-shadow-sm group-hover:scale-110 transition-transform duration-500" />
                             </div>
                             <h4 className="text-xs font-bold text-stone-800 line-clamp-1 group-hover:text-rose-500 transition-colors uppercase tracking-tight">{p.name}</h4>
                             <p className="text-xs font-black text-stone-900 mt-0.5">₹{Math.round(p.price)}</p>
