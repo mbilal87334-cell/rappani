@@ -849,14 +849,10 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
       <main>
         {/* Premium Hero Section */}
-        <AnimatePresence>
-          {!searchQuery && (
-            <motion.section 
-              id="home" 
-              initial={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="relative bg-[#0a0a0a] text-white overflow-hidden min-h-[95vh] flex items-center"
-            >
+        <section 
+          id="home" 
+          className="relative bg-[#0a0a0a] text-white overflow-hidden min-h-[95vh] flex items-center"
+        >
           {/* Animated Background Orbs */}
           <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-rose-500/10 rounded-full blur-[120px] mix-blend-screen pointer-events-none animate-pulse duration-10000"></div>
           <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[150px] mix-blend-screen pointer-events-none"></div>
@@ -920,69 +916,59 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                   <p className="text-xs text-stone-500 font-black uppercase tracking-[0.2em]">UPI Payments</p>
                 </div>
               </div>
-            </motion.div>
-          </div>
-        </motion.section>
-          )}
-        </AnimatePresence>
+            </section>
 
         {/* Products Section */}
-        <section id="products" className={`py-24 bg-stone-50 transition-all duration-700 ${searchQuery ? 'pt-32' : ''}`}>
+        <section id="products" className="py-24 bg-stone-50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {!searchQuery && (
-              <div className="text-center mb-16">
-                <h2 className="text-4xl md:text-5xl font-black text-stone-900 mb-6 tracking-tight">{t.featuredProducts}</h2>
-                <p className="text-stone-500 max-w-2xl mx-auto text-lg font-medium tracking-wide">{t.featuredDesc}</p>
-              </div>
-            )}
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-black text-stone-900 mb-6 tracking-tight">{t.featuredProducts}</h2>
+              <p className="text-stone-500 max-w-2xl mx-auto text-lg font-medium tracking-wide">{t.featuredDesc}</p>
+            </div>
 
-            {/* Dynamic Search & Category Bar */}
-            <div className={`mb-12 flex flex-col bg-white/95 backdrop-blur-3xl rounded-xl shadow-lg border border-stone-100 transition-all duration-700 sticky top-4 z-50 ${searchQuery ? 'max-w-[200px] mx-auto p-0.5' : 'max-w-full p-4 gap-4'}`}>
-              <div className="relative w-full group">
-                <Search className={`absolute left-3 top-1/2 -translate-y-1/2 transition-all ${searchQuery ? 'w-2.5 h-2.5 text-rose-500' : 'w-4 h-4 text-stone-300 group-focus-within:text-rose-500'}`} />
-                <input
-                  type="text"
-                  placeholder={t.searchPlaceholder}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className={`w-full border border-stone-50 rounded-lg focus:ring-2 focus:ring-rose-500/5 focus:border-stone-100 transition-all outline-none text-stone-800 font-bold ${searchQuery ? 'pl-7 pr-7 py-1 text-[10px] bg-white' : 'pl-12 pr-10 py-3 text-base bg-stone-50/50'}`}
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-300 hover:text-rose-500 transition-colors p-0.5"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
+            {/* Search Bar */}
+            <div className="mb-12 flex justify-center sticky top-6 z-50">
+              <div className="w-full max-w-2xl bg-white/95 backdrop-blur-3xl rounded-none md:rounded-3xl shadow-2xl shadow-stone-200/50 border border-stone-100 p-2 transition-all focus-within:shadow-rose-500/10 focus-within:border-rose-200">
+                <div className="relative flex items-center w-full group">
+                  <div className="flex-shrink-0 p-3 md:p-4 text-stone-400 group-focus-within:text-rose-500 transition-colors">
+                    <Search className="w-6 h-6 md:w-8 md:h-8" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder={t.searchPlaceholder}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full border-none rounded-r-3xl focus:ring-0 focus:border-transparent transition-all outline-none text-stone-800 font-bold bg-transparent text-xl md:text-2xl px-2 py-4"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-4 text-rose-500 bg-rose-50 hover:bg-rose-100 p-2 rounded-xl transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  )}
+                </div>
               </div>
+            </div>
 
-              <AnimatePresence>
-                {!searchQuery && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0, marginTop: 0 }}
-                    animate={{ height: 'auto', opacity: 1, marginTop: 8 }}
-                    exit={{ height: 0, opacity: 0, marginTop: 0 }}
-                    className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide px-1"
-                  >
-                    {categories.map((cat) => (
-                      <button
-                        key={cat.id}
-                        onClick={() => setSelectedCategory(cat.id)}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all border whitespace-nowrap group relative overflow-hidden ${selectedCategory === cat.id
-                          ? 'bg-stone-900 border-stone-800 text-white shadow-lg'
-                          : 'bg-white border-stone-100 text-stone-500 hover:border-rose-200 hover:text-rose-600'
-                          }`}
-                      >
-                        <div className={`p-1.5 rounded-lg transition-colors ${selectedCategory === cat.id ? 'text-white' : 'text-stone-400 group-hover:text-rose-500'}`}>
-                          {React.cloneElement(cat.icon as React.ReactElement, { size: 14 })}
-                        </div>
-                        <span className="text-[10px] font-black uppercase tracking-widest">{getCategoryName(cat.id)}</span>
-                      </button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+            {/* Always Visible Category Bar */}
+            <div className="mb-10 flex gap-3 overflow-x-auto pb-4 scrollbar-hide px-1 items-center justify-start md:justify-center">
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all border whitespace-nowrap group relative overflow-hidden ${selectedCategory === cat.id
+                    ? 'bg-stone-900 border-stone-800 text-white shadow-lg'
+                    : 'bg-white border-stone-100 text-stone-500 hover:border-rose-200 hover:text-rose-600'
+                    }`}
+                >
+                  <div className={`p-1.5 rounded-lg transition-colors ${selectedCategory === cat.id ? 'text-white' : 'text-stone-400 group-hover:text-rose-500'}`}>
+                    {React.cloneElement(cat.icon as React.ReactElement, { size: 14 })}
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-widest">{getCategoryName(cat.id)}</span>
+                </button>
+              ))}
             </div>
 
             <AnimatePresence mode="popLayout">
