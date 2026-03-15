@@ -925,20 +925,20 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
             </div>
 
             {/* Dynamic Search & Category Bar */}
-            <div className={`mb-10 flex flex-col gap-4 bg-white/80 backdrop-blur-2xl p-3 md:p-4 rounded-[2rem] shadow-xl shadow-stone-200/40 border border-white sticky top-[80px] z-40 transition-all duration-500 ${searchQuery ? 'max-w-2xl mx-auto' : ''}`}>
+            <div className={`mb-10 flex flex-col bg-white/90 backdrop-blur-2xl rounded-[2rem] shadow-xl shadow-stone-200/40 border border-white sticky top-[80px] z-40 transition-all duration-500 ${searchQuery ? 'max-w-sm mx-auto p-2 gap-0 shadow-md' : 'max-w-full p-3 md:p-4 gap-4'}`}>
               <div className="relative w-full group">
-                <Search className={`absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${searchQuery ? 'text-rose-500' : 'text-stone-300 group-focus-within:text-rose-500'}`} />
+                <Search className={`absolute left-5 top-1/2 -translate-y-1/2 transition-all ${searchQuery ? 'w-3.5 h-3.5 text-rose-500' : 'w-4 h-4 text-stone-300 group-focus-within:text-rose-500'}`} />
                 <input
                   type="text"
                   placeholder={t.searchPlaceholder}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-10 py-3 bg-stone-50/50 border border-stone-100 rounded-full focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 transition-all outline-none text-stone-800 text-base font-bold shadow-inner"
+                  className={`w-full border border-stone-100 rounded-full focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 transition-all outline-none text-stone-800 font-bold shadow-inner ${searchQuery ? 'pl-10 pr-10 py-2 text-sm bg-white' : 'pl-12 pr-10 py-3 text-base bg-stone-50/50'}`}
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-300 hover:text-stone-500 transition-colors"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-300 hover:text-rose-500 transition-colors p-1"
                   >
                     <X className="w-4 h-4" />
                   </button>
