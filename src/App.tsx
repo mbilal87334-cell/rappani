@@ -39,6 +39,14 @@ interface Order {
 // --- API Service ---
 const API_BASE = '/api';
 
+const getPremiumImageUrl = (url: string) => {
+  if (!url) return url;
+  if (url.includes('res.cloudinary.com') && !url.includes('e_background_removal')) {
+    return url.replace('/image/upload/', '/image/upload/e_background_removal/');
+  }
+  return url;
+};
+
 async function fetchSettings() {
   const res = await fetch(`${API_BASE}/settings`);
   if (!res.ok) throw new Error("Failed to fetch settings");
@@ -293,9 +301,9 @@ function getDistanceInKm(lat1: number, lon1: number, lat2: number, lon2: number)
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
+  const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
     Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return R * c;
@@ -325,7 +333,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
   const [isPhoneVerified, setIsPhoneVerified] = useState(() => localStorage.getItem('rappani_is_verified') === 'true');
 
   const [isFirstOrder, setIsFirstOrder] = useState<boolean | null>(null);
-  const [userLocation, setUserLocation] = useState<{lat: number, lon: number} | null>(null);
+  const [userLocation, setUserLocation] = useState<{ lat: number, lon: number } | null>(null);
   const [distance, setDistance] = useState<number | null>(null);
   const [locationStatus, setLocationStatus] = useState<'idle' | 'checking' | 'blocked' | 'done'>('idle');
 
@@ -450,7 +458,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
       const data = await res.json();
       if (data.success) {
         setIsPhoneVerified(true);
-        setIsOtpSent(false); 
+        setIsOtpSent(false);
         setMockOtp(null); // Clear mock OTP
       } else {
         setCheckoutError(data.error || "Invalid OTP");
@@ -586,7 +594,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
     setCheckoutError('');
     console.log(`[CHECKOUT] processCheckoutAndClearCart called for: ${paymentMethod}`);
-    
+
     // Explicitly block WhatsApp from being saved to the database (Robust check)
     if (paymentMethod.toLowerCase().includes('whatsapp')) {
       console.warn(`[CHECKOUT] WhatsApp mode detected (${paymentMethod}). NOT saving to server.`);
@@ -670,10 +678,10 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
     const encodedMsg = encodeURIComponent(message);
     console.log(`[CHECKOUT] WhatsApp clicked. ONLY opening WhatsApp. NO DB call.`);
-    
+
     // Open WhatsApp without booking the order in the system
     window.open(`https://wa.me/${settings.whatsapp_1 || '916384137974'}?text=${encodedMsg}`, '_blank');
-    
+
     // Optional: Clear cart locally so user knows it's sent, but don't save to DB
     // If you want to keep the items in cart for WhatsApp, comment out the next 2 lines
     setCart([]);
@@ -709,7 +717,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
     }
 
     setCheckoutError('');
-    
+
     try {
       await navigator.clipboard.writeText('mohammedazzam200512@okaxis');
       alert(`✅ UPI ID Copied!\n\nPlease open any UPI App (GPay/Paytm/PhonePe), paste this ID, and complete the payment of ₹${Math.round(cartTotalAmount)}`);
@@ -726,7 +734,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
       setCheckoutError('Please enter a valid 12-digit UTR/Ref No. from your bank app.');
       return;
     }
-    
+
     setCheckoutError('');
     console.log(`[CHECKOUT] GPay Confirm clicked. This WILL save to DB.`);
     const success = await processCheckoutAndClearCart(`GPay Order (UTR: ${utrNumber})`);
@@ -742,15 +750,15 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
       <div className="bg-stone-900 text-white py-2 overflow-hidden relative z-[60]">
         <div className="flex whitespace-nowrap animate-marquee">
           <div className="flex items-center gap-8 px-4">
-             <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-               <Sparkles className="w-3 h-3 text-rose-400" /> New Arrivals in Stationary Section • Free Pickup Available • Premium Fancy Items now in stock!
-             </span>
-             <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-               <Rocket className="w-3 h-3 text-blue-400" /> Shop online and collect in store for 10% discount on select items!
-             </span>
-             <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-               <Sparkles className="w-3 h-3 text-rose-400" /> New Arrivals in Stationary Section • Free Pickup Available • Premium Fancy Items now in stock!
-             </span>
+            <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+              <Sparkles className="w-3 h-3 text-rose-400" /> New Arrivals in Stationary Section • Free Pickup Available • Premium Fancy Items now in stock!
+            </span>
+            <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+              <Rocket className="w-3 h-3 text-blue-400" /> Shop online and collect in store for 10% discount on select items!
+            </span>
+            <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+              <Sparkles className="w-3 h-3 text-rose-400" /> New Arrivals in Stationary Section • Free Pickup Available • Premium Fancy Items now in stock!
+            </span>
           </div>
         </div>
       </div>
@@ -820,7 +828,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
         {/* Mobile Nav */}
         <AnimatePresence>
           {isMenuOpen && (
-            <motion.div 
+            <motion.div
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
@@ -840,339 +848,339 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
       </header>
 
       <main>
-      {/* Premium Hero Section */}
-      <section id="home" className="relative bg-[#0a0a0a] text-white overflow-hidden min-h-[95vh] flex items-center">
-        {/* Animated Background Orbs */}
-        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-rose-500/10 rounded-full blur-[120px] mix-blend-screen pointer-events-none animate-pulse duration-10000"></div>
-        <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[150px] mix-blend-screen pointer-events-none"></div>
-        
-        <div className="absolute inset-0 z-0">
-          <img src={settings.hero_image || "https://images.unsplash.com/photo-1583485088034-697b5a69f0bd?auto=format&fit=crop&q=80"} alt="Store Background" className="w-full h-full object-cover opacity-20 mix-blend-luminosity" referrerPolicy="no-referrer" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent"></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent"></div>
-        </div>
+        {/* Premium Hero Section */}
+        <section id="home" className="relative bg-[#0a0a0a] text-white overflow-hidden min-h-[95vh] flex items-center">
+          {/* Animated Background Orbs */}
+          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-rose-500/10 rounded-full blur-[120px] mix-blend-screen pointer-events-none animate-pulse duration-10000"></div>
+          <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[150px] mix-blend-screen pointer-events-none"></div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 w-full mt-10">
-          <motion.div 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="max-w-3xl"
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-stone-300 text-sm font-bold tracking-widest mb-8 shadow-2xl shadow-rose-500/10 hover:bg-white/10 transition-colors uppercase cursor-default">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
-              {t.welcome}
-            </div>
-            
-            <h2 className="text-6xl md:text-7xl lg:text-[6rem] font-black tracking-tighter mb-8 leading-[0.95] drop-shadow-2xl">
-              {t.heroTitle1} <br/> 
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-pink-500 to-orange-400 italic">{t.heroTitle2}</span> {t.heroTitle3}{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 italic">{t.heroTitle4}</span><br/>
-              {t.heroTitle5}
-            </h2>
-            
-            <p className="text-xl md:text-2xl text-stone-400 mb-12 max-w-xl leading-relaxed font-medium">
-              {t.heroDesc}
-            </p>
-            
-            <div className="flex flex-wrap gap-5 items-center">
-              <a href="#products" className="group relative bg-white text-stone-900 hover:text-rose-600 px-10 py-5 rounded-full font-black text-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-3 overflow-hidden shadow-2xl shadow-rose-500/10">
-                <span className="absolute inset-0 bg-gradient-to-r from-rose-100 to-orange-100 opacity-0 group-hover:opacity-100 transition-opacity"></span>
-                <ShoppingBag className="w-6 h-6 relative z-10" /> 
-                <span className="relative z-10">{t.shopNow}</span>
-              </a>
-              
-              <a href="#contact" className="group bg-white/5 hover:bg-white/10 backdrop-blur-md text-white border border-white/10 px-10 py-5 rounded-full font-bold text-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-3 shadow-xl">
-                <div className="bg-white/10 p-2.5 rounded-full group-hover:bg-rose-500 group-hover:text-white transition-all">
-                  <Phone className="w-5 h-5" />
-                </div>
-                {t.contactUs}
-              </a>
-            </div>
-            
-            {/* Quick stats */}
-            <div className="mt-20 pt-10 border-t border-white/10 grid grid-cols-2 md:grid-cols-3 gap-8 max-w-2xl">
-              <div className="flex flex-col gap-1">
-                <h4 className="text-3xl font-black text-white">100%</h4>
-                <p className="text-xs text-stone-500 font-black uppercase tracking-[0.2em]">Quality Assured</p>
-              </div>
-              <div className="flex flex-col gap-1">
-                <h4 className="text-3xl font-black text-white">Fast</h4>
-                <p className="text-xs text-stone-500 font-black uppercase tracking-[0.2em]">Store Pickup</p>
-              </div>
-              <div className="flex flex-col gap-1 hidden md:flex">
-                <h4 className="text-3xl font-black text-white">Secure</h4>
-                <p className="text-xs text-stone-500 font-black uppercase tracking-[0.2em]">UPI Payments</p>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-      {/* Products Section */}
-      <section id="products" className="py-24 bg-stone-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black text-stone-900 mb-6 tracking-tight">{t.featuredProducts}</h2>
-            <p className="text-stone-500 max-w-2xl mx-auto text-lg font-medium tracking-wide">{t.featuredDesc}</p>
+          <div className="absolute inset-0 z-0">
+            <img src={settings.hero_image || "https://images.unsplash.com/photo-1583485088034-697b5a69f0bd?auto=format&fit=crop&q=80"} alt="Store Background" className="w-full h-full object-cover opacity-20 mix-blend-luminosity" referrerPolicy="no-referrer" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0a] via-[#0a0a0a]/80 to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent"></div>
           </div>
 
-          {/* Dynamic Search & Category Bar */}
-          <div className={`mb-10 flex flex-col gap-4 bg-white/80 backdrop-blur-2xl p-3 md:p-4 rounded-[2rem] shadow-xl shadow-stone-200/40 border border-white sticky top-[80px] z-40 transition-all duration-500 ${searchQuery ? 'max-w-2xl mx-auto' : ''}`}>
-            <div className="relative w-full group">
-              <Search className={`absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${searchQuery ? 'text-rose-500' : 'text-stone-300 group-focus-within:text-rose-500'}`} />
-              <input
-                type="text"
-                placeholder={t.searchPlaceholder}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-10 py-3 bg-stone-50/50 border border-stone-100 rounded-full focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 transition-all outline-none text-stone-800 text-base font-bold shadow-inner"
-              />
-              {searchQuery && (
-                <button 
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-300 hover:text-stone-500 transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              )}
+          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 w-full mt-10">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              className="max-w-3xl"
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-stone-300 text-sm font-bold tracking-widest mb-8 shadow-2xl shadow-rose-500/10 hover:bg-white/10 transition-colors uppercase cursor-default">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+                {t.welcome}
+              </div>
+
+              <h2 className="text-6xl md:text-7xl lg:text-[6rem] font-black tracking-tighter mb-8 leading-[0.95] drop-shadow-2xl">
+                {t.heroTitle1} <br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-pink-500 to-orange-400 italic">{t.heroTitle2}</span> {t.heroTitle3}{" "}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 italic">{t.heroTitle4}</span><br />
+                {t.heroTitle5}
+              </h2>
+
+              <p className="text-xl md:text-2xl text-stone-400 mb-12 max-w-xl leading-relaxed font-medium">
+                {t.heroDesc}
+              </p>
+
+              <div className="flex flex-wrap gap-5 items-center">
+                <a href="#products" className="group relative bg-white text-stone-900 hover:text-rose-600 px-10 py-5 rounded-full font-black text-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-3 overflow-hidden shadow-2xl shadow-rose-500/10">
+                  <span className="absolute inset-0 bg-gradient-to-r from-rose-100 to-orange-100 opacity-0 group-hover:opacity-100 transition-opacity"></span>
+                  <ShoppingBag className="w-6 h-6 relative z-10" />
+                  <span className="relative z-10">{t.shopNow}</span>
+                </a>
+
+                <a href="#contact" className="group bg-white/5 hover:bg-white/10 backdrop-blur-md text-white border border-white/10 px-10 py-5 rounded-full font-bold text-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-3 shadow-xl">
+                  <div className="bg-white/10 p-2.5 rounded-full group-hover:bg-rose-500 group-hover:text-white transition-all">
+                    <Phone className="w-5 h-5" />
+                  </div>
+                  {t.contactUs}
+                </a>
+              </div>
+
+              {/* Quick stats */}
+              <div className="mt-20 pt-10 border-t border-white/10 grid grid-cols-2 md:grid-cols-3 gap-8 max-w-2xl">
+                <div className="flex flex-col gap-1">
+                  <h4 className="text-3xl font-black text-white">100%</h4>
+                  <p className="text-xs text-stone-500 font-black uppercase tracking-[0.2em]">Quality Assured</p>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <h4 className="text-3xl font-black text-white">Fast</h4>
+                  <p className="text-xs text-stone-500 font-black uppercase tracking-[0.2em]">Store Pickup</p>
+                </div>
+                <div className="flex flex-col gap-1 hidden md:flex">
+                  <h4 className="text-3xl font-black text-white">Secure</h4>
+                  <p className="text-xs text-stone-500 font-black uppercase tracking-[0.2em]">UPI Payments</p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+        {/* Products Section */}
+        <section id="products" className="py-24 bg-stone-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-black text-stone-900 mb-6 tracking-tight">{t.featuredProducts}</h2>
+              <p className="text-stone-500 max-w-2xl mx-auto text-lg font-medium tracking-wide">{t.featuredDesc}</p>
             </div>
 
-            <AnimatePresence>
-              {!searchQuery && (
-                <motion.div 
-                  initial={{ height: 0, opacity: 0, marginTop: 0 }}
-                  animate={{ height: 'auto', opacity: 1, marginTop: 8 }}
-                  exit={{ height: 0, opacity: 0, marginTop: 0 }}
-                  className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide px-1"
+            {/* Dynamic Search & Category Bar */}
+            <div className={`mb-10 flex flex-col gap-4 bg-white/80 backdrop-blur-2xl p-3 md:p-4 rounded-[2rem] shadow-xl shadow-stone-200/40 border border-white sticky top-[80px] z-40 transition-all duration-500 ${searchQuery ? 'max-w-2xl mx-auto' : ''}`}>
+              <div className="relative w-full group">
+                <Search className={`absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors ${searchQuery ? 'text-rose-500' : 'text-stone-300 group-focus-within:text-rose-500'}`} />
+                <input
+                  type="text"
+                  placeholder={t.searchPlaceholder}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-12 pr-10 py-3 bg-stone-50/50 border border-stone-100 rounded-full focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 transition-all outline-none text-stone-800 text-base font-bold shadow-inner"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-300 hover:text-stone-500 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              <AnimatePresence>
+                {!searchQuery && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                    animate={{ height: 'auto', opacity: 1, marginTop: 8 }}
+                    exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                    className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide px-1"
+                  >
+                    {categories.map((cat) => (
+                      <button
+                        key={cat.id}
+                        onClick={() => setSelectedCategory(cat.id)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all border whitespace-nowrap group relative overflow-hidden ${selectedCategory === cat.id
+                          ? 'bg-stone-900 border-stone-800 text-white shadow-lg'
+                          : 'bg-white border-stone-100 text-stone-500 hover:border-rose-200 hover:text-rose-600'
+                          }`}
+                      >
+                        <div className={`p-1.5 rounded-lg transition-colors ${selectedCategory === cat.id ? 'text-white' : 'text-stone-400 group-hover:text-rose-500'}`}>
+                          {React.cloneElement(cat.icon as React.ReactElement, { size: 14 })}
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-widest">{getCategoryName(cat.id)}</span>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <AnimatePresence mode="popLayout">
+              {filteredProducts.length > 0 ? (
+                <motion.div
+                  layout
+                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
                 >
-                  {categories.map((cat) => (
-                    <button
-                      key={cat.id}
-                      onClick={() => setSelectedCategory(cat.id)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all border whitespace-nowrap group relative overflow-hidden ${selectedCategory === cat.id
-                        ? 'bg-stone-900 border-stone-800 text-white shadow-lg'
-                        : 'bg-white border-stone-100 text-stone-500 hover:border-rose-200 hover:text-rose-600'
-                        }`}
-                    >
-                      <div className={`p-1.5 rounded-lg transition-colors ${selectedCategory === cat.id ? 'text-white' : 'text-stone-400 group-hover:text-rose-500'}`}>
-                        {React.cloneElement(cat.icon as React.ReactElement, { size: 14 })}
-                      </div>
-                      <span className="text-[10px] font-black uppercase tracking-widest">{getCategoryName(cat.id)}</span>
-                    </button>
-                  ))}
+                  {filteredProducts.map((product, idx) => {
+                    const cartItem = cart.find(item => item.product.id === product.id);
+                    return (
+                      <motion.div
+                        layout
+                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        transition={{ duration: 0.4, delay: Math.min(idx * 0.05, 0.4) }}
+                        key={product.id}
+                        className="bg-white rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-rose-500/10 transition-all duration-500 border border-stone-100 group flex flex-col relative h-full"
+                      >
+                        <div className="aspect-[4/5] overflow-hidden relative bg-white p-8 flex items-center justify-center border-b border-stone-100/50 shadow-[inset_0_-10px_30px_rgba(0,0,0,0.02)]">
+                          <img
+                            src={getPremiumImageUrl(product.image)}
+                            alt={product.name}
+                            className="w-full h-full object-contain mix-blend-multiply contrast-[1.15] brightness-[1.05] saturate-[1.1] group-hover:scale-110 transition-transform duration-1000 ease-out cursor-pointer drop-shadow-sm"
+                            referrerPolicy="no-referrer"
+                            onClick={() => setSelectedProduct(product)}
+                          />
+
+                          <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+                            <button
+                              onClick={() => setSelectedProduct(product)}
+                              className="w-12 h-12 bg-white shadow-2xl rounded-2xl flex items-center justify-center text-stone-600 hover:text-rose-500 hover:scale-110 transition-all border border-stone-100"
+                            >
+                              <Eye className="w-6 h-6" />
+                            </button>
+                          </div>
+
+                          <div className="absolute top-6 left-6 flex flex-col gap-2">
+                            <div className="bg-white/90 backdrop-blur-sm shadow-sm text-stone-700 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-stone-100 flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span> {getCategoryName(product.category)}
+                            </div>
+                            {product.originalPrice && product.originalPrice > product.price && (
+                              <div className="bg-emerald-500 text-white px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-1.5 animate-pulse">
+                                <Sparkles className="w-3 h-3" /> {t.offer}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="p-8 flex flex-col flex-1 relative bg-white border-t border-stone-50">
+                          <h3 className="text-xl font-black text-stone-800 mb-2 line-clamp-2 leading-tight group-hover:text-rose-600 transition-colors uppercase tracking-tight">{product.name}</h3>
+                          <div className="mt-auto pt-6 flex items-end justify-between border-t border-stone-50">
+                            <div className="flex flex-col">
+                              <span className="text-3xl font-black text-stone-900 tracking-tighter">₹{Math.round(product.price)}</span>
+                              {product.originalPrice && product.originalPrice > product.price && (
+                                <span className="text-xs font-bold text-stone-400 line-through decoration-rose-500/50 tracking-wide">₹{Math.round(product.originalPrice)}</span>
+                              )}
+                            </div>
+
+                            {cartItem ? (
+                              <div className="flex items-center gap-2 bg-stone-50 rounded-2xl p-1.5 border border-stone-100 shadow-inner">
+                                <button onClick={() => updateQuantity(product.id, cartItem.quantity - 1)} className="w-10 h-10 flex items-center justify-center bg-white rounded-xl text-stone-500 shadow-sm hover:text-rose-500 hover:bg-rose-50 active:scale-90 transition-all border border-stone-100">
+                                  <Minus className="w-4 h-4 font-bold" />
+                                </button>
+                                <span className="w-8 text-center text-sm font-black text-stone-800">
+                                  {cartItem.quantity}
+                                </span>
+                                <button onClick={() => updateQuantity(product.id, cartItem.quantity + 1)} disabled={product.stock !== undefined && cartItem.quantity >= product.stock} className="w-10 h-10 flex items-center justify-center bg-stone-900 rounded-xl text-white shadow-xl hover:bg-stone-800 active:scale-90 transition-all disabled:opacity-50">
+                                  <Plus className="w-4 h-4 font-bold" />
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => addToCart(product)}
+                                disabled={product.stock !== undefined && product.stock <= 0}
+                                className={`w-14 h-14 flex items-center justify-center rounded-2xl transition-all shadow-xl active:scale-90 relative overflow-hidden ${product.stock !== undefined && product.stock <= 0 ? 'bg-stone-100 text-stone-300 cursor-not-allowed' : 'bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/20 group-hover:rotate-6'}`}
+                              >
+                                {product.stock !== undefined && product.stock <= 0 ? (
+                                  <X className="w-6 h-6" />
+                                ) : (
+                                  <Plus className="w-8 h-8 relative z-10" />
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </motion.div>
+              ) : (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center py-32 bg-white rounded-[3rem] border border-dashed border-stone-200"
+                >
+                  <div className="bg-stone-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Search className="w-10 h-10 text-stone-300" />
+                  </div>
+                  <h3 className="text-2xl font-black text-stone-900 mb-2">{t.noProducts}</h3>
+                  <p className="text-stone-500 font-medium tracking-wide">Try adjusting your search or filter.</p>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
+        </section>
 
-          <AnimatePresence mode="popLayout">
-            {filteredProducts.length > 0 ? (
-              <motion.div 
-                layout
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
-              >
-                {filteredProducts.map((product, idx) => {
-                  const cartItem = cart.find(item => item.product.id === product.id);
-                  return (
-                   <motion.div 
-                    layout
-                    initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    transition={{ duration: 0.4, delay: Math.min(idx * 0.05, 0.4) }}
-                    key={product.id} 
-                    className="bg-white rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-rose-500/10 transition-all duration-500 border border-stone-100 group flex flex-col relative h-full"
-                   >
-                    <div className="aspect-[4/5] overflow-hidden relative bg-white p-8 flex items-center justify-center border-b border-stone-100/50 shadow-[inset_0_-10px_30px_rgba(0,0,0,0.02)]">
-                      <img 
-                        src={product.image} 
-                        alt={product.name} 
-                        className="w-full h-full object-contain mix-blend-multiply contrast-[1.15] brightness-[1.05] saturate-[1.1] group-hover:scale-110 transition-transform duration-1000 ease-out cursor-pointer drop-shadow-sm" 
-                        referrerPolicy="no-referrer"
-                        onClick={() => setSelectedProduct(product)}
-                      />
-                      
-                      <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
-                        <button 
-                          onClick={() => setSelectedProduct(product)}
-                          className="w-12 h-12 bg-white shadow-2xl rounded-2xl flex items-center justify-center text-stone-600 hover:text-rose-500 hover:scale-110 transition-all border border-stone-100"
-                        >
-                          <Eye className="w-6 h-6" />
-                        </button>
+        {/* Premium Contact Section */}
+        <section id="contact" className="py-24 bg-stone-50 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-rose-500/5 rounded-full blur-[100px] pointer-events-none"></div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="bg-white rounded-[3rem] overflow-hidden shadow-2xl shadow-stone-200/50 border border-stone-100">
+              <div className="grid lg:grid-cols-2">
+                <div className="p-10 md:p-20 flex flex-col justify-center relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-rose-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+                  <h2 className="text-4xl md:text-5xl font-black text-[#1a1a1a] mb-6 tracking-tight relative z-10">{t.getInTouch}</h2>
+                  <p className="text-stone-500 mb-12 text-lg font-medium leading-relaxed relative z-10">{t.contactDesc}</p>
+
+                  <div className="space-y-8 relative z-10">
+                    <div className="flex items-start gap-5 group">
+                      <div className="bg-stone-50 group-hover:bg-rose-500 group-hover:text-white p-4 rounded-2xl text-stone-600 transition-all duration-300 shadow-sm border border-stone-100">
+                        <Phone className="w-6 h-6" />
                       </div>
-
-                      <div className="absolute top-6 left-6 flex flex-col gap-2">
-                        <div className="bg-white/90 backdrop-blur-sm shadow-sm text-stone-700 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-stone-100 flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span> {getCategoryName(product.category)}
+                      <div>
+                        <p className="text-xs text-stone-400 font-bold uppercase tracking-widest mb-1.5">{t.callUs}</p>
+                        <div className="flex flex-col gap-1.5">
+                          <a href={`https://wa.me/${settings.whatsapp_1 || '916384137974'}`} target="_blank" rel="noopener noreferrer" className="text-stone-800 font-black text-xl hover:text-rose-500 transition-colors flex items-center gap-2">
+                            <MessageCircle className="w-5 h-5 text-[#25D366]" /> +{settings.whatsapp_1 || '91 6384137974'}
+                          </a>
+                          <a href={`https://wa.me/${settings.whatsapp_2 || '918940324030'}`} target="_blank" rel="noopener noreferrer" className="text-stone-800 font-black text-xl hover:text-rose-500 transition-colors flex items-center gap-2">
+                            <MessageCircle className="w-5 h-5 text-[#25D366]" /> +{settings.whatsapp_2 || '91 8940324030'}
+                          </a>
                         </div>
-                        {product.originalPrice && product.originalPrice > product.price && (
-                          <div className="bg-emerald-500 text-white px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-1.5 animate-pulse">
-                             <Sparkles className="w-3 h-3" /> {t.offer}
-                          </div>
-                        )}
                       </div>
                     </div>
 
-                    <div className="p-8 flex flex-col flex-1 relative bg-white border-t border-stone-50">
-                      <h3 className="text-xl font-black text-stone-800 mb-2 line-clamp-2 leading-tight group-hover:text-rose-600 transition-colors uppercase tracking-tight">{product.name}</h3>
-                      <div className="mt-auto pt-6 flex items-end justify-between border-t border-stone-50">
-                        <div className="flex flex-col">
-                          <span className="text-3xl font-black text-stone-900 tracking-tighter">₹{Math.round(product.price)}</span>
-                          {product.originalPrice && product.originalPrice > product.price && (
-                            <span className="text-xs font-bold text-stone-400 line-through decoration-rose-500/50 tracking-wide">₹{Math.round(product.originalPrice)}</span>
-                          )}
-                        </div>
-                        
-                        {cartItem ? (
-                          <div className="flex items-center gap-2 bg-stone-50 rounded-2xl p-1.5 border border-stone-100 shadow-inner">
-                            <button onClick={() => updateQuantity(product.id, cartItem.quantity - 1)} className="w-10 h-10 flex items-center justify-center bg-white rounded-xl text-stone-500 shadow-sm hover:text-rose-500 hover:bg-rose-50 active:scale-90 transition-all border border-stone-100">
-                              <Minus className="w-4 h-4 font-bold" />
-                            </button>
-                            <span className="w-8 text-center text-sm font-black text-stone-800">
-                              {cartItem.quantity}
-                            </span>
-                            <button onClick={() => updateQuantity(product.id, cartItem.quantity + 1)} disabled={product.stock !== undefined && cartItem.quantity >= product.stock} className="w-10 h-10 flex items-center justify-center bg-stone-900 rounded-xl text-white shadow-xl hover:bg-stone-800 active:scale-90 transition-all disabled:opacity-50">
-                              <Plus className="w-4 h-4 font-bold" />
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => addToCart(product)}
-                            disabled={product.stock !== undefined && product.stock <= 0}
-                            className={`w-14 h-14 flex items-center justify-center rounded-2xl transition-all shadow-xl active:scale-90 relative overflow-hidden ${product.stock !== undefined && product.stock <= 0 ? 'bg-stone-100 text-stone-300 cursor-not-allowed' : 'bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/20 group-hover:rotate-6'}`}
-                          >
-                            {product.stock !== undefined && product.stock <= 0 ? (
-                              <X className="w-6 h-6" />
-                            ) : (
-                              <Plus className="w-8 h-8 relative z-10" />
-                            )}
-                          </button>
-                        )}
+                    <div className="flex items-start gap-5 group">
+                      <div className="bg-stone-50 group-hover:bg-rose-500 group-hover:text-white p-4 rounded-2xl text-stone-600 transition-all duration-300 shadow-sm border border-stone-100">
+                        <Mail className="w-6 h-6" />
                       </div>
-                    </div>
-                   </motion.div>
-                   );
-                })}
-              </motion.div>
-            ) : (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center py-32 bg-white rounded-[3rem] border border-dashed border-stone-200"
-              >
-                <div className="bg-stone-100 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Search className="w-10 h-10 text-stone-300" />
-                </div>
-                <h3 className="text-2xl font-black text-stone-900 mb-2">{t.noProducts}</h3>
-                <p className="text-stone-500 font-medium tracking-wide">Try adjusting your search or filter.</p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </section>
-
-      {/* Premium Contact Section */}
-      <section id="contact" className="py-24 bg-stone-50 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-rose-500/5 rounded-full blur-[100px] pointer-events-none"></div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="bg-white rounded-[3rem] overflow-hidden shadow-2xl shadow-stone-200/50 border border-stone-100">
-            <div className="grid lg:grid-cols-2">
-              <div className="p-10 md:p-20 flex flex-col justify-center relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-rose-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-                <h2 className="text-4xl md:text-5xl font-black text-[#1a1a1a] mb-6 tracking-tight relative z-10">{t.getInTouch}</h2>
-                <p className="text-stone-500 mb-12 text-lg font-medium leading-relaxed relative z-10">{t.contactDesc}</p>
-
-                <div className="space-y-8 relative z-10">
-                  <div className="flex items-start gap-5 group">
-                    <div className="bg-stone-50 group-hover:bg-rose-500 group-hover:text-white p-4 rounded-2xl text-stone-600 transition-all duration-300 shadow-sm border border-stone-100">
-                      <Phone className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-stone-400 font-bold uppercase tracking-widest mb-1.5">{t.callUs}</p>
-                      <div className="flex flex-col gap-1.5">
-                        <a href={`https://wa.me/${settings.whatsapp_1 || '916384137974'}`} target="_blank" rel="noopener noreferrer" className="text-stone-800 font-black text-xl hover:text-rose-500 transition-colors flex items-center gap-2">
-                          <MessageCircle className="w-5 h-5 text-[#25D366]" /> +{settings.whatsapp_1 || '91 6384137974'}
-                        </a>
-                        <a href={`https://wa.me/${settings.whatsapp_2 || '918940324030'}`} target="_blank" rel="noopener noreferrer" className="text-stone-800 font-black text-xl hover:text-rose-500 transition-colors flex items-center gap-2">
-                          <MessageCircle className="w-5 h-5 text-[#25D366]" /> +{settings.whatsapp_2 || '91 8940324030'}
-                        </a>
+                      <div>
+                        <p className="text-xs text-stone-400 font-bold uppercase tracking-widest mb-1.5">{t.emailUs}</p>
+                        <a href="mailto:rappaniazzam@gmail.com" className="text-stone-800 font-black text-xl hover:text-rose-500 transition-colors">rappaniazzam@gmail.com</a>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-5 group">
-                    <div className="bg-stone-50 group-hover:bg-rose-500 group-hover:text-white p-4 rounded-2xl text-stone-600 transition-all duration-300 shadow-sm border border-stone-100">
-                      <Mail className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-stone-400 font-bold uppercase tracking-widest mb-1.5">{t.emailUs}</p>
-                      <a href="mailto:rappaniazzam@gmail.com" className="text-stone-800 font-black text-xl hover:text-rose-500 transition-colors">rappaniazzam@gmail.com</a>
-                    </div>
+                  <div className="mt-14 pt-10 border-t border-stone-100 flex flex-wrap gap-4 relative z-10">
+                    <a href={`https://wa.me/${settings.whatsapp_1 || '916384137974'}`} target="_blank" rel="noopener noreferrer" className="bg-stone-50 hover:bg-[#25D366] text-stone-700 hover:text-white px-8 py-4 rounded-full transition-all hover:scale-105 active:scale-95 shadow-sm hover:shadow-[#25D366]/30 flex items-center gap-3 font-bold border border-stone-200 hover:border-transparent group">
+                      <MessageCircle className="w-5 h-5 text-[#25D366] group-hover:text-white" /> Link 1
+                    </a>
+                    <a href={`https://wa.me/${settings.whatsapp_2 || '918940324030'}`} target="_blank" rel="noopener noreferrer" className="bg-stone-50 hover:bg-[#25D366] text-stone-700 hover:text-white px-8 py-4 rounded-full transition-all hover:scale-105 active:scale-95 shadow-sm hover:shadow-[#25D366]/30 flex items-center gap-3 font-bold border border-stone-200 hover:border-transparent group">
+                      <MessageCircle className="w-5 h-5 text-[#25D366] group-hover:text-white" /> Link 2
+                    </a>
+                    <a href="https://instagram.com/frds_call_me_rappani" target="_blank" rel="noopener noreferrer" className="bg-stone-50 hover:bg-gradient-to-tr hover:from-[#f09433] hover:via-[#e6683c] hover:to-[#bc1888] text-stone-600 hover:text-white p-4 rounded-full transition-all hover:scale-110 shadow-sm hover:shadow-[#bc1888]/30 border border-stone-200 hover:border-transparent">
+                      <Instagram className="w-5 h-5" />
+                    </a>
                   </div>
                 </div>
 
-                <div className="mt-14 pt-10 border-t border-stone-100 flex flex-wrap gap-4 relative z-10">
-                  <a href={`https://wa.me/${settings.whatsapp_1 || '916384137974'}`} target="_blank" rel="noopener noreferrer" className="bg-stone-50 hover:bg-[#25D366] text-stone-700 hover:text-white px-8 py-4 rounded-full transition-all hover:scale-105 active:scale-95 shadow-sm hover:shadow-[#25D366]/30 flex items-center gap-3 font-bold border border-stone-200 hover:border-transparent group">
-                    <MessageCircle className="w-5 h-5 text-[#25D366] group-hover:text-white" /> Link 1
-                  </a>
-                  <a href={`https://wa.me/${settings.whatsapp_2 || '918940324030'}`} target="_blank" rel="noopener noreferrer" className="bg-stone-50 hover:bg-[#25D366] text-stone-700 hover:text-white px-8 py-4 rounded-full transition-all hover:scale-105 active:scale-95 shadow-sm hover:shadow-[#25D366]/30 flex items-center gap-3 font-bold border border-stone-200 hover:border-transparent group">
-                    <MessageCircle className="w-5 h-5 text-[#25D366] group-hover:text-white" /> Link 2
-                  </a>
-                  <a href="https://instagram.com/frds_call_me_rappani" target="_blank" rel="noopener noreferrer" className="bg-stone-50 hover:bg-gradient-to-tr hover:from-[#f09433] hover:via-[#e6683c] hover:to-[#bc1888] text-stone-600 hover:text-white p-4 rounded-full transition-all hover:scale-110 shadow-sm hover:shadow-[#bc1888]/30 border border-stone-200 hover:border-transparent">
-                    <Instagram className="w-5 h-5" />
-                  </a>
-                </div>
+                <a
+                  href="https://maps.app.goo.gl/QwQ3ePTo52WKz6A79?g_st=aw"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="relative min-h-[400px] lg:h-auto bg-stone-100 block cursor-pointer group overflow-hidden p-6"
+                >
+                  <div className="absolute inset-4 rounded-[2rem] overflow-hidden shadow-inner">
+                    <img src={settings.location_image || "https://picsum.photos/seed/storefront/800/800"} alt="Store Location" className="w-full h-full object-cover opacity-90 group-hover:scale-110 transition-transform duration-1000 ease-out" referrerPolicy="no-referrer" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a]/90 via-[#1a1a1a]/40 to-transparent"></div>
+                    <div className="absolute bottom-8 left-8 right-8 bg-white/10 backdrop-blur-xl border border-white/20 p-6 rounded-3xl group-hover:bg-white/20 transition-all group-hover:-translate-y-2 duration-500">
+                      <div className="flex items-center gap-3 text-white mb-3">
+                        <div className="bg-rose-500 p-2 rounded-full shadow-lg shadow-rose-500/40">
+                          <MapPin className="w-5 h-5 text-white" />
+                        </div>
+                        <h3 className="font-black text-xl">{t.addressTitle}</h3>
+                      </div>
+                      <p className="text-stone-200 text-sm font-medium leading-relaxed">{t.addressDesc}</p>
+                      <div className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-white bg-white/20 px-4 py-2 rounded-full backdrop-blur-md">
+                        Get Directions ↗
+                      </div>
+                    </div>
+                  </div>
+                </a>
               </div>
-
-              <a
-                href="https://maps.app.goo.gl/QwQ3ePTo52WKz6A79?g_st=aw"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="relative min-h-[400px] lg:h-auto bg-stone-100 block cursor-pointer group overflow-hidden p-6"
-              >
-                <div className="absolute inset-4 rounded-[2rem] overflow-hidden shadow-inner">
-                  <img src={settings.location_image || "https://picsum.photos/seed/storefront/800/800"} alt="Store Location" className="w-full h-full object-cover opacity-90 group-hover:scale-110 transition-transform duration-1000 ease-out" referrerPolicy="no-referrer" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a]/90 via-[#1a1a1a]/40 to-transparent"></div>
-                  <div className="absolute bottom-8 left-8 right-8 bg-white/10 backdrop-blur-xl border border-white/20 p-6 rounded-3xl group-hover:bg-white/20 transition-all group-hover:-translate-y-2 duration-500">
-                    <div className="flex items-center gap-3 text-white mb-3">
-                      <div className="bg-rose-500 p-2 rounded-full shadow-lg shadow-rose-500/40">
-                         <MapPin className="w-5 h-5 text-white" />
-                      </div>
-                      <h3 className="font-black text-xl">{t.addressTitle}</h3>
-                    </div>
-                    <p className="text-stone-200 text-sm font-medium leading-relaxed">{t.addressDesc}</p>
-                    <div className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-white bg-white/20 px-4 py-2 rounded-full backdrop-blur-md">
-                      Get Directions ↗
-                    </div>
-                  </div>
-                </div>
-              </a>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Premium Footer */}
-      <footer className="bg-[#0a0a0a] text-stone-400 py-16 border-t border-white/5 relative overflow-hidden">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl h-64 bg-rose-500/5 rounded-full blur-[100px] pointer-events-none"></div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          <div className="flex items-center justify-center gap-3 mb-8">
-            <div className="bg-rose-500/10 p-3 rounded-2xl border border-rose-500/20">
-               <Store className="w-8 h-8 text-rose-500" />
+        {/* Premium Footer */}
+        <footer className="bg-[#0a0a0a] text-stone-400 py-16 border-t border-white/5 relative overflow-hidden">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl h-64 bg-rose-500/5 rounded-full blur-[100px] pointer-events-none"></div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+            <div className="flex items-center justify-center gap-3 mb-8">
+              <div className="bg-rose-500/10 p-3 rounded-2xl border border-rose-500/20">
+                <Store className="w-8 h-8 text-rose-500" />
+              </div>
+              <h2 className="text-2xl font-black tracking-tight text-white">{t.storeName}</h2>
             </div>
-            <h2 className="text-2xl font-black tracking-tight text-white">{t.storeName}</h2>
+            <p className="mb-10 font-medium text-stone-500">&copy; {new Date().getFullYear()} {t.rights}</p>
+            <div className="flex items-center justify-center gap-2 text-[10px] text-stone-600 font-bold uppercase tracking-[0.2em]">
+              <Database className="w-3.5 h-3.5" /> {t.storageStatus}
+            </div>
           </div>
-          <p className="mb-10 font-medium text-stone-500">&copy; {new Date().getFullYear()} {t.rights}</p>
-          <div className="flex items-center justify-center gap-2 text-[10px] text-stone-600 font-bold uppercase tracking-[0.2em]">
-            <Database className="w-3.5 h-3.5" /> {t.storageStatus}
-          </div>
-        </div>
-      </footer>
+        </footer>
       </main>
 
       {/* Floating Action Buttons */}
       <div className="fixed bottom-6 right-6 lg:bottom-10 lg:right-10 flex flex-col items-end gap-4 z-40">
-        
+
         {/* Back to Top */}
         {showBackToTop && (
           <button
@@ -1211,7 +1219,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
             <div className="px-6 py-5 bg-white/90 backdrop-blur-xl border-b border-stone-100 flex items-center justify-between sticky top-0 z-20">
               <h2 className="text-xl font-extrabold text-stone-800 flex items-center gap-3">
                 <div className="bg-rose-100 p-2.5 rounded-xl shadow-inner shadow-rose-200">
-                  <ShoppingCart className="w-5 h-5 text-rose-500" /> 
+                  <ShoppingCart className="w-5 h-5 text-rose-500" />
                 </div>
                 {t.cart} <span className="bg-stone-800 text-white text-[10px] px-2.5 py-1 rounded-full">{cartItemsCount} Items</span>
               </h2>
@@ -1240,26 +1248,26 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                       <p className="text-[11px] text-white/90 font-medium">Clear payment to confirm your items.</p>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-3">
-                  {cart.map(item => (
-                    <div key={item.product.id} className="flex gap-4 bg-white p-3.5 rounded-2xl shadow-sm border border-stone-100/80 items-center justify-between group hover:shadow-md transition-all hover:border-stone-200">
-                      <div className="flex gap-3 items-center">
-                        <div className="w-[4.5rem] h-[4.5rem] p-1.5 rounded-xl bg-white border border-stone-100 shadow-sm relative shrink-0">
-                          <img src={item.product.image} alt={item.product.name} className="w-full h-full object-contain mix-blend-multiply contrast-[1.15] brightness-[1.05] saturate-[1.1] rounded-lg group-hover:scale-105 transition-transform duration-300" referrerPolicy="no-referrer" />
+                    {cart.map(item => (
+                      <div key={item.product.id} className="flex gap-4 bg-white p-3.5 rounded-2xl shadow-sm border border-stone-100/80 items-center justify-between group hover:shadow-md transition-all hover:border-stone-200">
+                        <div className="flex gap-3 items-center">
+                          <div className="w-[4.5rem] h-[4.5rem] p-1.5 rounded-xl bg-white border border-stone-100 shadow-sm relative shrink-0">
+                            <img src={getPremiumImageUrl(item.product.image)} alt={item.product.name} className="w-full h-full object-contain mix-blend-multiply contrast-[1.15] brightness-[1.05] saturate-[1.1] rounded-lg group-hover:scale-105 transition-transform duration-300" referrerPolicy="no-referrer" />
+                          </div>
+                          <div className="flex flex-col max-w-[140px]">
+                            <h4 className="font-bold text-stone-800 text-sm line-clamp-2 leading-tight mb-1">{item.product.name}</h4>
+                            <p className="font-black text-rose-500 text-sm tracking-tight">₹{Math.round(item.product.price)}</p>
+                          </div>
                         </div>
-                        <div className="flex flex-col max-w-[140px]">
-                          <h4 className="font-bold text-stone-800 text-sm line-clamp-2 leading-tight mb-1">{item.product.name}</h4>
-                          <p className="font-black text-rose-500 text-sm tracking-tight">₹{Math.round(item.product.price)}</p>
+                        <div className="flex items-center gap-1 bg-stone-50 p-1 rounded-xl border border-stone-200/60 shadow-inner shrink-0">
+                          <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)} className="p-2 text-stone-500 hover:text-rose-500 hover:bg-white hover:shadow-sm rounded-lg transition-all active:scale-90"><Minus className="w-3.5 h-3.5" /></button>
+                          <span className="font-bold text-stone-800 text-xs min-w-[20px] text-center">{item.quantity}</span>
+                          <button onClick={() => updateQuantity(item.product.id, item.quantity + 1)} className="p-2 text-stone-500 hover:text-emerald-500 hover:bg-white hover:shadow-sm rounded-lg transition-all active:scale-90"><Plus className="w-3.5 h-3.5" /></button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 bg-stone-50 p-1 rounded-xl border border-stone-200/60 shadow-inner shrink-0">
-                        <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)} className="p-2 text-stone-500 hover:text-rose-500 hover:bg-white hover:shadow-sm rounded-lg transition-all active:scale-90"><Minus className="w-3.5 h-3.5" /></button>
-                        <span className="font-bold text-stone-800 text-xs min-w-[20px] text-center">{item.quantity}</span>
-                        <button onClick={() => updateQuantity(item.product.id, item.quantity + 1)} className="p-2 text-stone-500 hover:text-emerald-500 hover:bg-white hover:shadow-sm rounded-lg transition-all active:scale-90"><Plus className="w-3.5 h-3.5" /></button>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                   </div>
                 </div>
               )}
@@ -1269,19 +1277,19 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
             {cart.length > 0 && (
               <div className="bg-white border-t border-stone-100 shadow-[0_-10px_40px_-5px_rgba(0,0,0,0.08)] z-20 shrink-0 relative flex flex-col max-h-[60vh]">
                 <div className="p-5 sm:p-6 overflow-y-auto hidden-scrollbar pb-6">
-                  
+
                   {/* Delivery Method Selector */}
                   <div className="mb-5">
                     <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-2.5 ml-1">{t.deliveryMethod}</p>
                     <div className="grid grid-cols-2 gap-2 p-1.5 bg-stone-100 rounded-2xl border border-stone-200">
-                      <button 
+                      <button
                         onClick={() => setDeliveryMethod('pickup')}
                         className={`flex flex-col items-center gap-1 py-3 rounded-xl transition-all ${deliveryMethod === 'pickup' ? 'bg-white text-stone-900 shadow-md ring-1 ring-stone-200' : 'text-stone-500 hover:text-stone-700'}`}
                       >
                         <Store className="w-4 h-4" />
                         <span className="text-[10px] font-black uppercase tracking-tighter leading-none">{t.shopPickup}</span>
                       </button>
-                      <button 
+                      <button
                         onClick={() => {
                           setDeliveryMethod('home');
                           if (locationStatus === 'idle') refreshLocation();
@@ -1296,61 +1304,61 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
                   {/* Delivery Info Section */}
                   {deliveryMethod === 'home' && (
-                  <div className="bg-stone-50/50 p-4 rounded-2xl border border-stone-100 mb-5 space-y-3">
-                    <div className="flex justify-between items-start text-[10px] font-black tracking-widest text-stone-400">
-                      <div className="flex flex-col gap-1.5 uppercase">
-                        {distance !== null ? (
-                          <div className="flex items-center gap-2">
-                             <span className={`flex items-center gap-1.5 ${distance > 3 ? 'text-red-500' : 'text-stone-600'}`}>
-                              <MapPin className="w-3.5 h-3.5" /> 
-                              {distance.toFixed(1)}KM {t.distanceToStore}
-                            </span>
-                             <button 
+                    <div className="bg-stone-50/50 p-4 rounded-2xl border border-stone-100 mb-5 space-y-3">
+                      <div className="flex justify-between items-start text-[10px] font-black tracking-widest text-stone-400">
+                        <div className="flex flex-col gap-1.5 uppercase">
+                          {distance !== null ? (
+                            <div className="flex items-center gap-2">
+                              <span className={`flex items-center gap-1.5 ${distance > 3 ? 'text-red-500' : 'text-stone-600'}`}>
+                                <MapPin className="w-3.5 h-3.5" />
+                                {distance.toFixed(1)}KM {t.distanceToStore}
+                              </span>
+                              <button
                                 onClick={refreshLocation}
                                 className="bg-stone-100 hover:bg-stone-200 p-1.5 rounded-lg text-stone-500 transition-all active:scale-95"
                                 title={t.refreshLocation}
                               >
                                 <Aperture className={`w-3.5 h-3.5 ${locationStatus === 'checking' ? 'animate-spin text-rose-500' : ''}`} />
                               </button>
-                          </div>
-                        ) : (
-                          <div className="flex flex-col gap-2">
-                            <span className="flex items-center gap-1.5 text-stone-400">
-                              {locationStatus === 'checking' ? (
-                                <><div className="w-3 h-3 border-2 border-stone-300 border-t-stone-500 rounded-full animate-spin" /> {t.calculatingLocation}</>
-                              ) : (
-                                <><Info className="w-3.5 h-3.5 text-amber-500" /> {t.locationBlocked}</>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col gap-2">
+                              <span className="flex items-center gap-1.5 text-stone-400">
+                                {locationStatus === 'checking' ? (
+                                  <><div className="w-3 h-3 border-2 border-stone-300 border-t-stone-500 rounded-full animate-spin" /> {t.calculatingLocation}</>
+                                ) : (
+                                  <><Info className="w-3.5 h-3.5 text-amber-500" /> {t.locationBlocked}</>
+                                )}
+                              </span>
+                              {locationStatus !== 'checking' && (
+                                <button
+                                  onClick={refreshLocation}
+                                  className="bg-stone-900 hover:bg-stone-800 text-white px-3 py-2 rounded-xl flex items-center gap-2 text-[10px] uppercase font-black transition-all shadow-md active:scale-95 w-max"
+                                >
+                                  <Aperture className="w-3.5 h-3.5" /> {t.refreshLocation}
+                                </button>
                               )}
-                            </span>
-                            {locationStatus !== 'checking' && (
-                              <button 
-                                onClick={refreshLocation}
-                                className="bg-stone-900 hover:bg-stone-800 text-white px-3 py-2 rounded-xl flex items-center gap-2 text-[10px] uppercase font-black transition-all shadow-md active:scale-95 w-max"
-                              >
-                                <Aperture className="w-3.5 h-3.5" /> {t.refreshLocation}
-                              </button>
-                            )}
-                          </div>
+                            </div>
+                          )}
+                        </div>
+                        {distance !== null && distance > 3 && (
+                          <span className="text-red-500 font-black animate-pulse px-2 py-1 bg-red-50 rounded-lg border border-red-100">OVER LIMIT</span>
                         )}
                       </div>
-                      {distance !== null && distance > 3 && (
-                        <span className="text-red-500 font-black animate-pulse px-2 py-1 bg-red-50 rounded-lg border border-red-100">OVER LIMIT</span>
-                      )}
+                      <div className="flex justify-between items-center">
+                        <span className="text-[11px] font-bold text-stone-500 uppercase tracking-widest">{t.deliveryFee}</span>
+                        <span className={`font-black text-sm ${deliveryFee === 0 ? 'text-emerald-500' : 'text-stone-900'}`}>
+                          {deliveryFee === 0 ? t.freeDelivery : `₹${deliveryFee}`}
+                        </span>
+                      </div>
+
+                      <textarea
+                        placeholder={t.enterAddress}
+                        value={deliveryAddress}
+                        onChange={(e) => setDeliveryAddress(e.target.value)}
+                        className={`w-full px-4 py-3 bg-white border rounded-xl text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 text-stone-800 placeholder:text-stone-400 placeholder:font-medium mb-1 resize-none h-20 ${checkoutError && !deliveryAddress ? 'border-red-400 bg-red-50/50' : 'border-stone-200'}`}
+                      />
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-[11px] font-bold text-stone-500 uppercase tracking-widest">{t.deliveryFee}</span>
-                      <span className={`font-black text-sm ${deliveryFee === 0 ? 'text-emerald-500' : 'text-stone-900'}`}>
-                        {deliveryFee === 0 ? t.freeDelivery : `₹${deliveryFee}`}
-                      </span>
-                    </div>
-                    
-                    <textarea 
-                      placeholder={t.enterAddress}
-                      value={deliveryAddress}
-                      onChange={(e) => setDeliveryAddress(e.target.value)}
-                      className={`w-full px-4 py-3 bg-white border rounded-xl text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 text-stone-800 placeholder:text-stone-400 placeholder:font-medium mb-1 resize-none h-20 ${checkoutError && !deliveryAddress ? 'border-red-400 bg-red-50/50' : 'border-stone-200'}`}
-                    />
-                  </div>
                   )}
 
                   <div className="flex items-end justify-between mb-5">
@@ -1401,44 +1409,44 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                           </button>
                         )}
 
-                         {isOtpSent && !isPhoneVerified && (
-                           <div className="flex flex-col gap-2 mt-2.5 animate-in fade-in slide-in-from-top-2">
-                             {mockOtp && (
-                               <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl mb-1">
-                                  <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                                    <Sparkles className="w-3.5 h-3.5" /> Test Mode: Enter this OTP
-                                  </p>
-                                  <div className="flex gap-2">
-                                     {mockOtp.split('').map((digit, i) => (
-                                       <span key={i} className="flex-1 bg-white border border-amber-300 py-2 rounded-lg text-center font-black text-amber-600 text-lg shadow-sm">{digit}</span>
-                                     ))}
-                                  </div>
-                               </div>
-                             )}
-                             <div className="flex gap-2 items-center">
-                               <input
-                                 type="text"
-                                 maxLength={4}
-                                 value={otpInput}
-                                 onChange={e => setOtpInput(e.target.value.replace(/[^0-9]/g, ''))}
-                                 placeholder="Enter 4-digit OTP"
-                                 className="w-full px-4 py-3 bg-white border border-stone-300 rounded-xl text-lg font-black tracking-[0.3em] text-center outline-none focus:ring-4 focus:ring-rose-500/20 focus:border-rose-500 shadow-inner"
-                               />
-                               <button onClick={handleVerifyOtp} disabled={isVerifyingOtp} className="whitespace-nowrap bg-stone-900 hover:bg-stone-800 text-white px-6 py-3 rounded-xl font-extrabold text-[11px] uppercase tracking-widest transition-all shadow-md active:scale-95 shrink-0 flex items-center justify-center min-w-[100px] border border-stone-800">
-                                 {isVerifyingOtp ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t.verifyOtp}
-                               </button>
-                             </div>
-                             <button 
-                               onClick={() => { setIsOtpSent(false); setMockOtp(null); }} 
-                               className="text-[10px] text-stone-400 font-bold uppercase tracking-widest hover:text-rose-500 transition-colors self-center p-2"
-                             >
-                               Wrong number? Change it
-                             </button>
-                           </div>
-                         )}
+                        {isOtpSent && !isPhoneVerified && (
+                          <div className="flex flex-col gap-2 mt-2.5 animate-in fade-in slide-in-from-top-2">
+                            {mockOtp && (
+                              <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl mb-1">
+                                <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                                  <Sparkles className="w-3.5 h-3.5" /> Test Mode: Enter this OTP
+                                </p>
+                                <div className="flex gap-2">
+                                  {mockOtp.split('').map((digit, i) => (
+                                    <span key={i} className="flex-1 bg-white border border-amber-300 py-2 rounded-lg text-center font-black text-amber-600 text-lg shadow-sm">{digit}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            <div className="flex gap-2 items-center">
+                              <input
+                                type="text"
+                                maxLength={4}
+                                value={otpInput}
+                                onChange={e => setOtpInput(e.target.value.replace(/[^0-9]/g, ''))}
+                                placeholder="Enter 4-digit OTP"
+                                className="w-full px-4 py-3 bg-white border border-stone-300 rounded-xl text-lg font-black tracking-[0.3em] text-center outline-none focus:ring-4 focus:ring-rose-500/20 focus:border-rose-500 shadow-inner"
+                              />
+                              <button onClick={handleVerifyOtp} disabled={isVerifyingOtp} className="whitespace-nowrap bg-stone-900 hover:bg-stone-800 text-white px-6 py-3 rounded-xl font-extrabold text-[11px] uppercase tracking-widest transition-all shadow-md active:scale-95 shrink-0 flex items-center justify-center min-w-[100px] border border-stone-800">
+                                {isVerifyingOtp ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t.verifyOtp}
+                              </button>
+                            </div>
+                            <button
+                              onClick={() => { setIsOtpSent(false); setMockOtp(null); }}
+                              className="text-[10px] text-stone-400 font-bold uppercase tracking-widest hover:text-rose-500 transition-colors self-center p-2"
+                            >
+                              Wrong number? Change it
+                            </button>
+                          </div>
+                        )}
 
                         {isPhoneVerified && (
-                          <p className="text-[11px] text-emerald-600 font-extrabold mt-2 flex items-center gap-1.5 bg-emerald-50 py-2 px-3 rounded-xl border border-emerald-100 w-max tracking-wide uppercase"><ShieldCheck className="w-4 h-4"/> Verified Identity</p>
+                          <p className="text-[11px] text-emerald-600 font-extrabold mt-2 flex items-center gap-1.5 bg-emerald-50 py-2 px-3 rounded-xl border border-emerald-100 w-max tracking-wide uppercase"><ShieldCheck className="w-4 h-4" /> Verified Identity</p>
                         )}
                       </div>
                     </div>
@@ -1469,11 +1477,11 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                         <div className="w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-[200%] group-hover:translate-x-[200%] transition-transform duration-1000 ease-in-out"></div>
                       </div>
                       <div className="flex items-center gap-2 relative z-10">
-                         📋 COPY UPI ID & PAY
+                        📋 COPY UPI ID & PAY
                       </div>
                       <span className="text-[9px] font-bold text-stone-400 uppercase tracking-[0.2em] relative z-10">100% Secure • Bank Bypass</span>
                     </button>
-                    
+
                     <button
                       onClick={handleWhatsAppCheckout}
                       className="col-span-2 bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-2xl font-extrabold text-[15px] transition-all hover:shadow-xl hover:shadow-[#25D366]/30 active:scale-[0.98] flex items-center justify-center gap-2 relative overflow-hidden group"
@@ -1488,22 +1496,22 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                   {showGPayConfirm && (
                     <div className="mt-2 bg-[#1C1C1E] p-5 sm:p-6 rounded-2xl border border-stone-800 flex flex-col items-center justify-center transition-all animate-in zoom-in-95 duration-300 text-center shadow-2xl relative overflow-hidden">
                       <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl translate-x-12 -translate-y-12 pointer-events-none"></div>
-                      <p className="font-extrabold text-white text-sm mb-2 flex items-center gap-2 uppercase tracking-wide"><ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0"/> Secure Verification</p>
+                      <p className="font-extrabold text-white text-sm mb-2 flex items-center gap-2 uppercase tracking-wide"><ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" /> Secure Verification</p>
                       <p className="text-[11px] text-stone-400 mb-5 font-medium px-2 leading-relaxed tracking-wide">Please copy and paste the 12-digit UPI Reference / UTR Number from your banking app to confirm the order.</p>
-                      <input 
-                        type="text" 
-                        placeholder="e.g. 412345678901" 
+                      <input
+                        type="text"
+                        placeholder="e.g. 412345678901"
                         maxLength={12}
                         value={utrNumber}
                         onChange={(e) => setUtrNumber(e.target.value.replace(/[^0-9]/g, ''))}
-                        className="w-full text-center tracking-[0.25em] font-mono p-4 bg-black/50 text-emerald-400 rounded-xl border border-stone-700 mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-black placeholder:text-stone-700 text-lg shadow-inner" 
+                        className="w-full text-center tracking-[0.25em] font-mono p-4 bg-black/50 text-emerald-400 rounded-xl border border-stone-700 mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-black placeholder:text-stone-700 text-lg shadow-inner"
                       />
                       <button
                         onClick={handleGPayConfirm}
                         className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-black py-4 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all active:scale-95 flex items-center justify-center gap-2 text-sm uppercase tracking-widest relative overflow-hidden group"
                       >
-                         <span className="relative z-10 flex items-center gap-2">Confirm Payment <ShieldCheck className="w-4 h-4"/></span>
-                         <div className="absolute inset-0 bg-white/20 w-full h-full -translate-x-full group-hover:translate-x-full transition-transform duration-500 ease-in-out blur-md"></div>
+                        <span className="relative z-10 flex items-center gap-2">Confirm Payment <ShieldCheck className="w-4 h-4" /></span>
+                        <div className="absolute inset-0 bg-white/20 w-full h-full -translate-x-full group-hover:translate-x-full transition-transform duration-500 ease-in-out blur-md"></div>
                       </button>
                       <button onClick={() => setShowGPayConfirm(false)} className="mt-4 text-[11px] text-stone-500 hover:text-white uppercase font-bold tracking-[0.1em] transition-colors p-2">Close / Go Back</button>
                     </div>
@@ -1518,21 +1526,21 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
       <AnimatePresence>
         {selectedProduct && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6 lg:p-8">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSelectedProduct(null)}
               className="absolute inset-0 bg-stone-950/80 backdrop-blur-xl"
             />
-            
-            <motion.div 
+
+            <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               className="relative w-full max-w-4xl bg-white rounded-[3rem] shadow-2xl overflow-hidden flex flex-col md:grid md:grid-cols-2 max-h-[90vh]"
             >
-              <button 
+              <button
                 onClick={() => setSelectedProduct(null)}
                 className="absolute top-6 right-6 w-12 h-12 bg-white/80 backdrop-blur-md hover:bg-rose-100 text-stone-500 hover:text-rose-600 rounded-full flex items-center justify-center transition-all z-20 shadow-md border border-stone-100"
               >
@@ -1541,9 +1549,9 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
               <div className="h-full bg-white flex items-center justify-center p-8 md:p-12 relative overflow-hidden xl:border-r border-stone-100">
                 <div className="absolute inset-0 bg-gradient-to-tr from-stone-100/30 to-transparent"></div>
-                <img 
-                  src={selectedProduct.image} 
-                  alt={selectedProduct.name} 
+                <img
+                  src={getPremiumImageUrl(selectedProduct.image)}
+                  alt={selectedProduct.name}
                   className="w-full h-full object-contain mix-blend-multiply contrast-[1.15] brightness-[1.05] saturate-[1.1] relative z-10 drop-shadow-2xl hover:scale-105 transition-transform duration-700"
                   referrerPolicy="no-referrer"
                 />
@@ -1571,12 +1579,12 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                   ))}
                   <span className="text-xs font-bold text-stone-400 ml-2">(4.8/5)</span>
                   <span className="ml-auto bg-stone-900 text-white text-[9px] font-black uppercase px-2 py-1 rounded flex items-center gap-1 leading-none tracking-tighter">
-                     <TrendingUp className="w-3 h-3 text-rose-400" /> Best Seller
+                    <TrendingUp className="w-3 h-3 text-rose-400" /> Best Seller
                   </span>
                 </div>
 
                 <h2 className="text-3xl md:text-4xl font-black text-stone-900 mb-6 leading-tight">{selectedProduct.name}</h2>
-                
+
                 <div className="flex items-end gap-3 mb-10 pb-10 border-b border-stone-100">
                   <span className="text-5xl font-black text-stone-900 tracking-tighter">₹{Math.round(selectedProduct.price)}</span>
                   {selectedProduct.originalPrice && selectedProduct.originalPrice > selectedProduct.price && (
@@ -1591,22 +1599,22 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
                 <div className="mt-auto flex flex-col gap-4">
                   {cart.find(c => c.product.id === selectedProduct.id) ? (
-                     <div className="flex items-center justify-between bg-stone-50 p-6 rounded-3xl border border-stone-100 shadow-inner">
-                        <div className="flex flex-col">
-                          <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">In your cart</span>
-                          <span className="text-stone-800 font-black text-xl">{cart.find(c => c.product.id === selectedProduct.id)?.quantity} Items</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                           <button onClick={() => updateQuantity(selectedProduct.id, (cart.find(c => c.product.id === selectedProduct.id)?.quantity || 1) - 1)} className="w-12 h-12 flex items-center justify-center bg-white rounded-2xl text-rose-500 shadow-sm hover:bg-rose-50 transition-all border border-stone-100">
-                              <Minus className="w-5 h-5 font-bold" />
-                           </button>
-                           <button onClick={() => updateQuantity(selectedProduct.id, (cart.find(c => c.product.id === selectedProduct.id)?.quantity || 1) + 1)} disabled={selectedProduct.stock !== undefined && (cart.find(c => c.product.id === selectedProduct.id)?.quantity || 0) >= selectedProduct.stock} className="w-12 h-12 flex items-center justify-center bg-stone-900 rounded-2xl text-white shadow-xl hover:bg-stone-800 transition-all disabled:opacity-50">
-                              <Plus className="w-5 h-5 font-bold" />
-                           </button>
-                        </div>
-                     </div>
+                    <div className="flex items-center justify-between bg-stone-50 p-6 rounded-3xl border border-stone-100 shadow-inner">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">In your cart</span>
+                        <span className="text-stone-800 font-black text-xl">{cart.find(c => c.product.id === selectedProduct.id)?.quantity} Items</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button onClick={() => updateQuantity(selectedProduct.id, (cart.find(c => c.product.id === selectedProduct.id)?.quantity || 1) - 1)} className="w-12 h-12 flex items-center justify-center bg-white rounded-2xl text-rose-500 shadow-sm hover:bg-rose-50 transition-all border border-stone-100">
+                          <Minus className="w-5 h-5 font-bold" />
+                        </button>
+                        <button onClick={() => updateQuantity(selectedProduct.id, (cart.find(c => c.product.id === selectedProduct.id)?.quantity || 1) + 1)} disabled={selectedProduct.stock !== undefined && (cart.find(c => c.product.id === selectedProduct.id)?.quantity || 0) >= selectedProduct.stock} className="w-12 h-12 flex items-center justify-center bg-stone-900 rounded-2xl text-white shadow-xl hover:bg-stone-800 transition-all disabled:opacity-50">
+                          <Plus className="w-5 h-5 font-bold" />
+                        </button>
+                      </div>
+                    </div>
                   ) : (
-                    <button 
+                    <button
                       onClick={() => addToCart(selectedProduct)}
                       disabled={selectedProduct.stock !== undefined && selectedProduct.stock <= 0}
                       className="w-full bg-rose-500 hover:bg-rose-600 text-white py-6 rounded-[2rem] font-black text-xl shadow-2xl shadow-rose-500/30 transition-all active:scale-[0.98] flex items-center justify-center gap-4 disabled:opacity-50"
@@ -1615,7 +1623,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                     </button>
                   )}
 
-                  <a 
+                  <a
                     href={`https://wa.me/${settings.whatsapp_1 || '916384137974'}?text=Hi, I'm interested in: ${selectedProduct.name}`}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -1627,20 +1635,20 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                   {/* Related Products */}
                   <div className="mt-10 pt-10 border-t border-stone-100">
                     <h3 className="text-sm font-black text-stone-900 uppercase tracking-widest mb-6 flex items-center gap-2">
-                       <Sparkles className="w-4 h-4 text-rose-500" /> You might also like
+                      <Sparkles className="w-4 h-4 text-rose-500" /> You might also like
                     </h3>
                     <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
                       {products
                         .filter(p => p.category === selectedProduct.category && p.id !== selectedProduct.id)
                         .slice(0, 4)
                         .map(p => (
-                          <div 
-                            key={p.id} 
+                          <div
+                            key={p.id}
                             onClick={() => setSelectedProduct(p)}
                             className="min-w-[140px] group cursor-pointer"
                           >
                             <div className="aspect-square bg-white rounded-2xl p-4 mb-3 border border-stone-100 shadow-sm group-hover:border-rose-200 transition-all overflow-hidden flex items-center justify-center">
-                              <img src={p.image} alt={p.name} className="w-full h-full object-contain mix-blend-multiply contrast-[1.15] brightness-[1.05] saturate-[1.1] group-hover:scale-110 transition-transform duration-500" />
+                              <img src={getPremiumImageUrl(p.image)} alt={p.name} className="w-full h-full object-contain mix-blend-multiply contrast-[1.15] brightness-[1.05] saturate-[1.1] group-hover:scale-110 transition-transform duration-500" />
                             </div>
                             <h4 className="text-xs font-bold text-stone-800 line-clamp-1 group-hover:text-rose-500 transition-colors uppercase tracking-tight">{p.name}</h4>
                             <p className="text-xs font-black text-stone-900 mt-0.5">₹{Math.round(p.price)}</p>
@@ -1689,7 +1697,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
   }, [isAuthenticated, adminTab]);
 
   const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
-  
+
   const handleDeleteOrder = async (orderId: string) => {
     if (!window.confirm("Are you sure you want to delete this order?")) return;
     setDeletingOrderId(orderId);
@@ -2514,7 +2522,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
                         <tr key={product.id} className="hover:bg-stone-50 transition-colors group">
                           <td className="p-4 flex items-center gap-4">
                             <img
-                              src={product.image}
+                              src={getPremiumImageUrl(product.image)}
                               alt={product.name}
                               className="w-16 h-16 rounded-lg object-cover border border-stone-200 shadow-sm"
                               referrerPolicy="no-referrer"
@@ -2609,7 +2617,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
                           <div className="text-sm max-h-24 overflow-y-auto pr-2">
                             {order.items.map((item, idx) => (
                               <div key={idx} className="mb-1 border-b border-stone-100 last:border-0 pb-1 flex gap-2 items-center">
-                                <img src={item.product.image} alt={item.product.name} className="w-8 h-8 rounded object-cover" />
+                                <img src={getPremiumImageUrl(item.product.image)} alt={item.product.name} className="w-8 h-8 rounded object-cover" />
                                 <div>
                                   <p className="font-semibold text-stone-800 line-clamp-1 leading-tight">{item.product.name}</p>
                                   <p className="text-xs text-stone-500">₹{Math.round(item.product.price)} x {item.quantity}</p>
