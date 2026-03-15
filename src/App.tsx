@@ -1663,21 +1663,6 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
           </div>
         )}
       </AnimatePresence>
-
-      {/* Floating WhatsApp Quick Action */}
-      <a 
-        href={`https://wa.me/${settings.whatsapp_1 || '916384137974'}?text=Hi! I am looking at your store and need some assistance.`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-6 lg:bottom-10 right-6 lg:right-10 z-[100] w-14 h-14 md:w-16 md:h-16 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-full flex items-center justify-center shadow-2xl hover:shadow-[#25D366]/50 hover:scale-110 active:scale-95 transition-all group"
-        aria-label="Chat on WhatsApp"
-      >
-        <MessageCircle className="w-7 h-7 md:w-8 md:h-8" />
-        <span className="absolute -top-1 -right-1 flex h-4 w-4 md:h-5 md:w-5">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-4 w-4 md:h-5 md:w-5 bg-rose-500 border-2 border-white"></span>
-        </span>
-      </a>
     </div>
   );
 }
