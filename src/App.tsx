@@ -151,7 +151,7 @@ const translations = {
     products: "Products",
     contact: "Contact",
     adminLogin: "Admin Login",
-    welcome: "Welcome to our store",
+    welcome: "Welcome to Rappani Premium Store v3.0",
     heroTitle1: "Your One-Stop Shop for",
     heroTitle2: "Stationary",
     heroTitle3: "&",
@@ -225,7 +225,7 @@ const translations = {
     products: "பொருட்கள்",
     contact: "தொடர்புக்கு",
     adminLogin: "அட்மின்",
-    welcome: "எங்கள் கடைக்கு வரவேற்கிறோம்",
+    welcome: "ரப்பாணி பிரீமியம் ஸ்டோர் v3.0-க்கு வரவேற்கிறோம்",
     heroTitle1: "உங்களுக்கு தேவையான",
     heroTitle2: "ஸ்டேஷனரி",
     heroTitle3: "மற்றும்",
@@ -849,7 +849,14 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
       <main>
         {/* Premium Hero Section */}
-        <section id="home" className="relative bg-[#0a0a0a] text-white overflow-hidden min-h-[95vh] flex items-center">
+        <AnimatePresence>
+          {!searchQuery && (
+            <motion.section 
+              id="home" 
+              initial={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="relative bg-[#0a0a0a] text-white overflow-hidden min-h-[95vh] flex items-center"
+            >
           {/* Animated Background Orbs */}
           <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-rose-500/10 rounded-full blur-[120px] mix-blend-screen pointer-events-none animate-pulse duration-10000"></div>
           <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[150px] mix-blend-screen pointer-events-none"></div>
@@ -915,32 +922,37 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
               </div>
             </motion.div>
           </div>
-        </section>
+        </motion.section>
+          )}
+        </AnimatePresence>
+
         {/* Products Section */}
-        <section id="products" className="py-24 bg-stone-50">
+        <section id="products" className={`py-24 bg-stone-50 transition-all duration-700 ${searchQuery ? 'pt-32' : ''}`}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-black text-stone-900 mb-6 tracking-tight">{t.featuredProducts}</h2>
-              <p className="text-stone-500 max-w-2xl mx-auto text-lg font-medium tracking-wide">{t.featuredDesc}</p>
-            </div>
+            {!searchQuery && (
+              <div className="text-center mb-16">
+                <h2 className="text-4xl md:text-5xl font-black text-stone-900 mb-6 tracking-tight">{t.featuredProducts}</h2>
+                <p className="text-stone-500 max-w-2xl mx-auto text-lg font-medium tracking-wide">{t.featuredDesc}</p>
+              </div>
+            )}
 
             {/* Dynamic Search & Category Bar */}
-            <div className={`mb-10 flex flex-col bg-white/90 backdrop-blur-2xl rounded-[2rem] shadow-xl shadow-stone-200/40 border border-white sticky top-[80px] z-40 transition-all duration-500 ${searchQuery ? 'max-w-sm mx-auto p-2 gap-0 shadow-md' : 'max-w-full p-3 md:p-4 gap-4'}`}>
+            <div className={`mb-12 flex flex-col bg-white/95 backdrop-blur-3xl rounded-2xl shadow-xl shadow-stone-200/40 border border-stone-100 transition-all duration-700 sticky top-10 z-50 ${searchQuery ? 'max-w-xs mx-auto p-1' : 'max-w-full p-4 gap-4'}`}>
               <div className="relative w-full group">
-                <Search className={`absolute left-5 top-1/2 -translate-y-1/2 transition-all ${searchQuery ? 'w-3.5 h-3.5 text-rose-500' : 'w-4 h-4 text-stone-300 group-focus-within:text-rose-500'}`} />
+                <Search className={`absolute left-4 top-1/2 -translate-y-1/2 transition-all ${searchQuery ? 'w-3 h-3 text-rose-500' : 'w-4 h-4 text-stone-300 group-focus-within:text-rose-500'}`} />
                 <input
                   type="text"
                   placeholder={t.searchPlaceholder}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className={`w-full border border-stone-100 rounded-full focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 transition-all outline-none text-stone-800 font-bold shadow-inner ${searchQuery ? 'pl-10 pr-10 py-2 text-sm bg-white' : 'pl-12 pr-10 py-3 text-base bg-stone-50/50'}`}
+                  className={`w-full border border-stone-100 rounded-xl focus:ring-4 focus:ring-rose-500/5 focus:border-stone-200 transition-all outline-none text-stone-800 font-bold ${searchQuery ? 'pl-9 pr-9 py-1.5 text-xs bg-white' : 'pl-12 pr-10 py-3 text-base bg-stone-50/50'}`}
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-300 hover:text-rose-500 transition-colors p-1"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-300 hover:text-rose-500 transition-colors p-1"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 )}
               </div>
