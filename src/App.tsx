@@ -916,7 +916,9 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                   <p className="text-xs text-stone-500 font-black uppercase tracking-[0.2em]">UPI Payments</p>
                 </div>
               </div>
-            </section>
+            </motion.div>
+          </div>
+        </section>
 
         {/* Products Section */}
         <section id="products" className="py-24 bg-stone-50">
