@@ -937,22 +937,22 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
             )}
 
             {/* Dynamic Search & Category Bar */}
-            <div className={`mb-12 flex flex-col bg-white/95 backdrop-blur-3xl rounded-2xl shadow-xl shadow-stone-200/40 border border-stone-100 transition-all duration-700 sticky top-10 z-50 ${searchQuery ? 'max-w-xs mx-auto p-1' : 'max-w-full p-4 gap-4'}`}>
+            <div className={`mb-12 flex flex-col bg-white/95 backdrop-blur-3xl rounded-xl shadow-lg border border-stone-100 transition-all duration-700 sticky top-4 z-50 ${searchQuery ? 'max-w-[200px] mx-auto p-0.5' : 'max-w-full p-4 gap-4'}`}>
               <div className="relative w-full group">
-                <Search className={`absolute left-4 top-1/2 -translate-y-1/2 transition-all ${searchQuery ? 'w-3 h-3 text-rose-500' : 'w-4 h-4 text-stone-300 group-focus-within:text-rose-500'}`} />
+                <Search className={`absolute left-3 top-1/2 -translate-y-1/2 transition-all ${searchQuery ? 'w-2.5 h-2.5 text-rose-500' : 'w-4 h-4 text-stone-300 group-focus-within:text-rose-500'}`} />
                 <input
                   type="text"
                   placeholder={t.searchPlaceholder}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className={`w-full border border-stone-100 rounded-xl focus:ring-4 focus:ring-rose-500/5 focus:border-stone-200 transition-all outline-none text-stone-800 font-bold ${searchQuery ? 'pl-9 pr-9 py-1.5 text-xs bg-white' : 'pl-12 pr-10 py-3 text-base bg-stone-50/50'}`}
+                  className={`w-full border border-stone-50 rounded-lg focus:ring-2 focus:ring-rose-500/5 focus:border-stone-100 transition-all outline-none text-stone-800 font-bold ${searchQuery ? 'pl-7 pr-7 py-1 text-[10px] bg-white' : 'pl-12 pr-10 py-3 text-base bg-stone-50/50'}`}
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-300 hover:text-rose-500 transition-colors p-1"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-stone-300 hover:text-rose-500 transition-colors p-0.5"
                   >
-                    <X className="w-3.5 h-3.5" />
+                    <X className="w-3 h-3" />
                   </button>
                 )}
               </div>
