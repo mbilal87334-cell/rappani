@@ -41,8 +41,17 @@ const API_BASE = '/api';
 
 const getPremiumImageUrl = (url: string) => {
   if (!url) return url;
-  if (url.includes('res.cloudinary.com') && !url.includes('e_background_removal')) {
-    return url.replace('/image/upload/', '/image/upload/e_background_removal/');
+  if (url.includes('res.cloudinary.com')) {
+    // Add background removal AND premium sharpening/quality enhancements
+    let transformedUrl = url;
+    if (!url.includes('e_background_removal')) {
+      transformedUrl = transformedUrl.replace('/image/upload/', '/image/upload/e_background_removal/');
+    }
+    // Add quality auto, format auto, and subtle sharpening for that 'premium' look
+    if (!url.includes('q_auto')) {
+      transformedUrl = transformedUrl.replace('/image/upload/', '/image/upload/q_auto,f_auto,e_sharpen:50/');
+    }
+    return transformedUrl;
   }
   return url;
 };
@@ -205,9 +214,9 @@ const translations = {
     shareProduct: "Share on WhatsApp",
     viewProduct: "View",
     deliveryFee: "Delivery Fee",
-    freeDelivery: "Free Delivery (1st Order)",
+    freeDelivery: "Free Delivery",
     distanceToStore: "Distance to Store",
-    tooFarError: "We deliver only within 3KM. You are too far.",
+    tooFarError: "We deliver only within 5KM. You are too far.",
     calculatingLocation: "Checking location...",
     locationBlocked: "Allow location access for delivery.",
     refreshLocation: "Refresh Location",
@@ -279,9 +288,9 @@ const translations = {
     shareProduct: "WhatsApp-ல் பகிர",
     viewProduct: "பார்க்க",
     deliveryFee: "டெலிவரி கட்டணம்",
-    freeDelivery: "இலவச டெலிவரி (முதல் ஆர்டர்)",
+    freeDelivery: "இலவச டெலிவரி",
     distanceToStore: "கடைக்கும் உங்களுக்குமான தூரம்",
-    tooFarError: "கடையிலிருந்து 3கிமீ சுற்றளவிற்குள் மட்டுமே டெலிவரி செய்யப்படும். நீங்கள் தூரமாக உள்ளீர்கள்.",
+    tooFarError: "கடையிலிருந்து 5கிமீ சுற்றளவிற்குள் மட்டுமே டெலிவரி செய்யப்படும். நீங்கள் தூரமாக உள்ளீர்கள்.",
     calculatingLocation: "இருப்பிடத்தை சரிபார்க்கிறது...",
     locationBlocked: "டெலிவரி கட்டணத்தை கணக்கிட லொகேஷன் அனுமதியை வழங்கவும்.",
     refreshLocation: "லொகேஷனை புதுப்பி",
@@ -558,7 +567,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
   const cartTotalAmount = Math.round(cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0));
 
-  const deliveryFee = (deliveryMethod === 'pickup' || isFirstOrder === true) ? 0 : 30;
+  const deliveryFee = 0; // Delivery is now completely free as requested
   const finalTotal = Math.round(cartTotalAmount + deliveryFee);
 
   const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -586,7 +595,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
         setCheckoutError(t.enterAddress);
         return false;
       }
-      if (distance !== null && distance > 3) {
+      if (distance !== null && distance > 5) {
         setCheckoutError(t.tooFarError);
         return false;
       }
@@ -657,7 +666,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
         setCheckoutError(t.enterAddress);
         return;
       }
-      if (distance !== null && distance > 3) {
+      if (distance !== null && distance > 5) {
         setCheckoutError(t.tooFarError);
         return;
       }
@@ -668,7 +677,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
       message += `- ${item.product.name} (x${item.quantity}) = ₹${Math.round(item.product.price * item.quantity)}\n`;
     });
     message += `\n*Cart Total: ₹${cartTotalAmount}*`;
-    message += `\n*Delivery Fee: ₹${deliveryFee}* ${deliveryFee === 0 ? '(1st Order FREE)' : ''}`;
+    message += `\n*Delivery Fee: ₹${deliveryFee}* ${deliveryFee === 0 ? '(FREE)' : ''}`;
     message += `\n*Final Total: ₹${finalTotal}*`;
     message += `\n\nMethod: ${deliveryMethod === 'home' ? 'Home Delivery' : 'Shop Pickup'}`;
     if (deliveryMethod === 'home') {
@@ -710,7 +719,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
         setCheckoutError(t.enterAddress);
         return;
       }
-      if (distance !== null && distance > 3) {
+      if (distance !== null && distance > 5) {
         setCheckoutError(t.tooFarError);
         return;
       }
@@ -720,7 +729,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
     try {
       await navigator.clipboard.writeText('mohammedazzam200512@okaxis');
-      alert(`✅ UPI ID Copied!\n\nPlease open any UPI App (GPay/Paytm/PhonePe), paste this ID, and complete the payment of ₹${Math.round(cartTotalAmount)}`);
+      alert(`✅ UPI ID Copied!\n\nPlease open any UPI App (GPay/Paytm/PhonePe), paste this ID, and complete the payment of ₹${Math.round(finalTotal)}`);
     } catch (err) {
       console.log('Clipboard copy failed');
     }
@@ -1310,7 +1319,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                         <div className="flex flex-col gap-1.5 uppercase">
                           {distance !== null ? (
                             <div className="flex items-center gap-2">
-                              <span className={`flex items-center gap-1.5 ${distance > 3 ? 'text-red-500' : 'text-stone-600'}`}>
+                              <span className={`flex items-center gap-1.5 ${distance > 5 ? 'text-red-500' : 'text-stone-600'}`}>
                                 <MapPin className="w-3.5 h-3.5" />
                                 {distance.toFixed(1)}KM {t.distanceToStore}
                               </span>
@@ -1342,7 +1351,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                             </div>
                           )}
                         </div>
-                        {distance !== null && distance > 3 && (
+                        {distance !== null && distance > 5 && (
                           <span className="text-red-500 font-black animate-pulse px-2 py-1 bg-red-50 rounded-lg border border-red-100">OVER LIMIT</span>
                         )}
                       </div>
