@@ -987,7 +987,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                       <img 
                         src={product.image} 
                         alt={product.name} 
-                        className="w-full h-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-1000 ease-out cursor-pointer drop-shadow-sm" 
+                        className="w-full h-full object-contain mix-blend-multiply contrast-[1.15] brightness-[1.05] saturate-[1.1] group-hover:scale-110 transition-transform duration-1000 ease-out cursor-pointer drop-shadow-sm" 
                         referrerPolicy="no-referrer"
                         onClick={() => setSelectedProduct(product)}
                       />
@@ -1246,7 +1246,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                     <div key={item.product.id} className="flex gap-4 bg-white p-3.5 rounded-2xl shadow-sm border border-stone-100/80 items-center justify-between group hover:shadow-md transition-all hover:border-stone-200">
                       <div className="flex gap-3 items-center">
                         <div className="w-[4.5rem] h-[4.5rem] p-1.5 rounded-xl bg-white border border-stone-100 shadow-sm relative shrink-0">
-                          <img src={item.product.image} alt={item.product.name} className="w-full h-full object-contain mix-blend-multiply rounded-lg group-hover:scale-105 transition-transform duration-300" referrerPolicy="no-referrer" />
+                          <img src={item.product.image} alt={item.product.name} className="w-full h-full object-contain mix-blend-multiply contrast-[1.15] brightness-[1.05] saturate-[1.1] rounded-lg group-hover:scale-105 transition-transform duration-300" referrerPolicy="no-referrer" />
                         </div>
                         <div className="flex flex-col max-w-[140px]">
                           <h4 className="font-bold text-stone-800 text-sm line-clamp-2 leading-tight mb-1">{item.product.name}</h4>
@@ -1544,7 +1544,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                 <img 
                   src={selectedProduct.image} 
                   alt={selectedProduct.name} 
-                  className="w-full h-full object-contain mix-blend-multiply relative z-10 drop-shadow-2xl hover:scale-105 transition-transform duration-700"
+                  className="w-full h-full object-contain mix-blend-multiply contrast-[1.15] brightness-[1.05] saturate-[1.1] relative z-10 drop-shadow-2xl hover:scale-105 transition-transform duration-700"
                   referrerPolicy="no-referrer"
                 />
               </div>
@@ -1639,8 +1639,8 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                             onClick={() => setSelectedProduct(p)}
                             className="min-w-[140px] group cursor-pointer"
                           >
-                            <div className="aspect-square bg-stone-50 rounded-2xl p-4 mb-3 border border-stone-100 group-hover:border-rose-200 transition-all overflow-hidden flex items-center justify-center">
-                              <img src={p.image} alt={p.name} className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-500 mix-blend-multiply" />
+                            <div className="aspect-square bg-white rounded-2xl p-4 mb-3 border border-stone-100 shadow-sm group-hover:border-rose-200 transition-all overflow-hidden flex items-center justify-center">
+                              <img src={p.image} alt={p.name} className="w-full h-full object-contain mix-blend-multiply contrast-[1.15] brightness-[1.05] saturate-[1.1] group-hover:scale-110 transition-transform duration-500" />
                             </div>
                             <h4 className="text-xs font-bold text-stone-800 line-clamp-1 group-hover:text-rose-500 transition-colors uppercase tracking-tight">{p.name}</h4>
                             <p className="text-xs font-black text-stone-900 mt-0.5">₹{Math.round(p.price)}</p>
