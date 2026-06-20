@@ -437,7 +437,7 @@ async function startServer() {
               // Call Gemini AI
               if (process.env.GEMINI_API_KEY) {
                 try {
-                  const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+                  const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -449,6 +449,8 @@ async function startServer() {
                   const geminiData = await geminiResponse.json();
                   if (geminiData.candidates && geminiData.candidates.length > 0) {
                     aiReply = geminiData.candidates[0].content.parts[0].text;
+                  } else {
+                    console.error("[SERVER] Gemini AI Error response:", geminiData);
                   }
                 } catch (aiErr) {
                   console.error("[SERVER] Gemini AI Error:", aiErr);
@@ -458,7 +460,7 @@ async function startServer() {
               // Send Reply via WhatsApp API
               if (process.env.WHATSAPP_ACCESS_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID) {
                 try {
-                  await fetch(`https://graph.facebook.com/v17.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`, {
+                  const waResponse = await fetch(`https://graph.facebook.com/v17.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`, {
                     method: 'POST',
                     headers: {
                       'Authorization': `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
@@ -470,9 +472,14 @@ async function startServer() {
                       text: { body: aiReply }
                     })
                   });
-                  console.log(`[SERVER] Reply sent to ${from}`);
+                  const waData = await waResponse.json();
+                  if (!waResponse.ok) {
+                    console.error(`[SERVER] WhatsApp API Error (${waResponse.status}):`, waData);
+                  } else {
+                    console.log(`[SERVER] Reply sent to ${from}`);
+                  }
                 } catch (waErr) {
-                  console.error("[SERVER] WhatsApp API Error:", waErr);
+                  console.error("[SERVER] WhatsApp Fetch Error:", waErr);
                 }
               }
             }
