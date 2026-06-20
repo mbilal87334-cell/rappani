@@ -882,8 +882,8 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
               <h2 className="text-6xl md:text-7xl lg:text-[6rem] font-black tracking-tighter mb-8 leading-[0.95] drop-shadow-2xl">
                 {t.heroTitle1} <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-pink-500 to-orange-400 italic">{t.heroTitle2}</span> {t.heroTitle3}{" "}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 italic">{t.heroTitle4}</span><br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 font-black">{t.heroTitle2}</span> {t.heroTitle3}{" "}
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 font-black">{t.heroTitle4}</span><br />
                 {t.heroTitle5}
               </h2>
 
