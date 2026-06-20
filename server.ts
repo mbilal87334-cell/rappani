@@ -99,8 +99,7 @@ async function startServer() {
     params: async (req, file) => {
       return {
         folder: "rappani_store_uploads",
-        allowed_formats: ["jpg", "jpeg", "png", "webp", "gif"],
-        background_removal: 'cloudinary_ai'
+        allowed_formats: ["jpg", "jpeg", "png", "webp", "gif"]
       };
     },
   });
