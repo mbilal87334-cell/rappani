@@ -96,12 +96,11 @@ async function startServer() {
   // Cloudinary storage config
   const storage = new CloudinaryStorage({
     cloudinary: cloudinary,
-    params: async (req, file) => {
-      return {
-        folder: "rappani_store_uploads",
-        allowed_formats: ["jpg", "jpeg", "png", "webp", "gif"]
-      };
-    },
+    params: {
+      folder: "rappani-store",
+      allowed_formats: ["jpg", "png", "jpeg", "webp"],
+      background_removal: "cloudinary_ai",
+    } as any,
   });
 
   const upload = multer({ storage });
