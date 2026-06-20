@@ -397,6 +397,92 @@ async function startServer() {
     // Cloudinary returns the image URL in req.file.path
     res.json({ imageUrl: req.file.path });
   });
+  // WhatsApp Webhook Verification (GET)
+  app.get("/api/whatsapp-webhook", (req, res) => {
+    const mode = req.query["hub.mode"];
+    const token = req.query["hub.verify_token"];
+    const challenge = req.query["hub.challenge"];
+
+    if (mode === "subscribe" && token === process.env.WHATSAPP_VERIFY_TOKEN) {
+      console.log("[SERVER] WhatsApp Webhook Verified!");
+      res.status(200).send(challenge);
+    } else {
+      res.sendStatus(403);
+    }
+  });
+
+  // WhatsApp Webhook Message Receiver (POST)
+  app.post("/api/whatsapp-webhook", async (req, res) => {
+    try {
+      const body = req.body;
+      res.sendStatus(200); // Acknowledge receipt quickly to Meta
+
+      if (body.object === "whatsapp_business_account") {
+        for (const entry of body.entry) {
+          for (const change of entry.changes) {
+            if (change.value.messages && change.value.messages[0]) {
+              const message = change.value.messages[0];
+              const phone_number_id = change.value.metadata.phone_number_id;
+              const from = message.from;
+              let msgText = message.type === "text" ? message.text.body : "[Non-text message received]";
+
+              console.log(`[SERVER] Received WhatsApp msg from ${from}: ${msgText}`);
+
+              if (process.env.WHATSAPP_PHONE_NUMBER_ID && phone_number_id !== process.env.WHATSAPP_PHONE_NUMBER_ID) {
+                continue;
+              }
+
+              let aiReply = "Thank you for contacting Rappani Store! How can we help you today?";
+              
+              // Call Gemini AI
+              if (process.env.GEMINI_API_KEY) {
+                try {
+                  const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      contents: [{
+                        parts: [{ text: `You are the friendly customer assistant for Rappani Stationary & Fancy Store. Be concise, polite, and reply in the same language the user speaks. The user says: "${msgText}"` }]
+                      }]
+                    })
+                  });
+                  const geminiData = await geminiResponse.json();
+                  if (geminiData.candidates && geminiData.candidates.length > 0) {
+                    aiReply = geminiData.candidates[0].content.parts[0].text;
+                  }
+                } catch (aiErr) {
+                  console.error("[SERVER] Gemini AI Error:", aiErr);
+                }
+              }
+
+              // Send Reply via WhatsApp API
+              if (process.env.WHATSAPP_ACCESS_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID) {
+                try {
+                  await fetch(`https://graph.facebook.com/v17.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`, {
+                    method: 'POST',
+                    headers: {
+                      'Authorization': `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
+                      'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                      messaging_product: "whatsapp",
+                      to: from,
+                      text: { body: aiReply }
+                    })
+                  });
+                  console.log(`[SERVER] Reply sent to ${from}`);
+                } catch (waErr) {
+                  console.error("[SERVER] WhatsApp API Error:", waErr);
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error("[SERVER] Webhook Error:", err);
+    }
+  });
 
   // Serve uploaded files
   app.use("/uploads", express.static(uploadsDir));
