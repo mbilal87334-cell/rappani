@@ -12,6 +12,24 @@ import { CloudinaryStorage } from "multer-storage-cloudinary";
 
 dotenv.config();
 
+const serverLogs: string[] = [];
+const originalLog = console.log;
+const originalError = console.error;
+const originalWarn = console.warn;
+
+function interceptLog(type: string, ...args: any[]) {
+  const msg = `[${new Date().toISOString()}] [${type}] ` + args.map(a => typeof a === 'object' ? JSON.stringify(a) : a).join(' ');
+  serverLogs.push(msg);
+  if (serverLogs.length > 100) serverLogs.shift();
+  if (type === 'LOG') originalLog.apply(console, args);
+  if (type === 'ERROR') originalError.apply(console, args);
+  if (type === 'WARN') originalWarn.apply(console, args);
+}
+
+console.log = (...args) => interceptLog('LOG', ...args);
+console.error = (...args) => interceptLog('ERROR', ...args);
+console.warn = (...args) => interceptLog('WARN', ...args);
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = process.cwd();
@@ -59,6 +77,9 @@ const Order = mongoose.model("Order", orderSchema);
 
 async function startServer() {
   const app = express();
+  app.get("/api/logs", (req, res) => {
+    res.type("text/plain").send(serverLogs.join('\n'));
+  });
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
   const uploadsDir = path.join(ROOT_DIR, "public", "uploads");
 
