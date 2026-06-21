@@ -32,6 +32,7 @@ interface Order {
   items: CartItem[];
   totalAmount: number;
   paymentMethod: string;
+  utrNumber?: string;
   status: string;
   createdAt: string;
 }
@@ -86,7 +87,7 @@ async function saveProduct(product: Product, isEditing: boolean) {
   return res.json();
 }
 
-async function checkoutCart(payload: { customerName: string; customerPhone: string; paymentMethod: string; totalAmount: number; items: CartItem[] }) {
+async function checkoutCart(payload: { customerName: string; customerPhone: string; paymentMethod: string; totalAmount: number; items: CartItem[]; utrNumber?: string }) {
   const res = await fetch(`${API_BASE}/checkout`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -616,7 +617,8 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
         totalAmount: finalTotal,
         items: cart,
         deliveryMethod,
-        deliveryAddress: deliveryMethod === 'home' ? deliveryAddress : 'Shop Pickup'
+        deliveryAddress: deliveryMethod === 'home' ? deliveryAddress : 'Shop Pickup',
+        utrNumber: utrNumber ? utrNumber.trim() : undefined
       };
       await checkoutCart(payload);
 
@@ -742,7 +744,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
     setCheckoutError('');
     console.log(`[CHECKOUT] GPay Confirm clicked. This WILL save to DB.`);
-    const success = await processCheckoutAndClearCart(`GPay Order (UTR: ${utrNumber})`);
+    const success = await processCheckoutAndClearCart(`GPay Order`);
     if (success) {
       setShowGPayConfirm(false);
       setUtrNumber('');
@@ -2653,15 +2655,31 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
                         <td className="p-4">
                           <span className="font-bold text-white">₹{Math.round(order.totalAmount)}</span><br />
                           <span className="text-[10px] uppercase bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded inline-block mt-1">{order.paymentMethod}</span>
+                          {order.utrNumber && (
+                            <div className="mt-2 bg-stone-800 p-2 rounded-lg border border-stone-700">
+                              <p className="text-[9px] text-stone-400 uppercase tracking-wider mb-1 font-bold">UTR / Ref Number:</p>
+                              <p className="text-emerald-400 font-mono text-xs tracking-widest font-black">{order.utrNumber}</p>
+                            </div>
+                          )}
                         </td>
                         <td className="p-4 flex flex-col gap-2">
                           {order.status === 'Pending' ? (
-                            <button
-                              onClick={() => handleMarkDelivered(order.id)}
-                              className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-xs font-bold transition-colors shadow-sm"
-                            >
-                              Mark Delivered
-                            </button>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleMarkDelivered(order.id)}
+                                className="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-2 rounded-lg text-xs font-bold transition-colors shadow-sm flex-1"
+                              >
+                                {order.utrNumber ? "Approve" : "Deliver"}
+                              </button>
+                              {order.utrNumber && (
+                                <button
+                                  onClick={() => handleDeleteOrder(order.id)}
+                                  className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg text-xs font-bold transition-colors shadow-sm flex-1"
+                                >
+                                  Reject
+                                </button>
+                              )}
+                            </div>
                           ) : (
                             <span className="bg-stone-200 text-zinc-400 px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1 justify-center">
                               ✓ Completed

@@ -51,6 +51,7 @@ const orderSchema = new mongoose.Schema({
   items: { type: Array, required: true },
   totalAmount: { type: Number, required: true },
   paymentMethod: { type: String, required: true },
+  utrNumber: { type: String, default: null },
   status: { type: String, required: true, default: 'Pending' },
   createdAt: { type: Date, required: true, default: Date.now }
 });
@@ -274,7 +275,11 @@ async function startServer() {
   app.post("/api/checkout", async (req, res) => {
     try {
       console.log(`[SERVER] Checkout hit. Body:`, JSON.stringify(req.body));
-      const { items, customerName, customerPhone, paymentMethod, totalAmount } = req.body;
+      const { customerName, customerPhone, items, totalAmount, paymentMethod, utrNumber } = req.body;
+
+      if (!customerName || !customerPhone || !items || !totalAmount || !paymentMethod) {
+        return res.status(400).json({ success: false, error: "Missing required fields" });
+      }
 
       // SERVER-SIDE SAFEGUARD: Ignore WhatsApp orders if they somehow reach here
       if (paymentMethod && paymentMethod.toLowerCase().includes('whatsapp')) {
@@ -290,6 +295,7 @@ async function startServer() {
         items,
         totalAmount,
         paymentMethod,
+        utrNumber: utrNumber || null,
         status: 'Pending',
         createdAt: new Date()
       });
