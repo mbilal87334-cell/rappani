@@ -470,7 +470,9 @@ async function startServer() {
   // WhatsApp Webhook Message Receiver (POST)
   app.post("/api/whatsapp-webhook", async (req, res) => {
     try {
+      console.log(`[SERVER] Incoming POST /api/whatsapp-webhook`);
       const body = req.body;
+      console.log(`[SERVER] Webhook Body Object:`, body.object);
       res.sendStatus(200); // Acknowledge receipt quickly to Meta
 
       if (body.object === "whatsapp_business_account") {
