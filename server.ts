@@ -80,6 +80,32 @@ async function startServer() {
   app.get("/api/logs", (req, res) => {
     res.type("text/plain").send(serverLogs.join('\n'));
   });
+
+  app.get("/api/test-whatsapp", async (req, res) => {
+    try {
+      const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+      const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
+      const to = req.query.to || "918189940301";
+      
+      const response = await fetch(`https://graph.facebook.com/v17.0/${phoneNumberId}/messages`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          to: to,
+          type: "text",
+          text: { body: "Hello from Rappani Store! This is a test message to confirm your API is working correctly." }
+        })
+      });
+      const data = await response.json();
+      res.json({ status: response.status, data });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
   const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
   const uploadsDir = path.join(ROOT_DIR, "public", "uploads");
 
