@@ -456,10 +456,13 @@ async function startServer() {
     const token = req.query["hub.verify_token"];
     const challenge = req.query["hub.challenge"];
 
+    console.log(`[SERVER] Webhook Verification Request Received. Mode: ${mode}, Token: ${token}`);
+
     if (mode === "subscribe" && token === process.env.WHATSAPP_VERIFY_TOKEN) {
-      console.log("[SERVER] WhatsApp Webhook Verified!");
+      console.log(`[SERVER] Webhook Verified Successfully!`);
       res.status(200).send(challenge);
     } else {
+      console.log(`[SERVER] Webhook Verification Failed!`);
       res.sendStatus(403);
     }
   });
