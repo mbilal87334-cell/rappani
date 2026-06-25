@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
-import { Phone, Mail, Instagram, MessageCircle, MapPin, Lock, LogOut, Plus, Edit, Trash2, Store, ShoppingBag, Menu, X, Camera, Aperture, Globe, Database, Search, ArrowUp, Package, LayoutGrid, ShoppingCart, Minus, Image, ShieldCheck, Gift, Sparkles, Sticker, Rocket, Coffee, Eye, Star, TrendingUp, CheckCircle2, Info } from 'lucide-react';
+import { Phone, Mail, Instagram, MessageCircle, MapPin, Lock, LogOut, Plus, Edit, Trash2, Store, ShoppingBag, Menu, X, Camera, Aperture, Globe, Database, Search, ArrowUp, Package, LayoutGrid, ShoppingCart, Minus, Image, ShieldCheck, Gift, Sparkles, Sticker, Rocket, Coffee, Eye, Star, TrendingUp, CheckCircle2, Info , Home, Heart, User, ChevronRight, CreditCard} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 
@@ -368,6 +368,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
   }, [isPhoneVerified]);
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [currentTab, setCurrentTab] = useState<'home' | 'offers' | 'cart' | 'account'>('home');
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [lang, setLang] = useState<'en' | 'ta'>('en');
@@ -751,925 +752,393 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
     }
   };
 
+  
   return (
-    <div className="min-h-screen bg-zinc-800/50 font-sans text-white">
-      {/* Dynamic Announcement Bar */}
-      <div className="bg-zinc-950 text-white py-2 overflow-hidden relative z-[60]">
-        <div className="flex whitespace-nowrap animate-marquee">
-          <div className="flex items-center gap-8 px-4">
-            <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-              <Sparkles className="w-3 h-3 text-rose-400" /> New Arrivals in Stationary Section • Free Pickup Available • Premium Fancy Items now in stock!
-            </span>
-            <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-              <Rocket className="w-3 h-3 text-blue-400" /> Shop online and collect in store for 10% discount on select items!
-            </span>
-            <span className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-              <Sparkles className="w-3 h-3 text-rose-400" /> New Arrivals in Stationary Section • Free Pickup Available • Premium Fancy Items now in stock!
-            </span>
+    <div className="bg-gray-50 font-sans text-gray-900 pb-20 min-h-screen">
+      {/* Top Header */}
+      <header className="sticky top-0 z-50 bg-white shadow-sm px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600">
+            <Store className="w-6 h-6" />
+          </div>
+          <div>
+            <h1 className="font-bold text-lg leading-tight text-gray-900">{t.storeName}</h1>
+            <p className="text-xs text-gray-500 flex items-center gap-1">
+              <MapPin className="w-3 h-3 text-green-500" /> Melapalayam, Tirunelveli
+            </p>
           </div>
         </div>
-      </div>
-
-      {/* Enhanced Premium Header */}
-      <header className="fixed w-full top-0 z-50 transition-all duration-300 bg-zinc-900/40 glass/70 backdrop-blur-xl border-b border-white/20 shadow-[0_4px_30px_rgba(0,0,0,0.05)]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
-            <div className="flex items-center gap-3">
-              <div className="bg-gradient-to-br from-rose-400 to-amber-600 p-2.5 rounded-2xl text-white shadow-lg shadow-amber-500/30 ring-1 ring-white/50">
-                <Store className="w-6 h-6" />
-              </div>
-              <div className="flex flex-col">
-                <h1 className="text-xl md:text-2xl font-black text-white tracking-tight leading-none mb-1">{t.storeName}</h1>
-                <p className="text-[10px] font-bold text-amber-500 tracking-[0.2em] uppercase">{t.tagline}</p>
-              </div>
-            </div>
-
-            {/* Desktop Nav */}
-            <nav className="hidden md:flex items-center gap-1 bg-zinc-900/40 glass/50 p-1.5 rounded-full border border-white/5 shadow-sm">
-              <a href="#home" className="text-xs font-bold px-4 py-2 rounded-full text-zinc-400 hover:text-rose-600 hover:bg-amber-500/10 transition-all">{t.home}</a>
-              <a href="#products" className="text-xs font-bold px-4 py-2 rounded-full text-zinc-400 hover:text-rose-600 hover:bg-amber-500/10 transition-all">{t.products}</a>
-              <a href="#contact" className="text-xs font-bold px-4 py-2 rounded-full text-zinc-400 hover:text-rose-600 hover:bg-amber-500/10 transition-all">{t.contact}</a>
-            </nav>
-
-            <div className="hidden md:flex items-center gap-4">
-              <button onClick={toggleLanguage} className="flex items-center gap-2 text-xs font-black text-rose-600 bg-amber-500/10 px-4 py-2 rounded-full hover:bg-rose-100 transition-all border border-rose-100 uppercase tracking-widest shadow-sm">
-                <Globe className="w-3.5 h-3.5" /> {lang === 'en' ? 'தமிழ்' : 'English'}
-              </button>
-
-              <button onClick={() => setIsCartOpen(true)} className="relative p-2.5 bg-zinc-800/80 text-zinc-400 hover:text-amber-500 hover:bg-stone-200 rounded-full transition-all shadow-sm">
-                <ShoppingCart className="w-5 h-5" />
-                {cartItemsCount > 0 && (
-                  <span className="absolute top-0 right-0 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center translate-x-1/4 -translate-y-1/4 shadow-md ring-2 ring-white">
-                    {cartItemsCount}
-                  </span>
-                )}
-              </button>
-
-              <Link to="/admin" className="flex items-center gap-2 text-xs font-bold bg-[#1a1a1a] text-white px-5 py-2.5 rounded-full hover:bg-black transition-all shadow-md active:scale-95 border border-stone-800">
-                <Lock className="w-3.5 h-3.5" /> {t.adminLogin}
-              </Link>
-            </div>
-
-            {/* Mobile Menu Button */}
-            <div className="md:hidden flex items-center gap-3">
-              <button onClick={toggleLanguage} className="flex items-center gap-1 text-[10px] font-black text-rose-600 bg-amber-500/10 px-3 py-1.5 rounded-full border border-rose-100 uppercase tracking-widest">
-                <Globe className="w-3 h-3" /> {lang === 'en' ? 'தமிழ்' : 'EN'}
-              </button>
-
-              <button onClick={() => setIsCartOpen(true)} className="relative p-2 bg-zinc-800/80 rounded-full text-zinc-400">
-                <ShoppingCart className="w-4 h-4" />
-                {cartItemsCount > 0 && (
-                  <span className="absolute top-0 right-0 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center translate-x-1/4 -translate-y-1/4 shadow border border-white">
-                    {cartItemsCount}
-                  </span>
-                )}
-              </button>
-
-              <button className="p-2 bg-zinc-800/80 rounded-full text-zinc-200" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-                {isMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </button>
-            </div>
+        <div className="flex items-center gap-3">
+          <button onClick={toggleLanguage} className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded border border-green-200">
+             {lang === 'en' ? 'தமிழ்' : 'EN'}
+          </button>
+          <div className="w-10 h-10 bg-gray-200 rounded-full overflow-hidden border-2 border-white shadow-sm flex items-center justify-center">
+            <div className="w-5 h-5 bg-gray-400 rounded-full shrink-0 mt-2"></div>
           </div>
         </div>
-
-        {/* Mobile Nav */}
-        <AnimatePresence>
-          {isMenuOpen && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="md:hidden absolute w-full top-20 left-0 bg-zinc-900/40 glass border-b border-white/5 shadow-xl overflow-hidden"
-            >
-              <div className="px-4 py-6 space-y-2 flex flex-col">
-                <a href="#home" className="block px-4 py-3 text-sm font-bold text-stone-700 hover:bg-amber-500/10 hover:text-rose-600 rounded-xl transition-colors" onClick={() => setIsMenuOpen(false)}>{t.home}</a>
-                <a href="#products" className="block px-4 py-3 text-sm font-bold text-stone-700 hover:bg-amber-500/10 hover:text-rose-600 rounded-xl transition-colors" onClick={() => setIsMenuOpen(false)}>{t.products}</a>
-                <a href="#contact" className="block px-4 py-3 text-sm font-bold text-stone-700 hover:bg-amber-500/10 hover:text-rose-600 rounded-xl transition-colors" onClick={() => setIsMenuOpen(false)}>{t.contact}</a>
-                <Link to="/admin" className="mt-2 flex items-center justify-center gap-2 text-sm font-bold bg-zinc-950 text-white px-4 py-4 rounded-xl shadow-md" onClick={() => setIsMenuOpen(false)}>
-                  <Lock className="w-4 h-4" /> {t.adminLogin}
-                </Link>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </header>
 
-      <main>
-        {/* Premium Hero Section */}
-        <section
-          id="home"
-          className="relative bg-zinc-950 text-white overflow-hidden min-h-[95vh] flex items-center"
-        >
-          {/* Animated Background Orbs */}
-          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-gradient-to-r from-amber-500 to-amber-600/10 rounded-full blur-[120px] mix-blend-screen pointer-events-none animate-pulse duration-10000"></div>
-          <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-purple-500/15 rounded-full blur-[150px] mix-blend-screen pointer-events-none"></div>
-
-          <div className="absolute inset-0 z-0">
-            <img src={settings.hero_image || "https://images.unsplash.com/photo-1583485088034-697b5a69f0bd?auto=format&fit=crop&q=80"} alt="Store Background" className="w-full h-full object-cover opacity-20 mix-blend-luminosity" referrerPolicy="no-referrer" />
-            <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/80 to-transparent"></div>
-            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent"></div>
-          </div>
-
-          <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 w-full mt-10">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              className="max-w-3xl"
-            >
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-900/40 glass/5 border border-white/10 backdrop-blur-md text-stone-300 text-sm font-bold tracking-widest mb-8 shadow-2xl shadow-rose-500/10 hover:bg-zinc-900/40 glass/10 transition-colors uppercase cursor-default">
-                <span className="w-2.5 h-2.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 animate-pulse"></span>
-                {t.welcome}
-              </div>
-
-              <h2 className="text-6xl md:text-7xl lg:text-[6rem] font-black tracking-tighter mb-8 leading-[0.95] drop-shadow-2xl">
-                {t.heroTitle1} <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 font-black">{t.heroTitle2}</span> {t.heroTitle3}{" "}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600 font-black">{t.heroTitle4}</span><br />
-                {t.heroTitle5}
-              </h2>
-
-              <p className="text-xl md:text-2xl text-stone-400 mb-12 max-w-xl leading-relaxed font-medium">
-                {t.heroDesc}
-              </p>
-
-              <div className="flex flex-wrap gap-5 items-center">
-                <a href="#products" className="group relative bg-zinc-900/40 glass text-white hover:text-rose-600 px-10 py-5 rounded-full font-black text-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-3 overflow-hidden shadow-2xl shadow-rose-500/10">
-                  <span className="absolute inset-0 bg-gradient-to-r from-rose-100 to-orange-100 opacity-0 group-hover:opacity-100 transition-opacity"></span>
-                  <ShoppingBag className="w-6 h-6 relative z-10" />
-                  <span className="relative z-10">{t.shopNow}</span>
-                </a>
-
-                <a href="#contact" className="group bg-zinc-900/40 glass/5 hover:bg-zinc-900/40 glass/10 backdrop-blur-md text-white border border-white/10 px-10 py-5 rounded-full font-bold text-xl transition-all hover:scale-105 active:scale-95 flex items-center gap-3 shadow-xl">
-                  <div className="bg-zinc-900/40 glass/10 p-2.5 rounded-full group-hover:bg-gradient-to-r from-amber-500 to-amber-600 group-hover:text-white transition-all">
-                    <Phone className="w-5 h-5" />
-                  </div>
-                  {t.contactUs}
-                </a>
-              </div>
-
-              {/* Quick stats */}
-              <div className="mt-20 pt-10 border-t border-white/10 grid grid-cols-2 md:grid-cols-3 gap-8 max-w-2xl">
-                <div className="flex flex-col gap-1">
-                  <h4 className="text-3xl font-black text-white">100%</h4>
-                  <p className="text-xs text-zinc-400 font-black uppercase tracking-[0.2em]">Quality Assured</p>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <h4 className="text-3xl font-black text-white">Fast</h4>
-                  <p className="text-xs text-zinc-400 font-black uppercase tracking-[0.2em]">Store Pickup</p>
-                </div>
-                <div className="flex flex-col gap-1 hidden md:flex">
-                  <h4 className="text-3xl font-black text-white">Secure</h4>
-                  <p className="text-xs text-zinc-400 font-black uppercase tracking-[0.2em]">UPI Payments</p>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </section>
-
-        {/* Products Section */}
-        <section id="products" className="py-24 bg-zinc-800/50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-black text-white mb-6 tracking-tight">{t.featuredProducts}</h2>
-              <p className="text-zinc-400 max-w-2xl mx-auto text-lg font-medium tracking-wide">{t.featuredDesc}</p>
-            </div>
-
+      {/* Main Content Area based on Tab */}
+      <main className="px-4 py-4 space-y-6">
+        {currentTab === 'home' && (
+          <div className="space-y-6">
             {/* Search Bar */}
-            <div className="mb-12 flex justify-center sticky top-6 z-50">
-              <div className="w-full max-w-2xl bg-zinc-900/40 glass/95 backdrop-blur-3xl rounded-none md:rounded-3xl shadow-2xl shadow-stone-200/50 border border-white/5 p-2 transition-all focus-within:shadow-rose-500/10 focus-within:border-rose-200">
-                <div className="relative flex items-center w-full group">
-                  <div className="flex-shrink-0 p-3 md:p-4 text-stone-400 group-focus-within:text-amber-500 transition-colors">
-                    <Search className="w-6 h-6 md:w-8 md:h-8" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder={t.searchPlaceholder}
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full border-none rounded-r-3xl focus:ring-0 focus:border-transparent transition-all outline-none text-zinc-200 font-bold bg-transparent text-xl md:text-2xl px-2 py-4"
-                  />
-                  {searchQuery && (
-                    <button
-                      onClick={() => setSearchQuery('')}
-                      className="absolute right-4 text-amber-500 bg-amber-500/10 hover:bg-rose-100 p-2 rounded-xl transition-colors"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  )}
-                </div>
+            <div className="relative">
+              <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input 
+                type="text" 
+                placeholder={t.searchPlaceholder} 
+                className="w-full bg-white border border-gray-200 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all shadow-sm"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            {/* Banner Slider (Mocked as single banner for now) */}
+            <div className="relative w-full h-40 bg-gradient-to-r from-green-500 to-green-400 rounded-2xl overflow-hidden shadow-md flex items-center px-6">
+              <div className="z-10 text-white w-2/3">
+                <span className="text-xs font-bold uppercase tracking-wider bg-white/20 px-2 py-1 rounded inline-block mb-2">Special Offer</span>
+                <h2 className="text-xl font-bold leading-tight mb-2">Get 10% Off on All Stationary</h2>
+                <button className="bg-white text-green-600 text-xs font-bold px-4 py-2 rounded-full shadow-sm hover:scale-105 transition-transform" onClick={() => setCurrentTab('offers')}>Shop Now</button>
+              </div>
+              <div className="absolute right-0 bottom-0 opacity-50 translate-x-4 translate-y-4">
+                 <Store className="w-40 h-40" />
               </div>
             </div>
 
-            {/* Always Visible Category Bar */}
-            <div className="mb-10 flex gap-3 overflow-x-auto pb-4 scrollbar-hide px-1 items-center justify-start md:justify-center">
-              {categories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => setSelectedCategory(cat.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all border whitespace-nowrap group relative overflow-hidden ${selectedCategory === cat.id
-                    ? 'bg-zinc-950 border-stone-800 text-white shadow-lg'
-                    : 'bg-zinc-900/40 glass border-white/5 text-zinc-400 hover:border-rose-200 hover:text-rose-600'
-                    }`}
-                >
-                  <div className={`p-1.5 rounded-lg transition-colors ${selectedCategory === cat.id ? 'text-white' : 'text-stone-400 group-hover:text-amber-500'}`}>
-                    {React.cloneElement(cat.icon as React.ReactElement, { size: 14 })}
+            {/* Categories */}
+            <div>
+              <div className="flex justify-between items-end mb-4">
+                <h3 className="text-lg font-bold text-gray-900">Categories</h3>
+              </div>
+              <div className="grid grid-cols-4 gap-4">
+                {categories.map((cat, idx) => (
+                  <div key={idx} onClick={() => { setSelectedCategory(cat.id); setCurrentTab('offers'); }} className="flex flex-col items-center gap-2 cursor-pointer group">
+                    <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center text-green-500 border border-gray-100 group-hover:bg-green-50 group-hover:border-green-200 transition-colors relative">
+                       {cat.icon}
+                       {idx === 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">New</span>}
+                    </div>
+                    <span className="text-[10px] font-medium text-center text-gray-700 leading-tight">{getCategoryName(cat.id)}</span>
                   </div>
-                  <span className="text-[10px] font-black uppercase tracking-widest">{getCategoryName(cat.id)}</span>
-                </button>
+                ))}
+              </div>
+            </div>
+            
+            {/* Featured Products (Home Tab) */}
+            <div>
+               <div className="flex justify-between items-end mb-4">
+                <h3 className="text-lg font-bold text-gray-900">Popular Now</h3>
+                <button className="text-sm text-green-600 font-bold" onClick={() => setCurrentTab('offers')}>See All</button>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {products.slice(0, 4).map(product => {
+                  const cartItem = cart.find(item => item.product.id === product.id);
+                  const qty = cartItem ? cartItem.quantity : 0;
+                  return (
+                    <div key={product.id} className="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col relative">
+                       <div className="w-full aspect-square bg-gray-50 rounded-xl mb-3 overflow-hidden">
+                         <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400?text=No+Image"} alt={product.name} className="w-full h-full object-cover" />
+                       </div>
+                       <h4 className="font-bold text-gray-900 text-sm mb-1 truncate">{product.name}</h4>
+                       <p className="text-xs text-gray-500 mb-2 truncate">{product.category}</p>
+                       <div className="mt-auto flex items-center justify-between">
+                         <span className="font-black text-green-600">₹{product.price}</span>
+                         {qty > 0 ? (
+                            <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-2 py-1">
+                              <button onClick={() => updateQuantity(product.id, qty - 1)} className="text-green-600 w-5 h-5 flex items-center justify-center font-bold">-</button>
+                              <span className="text-sm font-bold text-gray-900">{qty}</span>
+                              <button onClick={() => updateQuantity(product.id, qty + 1)} className="text-green-600 w-5 h-5 flex items-center justify-center font-bold">+</button>
+                            </div>
+                         ) : (
+                            <button onClick={() => addToCart(product)} className="bg-green-50 text-green-600 p-1.5 rounded-lg border border-green-200 hover:bg-green-100 transition-colors">
+                              <Plus className="w-4 h-4" />
+                            </button>
+                         )}
+                       </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {currentTab === 'offers' && (
+          <div className="space-y-4">
+             {/* Search Bar */}
+             <div className="relative mb-4">
+              <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input 
+                type="text" 
+                placeholder={t.searchPlaceholder} 
+                className="w-full bg-white border border-gray-200 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all shadow-sm"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            {/* Filter Chips */}
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              {categories.map(cat => (
+                 <button 
+                   key={cat.id}
+                   onClick={() => setSelectedCategory(cat.id)}
+                   className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-all shadow-sm border ${selectedCategory === cat.id ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+                 >
+                   {getCategoryName(cat.id)}
+                 </button>
               ))}
             </div>
 
-            <AnimatePresence mode="popLayout">
-              {filteredProducts.length > 0 ? (
-                <motion.div
-                  layout
-                  className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8"
-                >
-                  {filteredProducts.map((product, idx) => {
-                    const cartItem = cart.find(item => item.product.id === product.id);
-                    return (
-                      <motion.div
-                        layout
-                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        transition={{ duration: 0.4, delay: Math.min(idx * 0.05, 0.4) }}
-                        key={product.id}
-                        className="premium-card group flex flex-col relative h-full"
-                      >
-                        <div className="aspect-[4/5] sm:aspect-square overflow-hidden relative bg-zinc-900/50 p-6 flex items-center justify-center border-b border-white/5/60">
-                          <div className="absolute inset-3 sm:inset-4 border border-white/10/60 rounded-xl pointer-events-none z-10"></div>
-                          <img
-                            src={getPremiumImageUrl(product.image)}
-                            alt={product.name}
-                            className="w-full h-full object-contain mix-blend-multiply drop-shadow-md group-hover:scale-105 transition-transform duration-700 ease-out cursor-pointer relative z-0"
-                            referrerPolicy="no-referrer"
-                            onClick={() => setSelectedProduct(product)}
-                          />
-
-                          <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
-                            <button
-                              onClick={() => setSelectedProduct(product)}
-                              className="w-12 h-12 bg-zinc-900/40 glass shadow-2xl rounded-2xl flex items-center justify-center text-zinc-400 hover:text-amber-500 hover:scale-110 transition-all border border-white/5"
-                            >
-                              <Eye className="w-6 h-6" />
-                            </button>
-                          </div>
-
-                          <div className="absolute top-6 left-6 flex flex-col gap-2">
-                            <div className="bg-zinc-900/40 glass/90 backdrop-blur-sm shadow-sm text-stone-700 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border border-white/5 flex items-center gap-1.5">
-                              <span className="w-1.5 h-1.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-600"></span> {getCategoryName(product.category)}
-                            </div>
-                            {product.originalPrice && product.originalPrice > product.price && (
-                              <div className="bg-emerald-500 text-white px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-1.5 animate-pulse">
-                                <Sparkles className="w-3 h-3" /> {t.offer}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="p-6 flex flex-col flex-1 relative bg-zinc-900/40 glass">
-                          <h3 className="text-lg font-bold text-zinc-200 mb-2 line-clamp-2 leading-relaxed group-hover:text-rose-600 transition-colors tracking-tight">{product.name}</h3>
-                          <div className="mt-auto pt-5 flex items-end justify-between border-t border-white/5">
-                            <div className="flex flex-col">
-                              <span className="text-3xl font-black text-white tracking-tighter">₹{Math.round(product.price)}</span>
-                              {product.originalPrice && product.originalPrice > product.price && (
-                                <span className="text-xs font-bold text-stone-400 line-through decoration-rose-500/50 tracking-wide">₹{Math.round(product.originalPrice)}</span>
-                              )}
-                            </div>
-
-                            {cartItem ? (
-                              <div className="flex items-center gap-2 bg-zinc-800/50 rounded-2xl p-1.5 border border-white/5 shadow-inner">
-                                <button onClick={() => updateQuantity(product.id, cartItem.quantity - 1)} className="w-10 h-10 flex items-center justify-center bg-zinc-900/40 glass rounded-xl text-zinc-400 shadow-sm hover:text-amber-500 hover:bg-amber-500/10 active:scale-90 transition-all border border-white/5">
-                                  <Minus className="w-4 h-4 font-bold" />
-                                </button>
-                                <span className="w-8 text-center text-sm font-black text-zinc-200">
-                                  {cartItem.quantity}
-                                </span>
-                                <button onClick={() => updateQuantity(product.id, cartItem.quantity + 1)} disabled={product.stock !== undefined && cartItem.quantity >= product.stock} className="w-10 h-10 flex items-center justify-center bg-zinc-950 rounded-xl text-white shadow-xl hover:bg-zinc-900 active:scale-90 transition-all disabled:opacity-50">
-                                  <Plus className="w-4 h-4 font-bold" />
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => addToCart(product)}
-                                disabled={product.stock !== undefined && product.stock <= 0}
-                                className={`w-14 h-14 flex items-center justify-center rounded-2xl transition-all shadow-xl active:scale-90 relative overflow-hidden ${product.stock !== undefined && product.stock <= 0 ? 'bg-zinc-800/80 text-stone-300 cursor-not-allowed' : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white shadow-amber-500/20 group-hover:rotate-6'}`}
-                              >
-                                {product.stock !== undefined && product.stock <= 0 ? (
-                                  <X className="w-6 h-6" />
-                                ) : (
-                                  <Plus className="w-8 h-8 relative z-10" />
-                                )}
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </motion.div>
-              ) : (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-center py-32 bg-zinc-900/40 glass rounded-[3rem] border border-dashed border-white/10"
-                >
-                  <div className="bg-zinc-800/80 w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <Search className="w-10 h-10 text-stone-300" />
-                  </div>
-                  <h3 className="text-2xl font-black text-white mb-2">{t.noProducts}</h3>
-                  <p className="text-zinc-400 font-medium tracking-wide">Try adjusting your search or filter.</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        </section>
-
-        {/* Premium Contact Section */}
-        <section id="contact" className="py-24 bg-zinc-800/50 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-gradient-to-r from-amber-500 to-amber-600/5 rounded-full blur-[100px] pointer-events-none"></div>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-            <div className="bg-zinc-900/40 glass rounded-[3rem] overflow-hidden shadow-2xl shadow-stone-200/50 border border-white/5">
-              <div className="grid lg:grid-cols-2">
-                <div className="p-10 md:p-20 flex flex-col justify-center relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-                  <h2 className="text-4xl md:text-5xl font-black text-[#1a1a1a] mb-6 tracking-tight relative z-10">{t.getInTouch}</h2>
-                  <p className="text-zinc-400 mb-12 text-lg font-medium leading-relaxed relative z-10">{t.contactDesc}</p>
-
-                  <div className="space-y-8 relative z-10">
-                    <div className="flex items-start gap-5 group">
-                      <div className="bg-zinc-800/50 group-hover:bg-gradient-to-r from-amber-500 to-amber-600 group-hover:text-white p-4 rounded-2xl text-zinc-400 transition-all duration-300 shadow-sm border border-white/5">
-                        <Phone className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-stone-400 font-bold uppercase tracking-widest mb-1.5">{t.callUs}</p>
-                        <div className="flex flex-col gap-1.5">
-                          <a href={`https://wa.me/${settings.whatsapp_1 || '916384137974'}`} target="_blank" rel="noopener noreferrer" className="text-zinc-200 font-black text-xl hover:text-amber-500 transition-colors flex items-center gap-2">
-                            <MessageCircle className="w-5 h-5 text-[#25D366]" /> +{settings.whatsapp_1 || '91 6384137974'}
-                          </a>
-                          <a href={`https://wa.me/${settings.whatsapp_2 || '918940324030'}`} target="_blank" rel="noopener noreferrer" className="text-zinc-200 font-black text-xl hover:text-amber-500 transition-colors flex items-center gap-2">
-                            <MessageCircle className="w-5 h-5 text-[#25D366]" /> +{settings.whatsapp_2 || '91 8940324030'}
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-5 group">
-                      <div className="bg-zinc-800/50 group-hover:bg-gradient-to-r from-amber-500 to-amber-600 group-hover:text-white p-4 rounded-2xl text-zinc-400 transition-all duration-300 shadow-sm border border-white/5">
-                        <Mail className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-stone-400 font-bold uppercase tracking-widest mb-1.5">{t.emailUs}</p>
-                        <a href="mailto:rappaniazzam@gmail.com" className="text-zinc-200 font-black text-xl hover:text-amber-500 transition-colors">rappaniazzam@gmail.com</a>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-14 pt-10 border-t border-white/5 flex flex-wrap gap-4 relative z-10">
-                    <a href={`https://wa.me/${settings.whatsapp_1 || '916384137974'}`} target="_blank" rel="noopener noreferrer" className="bg-zinc-800/50 hover:bg-[#25D366] text-stone-700 hover:text-white px-8 py-4 rounded-full transition-all hover:scale-105 active:scale-95 shadow-sm hover:shadow-[#25D366]/30 flex items-center gap-3 font-bold border border-white/10 hover:border-transparent group">
-                      <MessageCircle className="w-5 h-5 text-[#25D366] group-hover:text-white" /> Link 1
-                    </a>
-                    <a href={`https://wa.me/${settings.whatsapp_2 || '918940324030'}`} target="_blank" rel="noopener noreferrer" className="bg-zinc-800/50 hover:bg-[#25D366] text-stone-700 hover:text-white px-8 py-4 rounded-full transition-all hover:scale-105 active:scale-95 shadow-sm hover:shadow-[#25D366]/30 flex items-center gap-3 font-bold border border-white/10 hover:border-transparent group">
-                      <MessageCircle className="w-5 h-5 text-[#25D366] group-hover:text-white" /> Link 2
-                    </a>
-                    <a href="https://instagram.com/frds_call_me_rappani" target="_blank" rel="noopener noreferrer" className="bg-zinc-800/50 hover:bg-gradient-to-tr hover:from-[#f09433] hover:via-[#e6683c] hover:to-[#bc1888] text-zinc-400 hover:text-white p-4 rounded-full transition-all hover:scale-110 shadow-sm hover:shadow-[#bc1888]/30 border border-white/10 hover:border-transparent">
-                      <Instagram className="w-5 h-5" />
-                    </a>
-                  </div>
+            {/* Product List */}
+            <div className="space-y-3">
+              {filteredProducts.length === 0 ? (
+                <div className="text-center py-12 text-gray-400">
+                  <Package className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>{t.noProducts}</p>
                 </div>
-
-                <a
-                  href="https://maps.app.goo.gl/QwQ3ePTo52WKz6A79?g_st=aw"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="relative min-h-[400px] lg:h-auto bg-zinc-800/80 block cursor-pointer group overflow-hidden p-6"
-                >
-                  <div className="absolute inset-4 rounded-[2rem] overflow-hidden shadow-inner">
-                    <img src={settings.location_image || "https://picsum.photos/seed/storefront/800/800"} alt="Store Location" className="w-full h-full object-cover opacity-90 group-hover:scale-110 transition-transform duration-1000 ease-out" referrerPolicy="no-referrer" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a]/90 via-[#1a1a1a]/40 to-transparent"></div>
-                    <div className="absolute bottom-8 left-8 right-8 bg-zinc-900/40 glass/10 backdrop-blur-xl border border-white/20 p-6 rounded-3xl group-hover:bg-zinc-900/40 glass/20 transition-all group-hover:-translate-y-2 duration-500">
-                      <div className="flex items-center gap-3 text-white mb-3">
-                        <div className="bg-gradient-to-r from-amber-500 to-amber-600 p-2 rounded-full shadow-lg shadow-amber-500/40">
-                          <MapPin className="w-5 h-5 text-white" />
-                        </div>
-                        <h3 className="font-black text-xl">{t.addressTitle}</h3>
+              ) : (
+                filteredProducts.map(product => {
+                  const cartItem = cart.find(item => item.product.id === product.id);
+                  const qty = cartItem ? cartItem.quantity : 0;
+                  return (
+                    <div key={product.id} className="bg-white p-3 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-gray-100 flex gap-4 relative">
+                      <div className="w-24 h-24 bg-gray-50 rounded-xl overflow-hidden shrink-0">
+                        <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400"} alt={product.name} className="w-full h-full object-cover" />
                       </div>
-                      <p className="text-stone-200 text-sm font-medium leading-relaxed">{t.addressDesc}</p>
-                      <div className="mt-4 inline-flex items-center gap-2 text-xs font-bold text-white bg-zinc-900/40 glass/20 px-4 py-2 rounded-full backdrop-blur-md">
-                        Get Directions ↗
+                      <div className="flex-1 flex flex-col justify-center py-1">
+                         <h4 className="font-bold text-gray-900 text-[15px] leading-tight mb-1">{product.name}</h4>
+                         <p className="text-xs text-gray-500 mb-2">{product.category}</p>
+                         {product.originalPrice && product.originalPrice > product.price && (
+                            <div className="text-xs text-gray-400 line-through mb-1">₹{product.originalPrice}</div>
+                         )}
+                         <div className="mt-auto flex items-center justify-between">
+                           <span className="font-black text-green-600 text-lg">₹{product.price}</span>
+                           {qty > 0 ? (
+                              <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-2 py-1 shadow-sm">
+                                <button onClick={() => updateQuantity(product.id, qty - 1)} className="text-green-600 w-6 h-6 flex items-center justify-center font-bold text-lg">-</button>
+                                <span className="text-sm font-bold text-gray-900 w-4 text-center">{qty}</span>
+                                <button onClick={() => updateQuantity(product.id, qty + 1)} className="text-green-600 w-6 h-6 flex items-center justify-center font-bold text-lg">+</button>
+                              </div>
+                           ) : (
+                              <button onClick={() => addToCart(product)} className="bg-green-50 text-green-600 px-4 py-1.5 rounded-xl border border-green-200 hover:bg-green-100 transition-colors font-bold text-sm shadow-sm">
+                                Add +
+                              </button>
+                           )}
+                         </div>
                       </div>
                     </div>
-                  </div>
-                </a>
-              </div>
+                  )
+                })
+              )}
             </div>
           </div>
-        </section>
+        )}
 
-        {/* Premium Footer */}
-        <footer className="bg-zinc-950 text-stone-400 py-16 border-t border-white/5 relative overflow-hidden">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl h-64 bg-gradient-to-r from-amber-500 to-amber-600/5 rounded-full blur-[100px] pointer-events-none"></div>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-            <div className="flex items-center justify-center gap-3 mb-8">
-              <div className="bg-gradient-to-r from-amber-500 to-amber-600/10 p-3 rounded-2xl border border-rose-500/20">
-                <Store className="w-8 h-8 text-amber-500" />
-              </div>
-              <h2 className="text-2xl font-black tracking-tight text-white">{t.storeName}</h2>
-            </div>
-            <p className="mb-10 font-medium text-zinc-400">&copy; {new Date().getFullYear()} {t.rights}</p>
-            <div className="flex items-center justify-center gap-2 text-[10px] text-zinc-400 font-bold uppercase tracking-[0.2em]">
-              <Database className="w-3.5 h-3.5" /> {t.storageStatus}
-            </div>
-          </div>
-        </footer>
+        {currentTab === 'cart' && (
+           <div className="space-y-6">
+             <h2 className="text-xl font-bold text-gray-900">Your Cart</h2>
+             {cart.length === 0 ? (
+               <div className="text-center py-12 text-gray-400">
+                  <ShoppingCart className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                  <p className="font-medium text-lg text-gray-500">Your cart is empty</p>
+                  <button onClick={() => setCurrentTab('home')} className="mt-6 bg-green-600 text-white px-6 py-2 rounded-full font-bold shadow-md hover:bg-green-700">Go to Home</button>
+               </div>
+             ) : (
+               <>
+                  <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div className="p-4 space-y-4">
+                      {cart.map((item, idx) => (
+                         <div key={idx} className="flex gap-4 items-center">
+                            <div className="w-16 h-16 bg-gray-50 rounded-lg overflow-hidden shrink-0">
+                               <img src={getPremiumImageUrl(item.product.image) || "https://placehold.co/100x100"} alt="" className="w-full h-full object-cover" />
+                            </div>
+                            <div className="flex-1">
+                               <h5 className="font-bold text-sm text-gray-900 leading-tight">{item.product.name}</h5>
+                               <p className="font-black text-green-600 text-sm mt-1">₹{item.product.price}</p>
+                            </div>
+                            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1 shrink-0">
+                              <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)} className="text-gray-600 w-5 h-5 flex items-center justify-center font-bold">-</button>
+                              <span className="text-sm font-bold text-gray-900">{item.quantity}</span>
+                              <button onClick={() => updateQuantity(item.product.id, item.quantity + 1)} className="text-gray-600 w-5 h-5 flex items-center justify-center font-bold">+</button>
+                            </div>
+                         </div>
+                      ))}
+                    </div>
+                    <div className="bg-gray-50 p-4 border-t border-gray-100">
+                       <div className="flex justify-between text-sm text-gray-600 mb-2">
+                         <span>Items Total</span>
+                         <span className="font-bold text-gray-900">₹{cartTotalAmount}</span>
+                       </div>
+                       <div className="flex justify-between text-sm text-gray-600 mb-4">
+                         <span>Delivery Fee</span>
+                         <span className="font-bold text-green-600">Free</span>
+                       </div>
+                       <div className="flex justify-between text-lg font-black text-gray-900 pt-3 border-t border-gray-200">
+                         <span>To Pay</span>
+                         <span>₹{finalTotal}</span>
+                       </div>
+                    </div>
+                  </div>
+
+                  {/* Checkout Details */}
+                  <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 space-y-4">
+                    <h3 className="font-bold text-gray-900">Delivery Details</h3>
+                    {checkoutError && (
+                      <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm border border-red-100 flex items-start gap-2">
+                         <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                         <span>{checkoutError}</span>
+                      </div>
+                    )}
+                    <div className="space-y-3">
+                       <input 
+                          type="text" 
+                          placeholder="Your Name" 
+                          value={customerName}
+                          onChange={e => setCustomerName(e.target.value)}
+                          className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all shadow-sm"
+                       />
+                       <input 
+                          type="tel" 
+                          placeholder="Phone Number (10 digits)" 
+                          value={customerPhone}
+                          onChange={e => setCustomerPhone(e.target.value)}
+                          className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all shadow-sm"
+                       />
+                       {!isPhoneVerified && (
+                          <div className="flex gap-2">
+                            {isOtpSent ? (
+                               <div className="flex w-full gap-2">
+                                 <input type="text" placeholder="Enter OTP" value={otpInput} onChange={e=>setOtpInput(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4" />
+                                 <button onClick={handleVerifyOtp} disabled={isVerifyingOtp} className="bg-green-600 text-white px-4 rounded-xl font-bold whitespace-nowrap">{isVerifyingOtp ? '...' : 'Verify'}</button>
+                               </div>
+                            ) : (
+                               <button onClick={handleSendOtp} disabled={isSendingOtp} className="w-full bg-blue-50 text-blue-600 border border-blue-200 py-3 rounded-xl font-bold shadow-sm">{isSendingOtp ? 'Sending...' : 'Send OTP'}</button>
+                            )}
+                          </div>
+                       )}
+                       {isPhoneVerified && <div className="text-green-600 font-bold text-sm bg-green-50 p-2 rounded-lg text-center">✔ Phone Verified</div>}
+                       
+                       <div className="flex gap-2 p-1 bg-gray-100 rounded-xl">
+                          <button onClick={() => setDeliveryMethod('pickup')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${deliveryMethod === 'pickup' ? 'bg-white shadow text-green-600' : 'text-gray-500'}`}>Shop Pickup</button>
+                          <button onClick={() => setDeliveryMethod('home')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${deliveryMethod === 'home' ? 'bg-white shadow text-green-600' : 'text-gray-500'}`}>Home Delivery</button>
+                       </div>
+
+                       {deliveryMethod === 'home' && (
+                          <textarea 
+                             placeholder="Enter Full Delivery Address" 
+                             value={deliveryAddress}
+                             onChange={e => setDeliveryAddress(e.target.value)}
+                             rows={3}
+                             className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all shadow-sm resize-none"
+                          />
+                       )}
+
+                       <div className="pt-4 space-y-3">
+                          <button onClick={handleWhatsAppCheckout} className="w-full bg-[#25D366] text-white py-3.5 rounded-xl font-bold shadow-md shadow-green-500/20 flex items-center justify-center gap-2 hover:bg-[#20bd5a] transition-colors">
+                             <MessageCircle className="w-5 h-5" /> Checkout on WhatsApp
+                          </button>
+                          <button onClick={handleGPayCheckout} className="w-full bg-gray-900 text-white py-3.5 rounded-xl font-bold shadow-md shadow-gray-900/20 flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors">
+                             <CreditCard className="w-5 h-5" /> Pay via GPay / UPI
+                          </button>
+                       </div>
+                    </div>
+                  </div>
+               </>
+             )}
+           </div>
+        )}
+
+        {currentTab === 'account' && (
+           <div className="space-y-6">
+             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center justify-center">
+                <div className="w-24 h-24 bg-green-100 rounded-full mb-4 flex items-center justify-center text-green-600">
+                  <User className="w-12 h-12" />
+                </div>
+                <h2 className="text-xl font-bold text-gray-900">{customerName || 'Guest User'}</h2>
+                <p className="text-gray-500">{customerPhone || 'Add phone number to track orders'}</p>
+             </div>
+
+             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-4 border-b border-gray-50 flex items-center gap-4 hover:bg-gray-50 cursor-pointer transition-colors">
+                   <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center shrink-0"><Package className="w-5 h-5" /></div>
+                   <div className="flex-1">
+                     <h4 className="font-bold text-gray-900">My Orders</h4>
+                     <p className="text-xs text-gray-500">View order history</p>
+                   </div>
+                   <ChevronRight className="w-5 h-5 text-gray-300" />
+                </div>
+                <div className="p-4 border-b border-gray-50 flex items-center gap-4 hover:bg-gray-50 cursor-pointer transition-colors">
+                   <div className="w-10 h-10 bg-rose-50 text-rose-600 rounded-full flex items-center justify-center shrink-0"><MapPin className="w-5 h-5" /></div>
+                   <div className="flex-1">
+                     <h4 className="font-bold text-gray-900">Delivery Address</h4>
+                     <p className="text-xs text-gray-500">Manage saved addresses</p>
+                   </div>
+                   <ChevronRight className="w-5 h-5 text-gray-300" />
+                </div>
+                <div className="p-4 flex items-center gap-4 hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => window.location.href = '/admin'}>
+                   <div className="w-10 h-10 bg-gray-100 text-gray-600 rounded-full flex items-center justify-center shrink-0"><Lock className="w-5 h-5" /></div>
+                   <div className="flex-1">
+                     <h4 className="font-bold text-gray-900">Admin Panel</h4>
+                     <p className="text-xs text-gray-500">Store owner login</p>
+                   </div>
+                   <ChevronRight className="w-5 h-5 text-gray-300" />
+                </div>
+             </div>
+             
+             {showGPayConfirm && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-gray-900/40 backdrop-blur-sm">
+                   <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm space-y-4">
+                      <h3 className="font-bold text-lg text-gray-900">Confirm Payment</h3>
+                      <p className="text-sm text-gray-600">Please enter the 12-digit UTR or Reference Number from your payment app to confirm your order.</p>
+                      <input 
+                          type="text" 
+                          placeholder="Enter UTR Number" 
+                          value={utrNumber}
+                          onChange={e => setUtrNumber(e.target.value)}
+                          className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
+                      <div className="flex gap-3 pt-2">
+                         <button onClick={() => setShowGPayConfirm(false)} className="flex-1 py-3 font-bold text-gray-600 bg-gray-100 rounded-xl">Cancel</button>
+                         <button onClick={handleGPayConfirm} className="flex-1 py-3 font-bold text-white bg-green-600 rounded-xl shadow-md">Confirm</button>
+                      </div>
+                   </div>
+                </div>
+             )}
+           </div>
+        )}
       </main>
 
-      {/* Floating Action Buttons */}
-      <div className="fixed bottom-6 right-6 lg:bottom-10 lg:right-10 flex flex-col items-end gap-4 z-40">
-
-        {/* Back to Top */}
-        {showBackToTop && (
-          <button
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="bg-zinc-950 text-white p-3.5 rounded-full shadow-xl hover:bg-gradient-to-r from-amber-500 to-amber-600 transition-all hover:scale-110 active:scale-95 animate-in fade-in zoom-in duration-300 border border-white/10"
-          >
-            <ArrowUp className="w-5 h-5" />
-          </button>
-        )}
-
-        {/* WhatsApp Chat Button */}
-        <a
-          href={`https://wa.me/${settings.whatsapp_1 || '916384137974'}?text=Hi Rappani Store! 🛍️`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="bg-[#25D366] text-white p-4 rounded-full shadow-[0_8px_30px_rgba(37,211,102,0.4)] hover:bg-[#20bd5a] transition-all hover:scale-110 active:scale-95 group flex items-center justify-center relative border-2 border-white/20"
-        >
-          <MessageCircle className="w-7 h-7" />
-          <span className="absolute right-full mr-4 bg-zinc-900/40 glass/95 backdrop-blur-md text-zinc-200 text-xs font-black py-2.5 px-4 rounded-[1.25rem] shadow-xl opacity-0 translate-x-4 group-hover:opacity-100 group-hover:translate-x-0 transition-all pointer-events-none whitespace-nowrap border border-white/5">
-            Chat with us! 👋
-          </span>
-          {/* Notification Badge */}
-          <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-red-500 border-2 border-white"></span>
-          </span>
-        </a>
-      </div>
-
-      {/* Premium Cart Drawer */}
-      {isCartOpen && (
-        <div className="fixed inset-0 z-[100] flex justify-end">
-          <div className="absolute inset-0 bg-zinc-950/60 backdrop-blur-sm transition-opacity" onClick={() => setIsCartOpen(false)}></div>
-          <div className="relative w-full max-w-[420px] bg-[#fdfdfd] h-full flex flex-col shadow-2xl animate-in slide-in-from-right duration-500 sm:rounded-l-[2rem] overflow-hidden border-l border-white/20">
-            {/* Header */}
-            <div className="px-6 py-5 bg-zinc-900/40 glass/90 backdrop-blur-xl border-b border-white/5 flex items-center justify-between sticky top-0 z-20">
-              <h2 className="text-xl font-extrabold text-zinc-200 flex items-center gap-3">
-                <div className="bg-rose-100 p-2.5 rounded-xl shadow-inner shadow-rose-200">
-                  <ShoppingCart className="w-5 h-5 text-amber-500" />
-                </div>
-                {t.cart} <span className="bg-zinc-900 text-white text-[10px] px-2.5 py-1 rounded-full">{cartItemsCount} Items</span>
-              </h2>
-              <button onClick={() => setIsCartOpen(false)} className="p-2.5 bg-zinc-800/80 text-zinc-400 hover:text-zinc-200 hover:bg-stone-200 rounded-full transition-all shadow-sm border border-white/10/50">
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto hidden-scrollbar flex flex-col relative z-0">
-              {cart.length === 0 ? (
-                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center text-stone-400 h-full min-h-[50vh]">
-                  <div className="bg-zinc-900/40 glass w-32 h-32 rounded-full flex items-center justify-center mb-6 shadow-sm border border-white/5 relative">
-                    <div className="absolute inset-0 bg-gradient-to-r from-amber-500 to-amber-600/10 rounded-full animate-ping opacity-75"></div>
-                    <ShoppingBag className="w-12 h-12 text-stone-200 relative z-10" />
-                  </div>
-                  <h3 className="text-xl font-extrabold text-stone-700 mb-2">{t.emptyCart}</h3>
-                  <p className="text-sm mb-6 text-stone-400">Looks like you haven't added anything yet.</p>
-                  <button onClick={() => setIsCartOpen(false)} className="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-8 py-3 rounded-full font-bold shadow-xl shadow-amber-500/30 hover:from-amber-400 hover:to-amber-500 transition-all hover:-translate-y-1 active:scale-95">Start Shopping</button>
-                </div>
-              ) : (
-                <div className="p-4 sm:p-6 flex flex-col gap-4">
-                  <div className="bg-gradient-to-r from-emerald-500 to-teal-500 p-4 rounded-2xl text-white shadow-lg shadow-emerald-500/20 flex gap-3 items-center mb-2">
-                    <div className="bg-zinc-900/40 glass/20 p-2.5 rounded-full backdrop-blur-sm text-lg leading-none flex items-center justify-center shadow-inner">✨</div>
-                    <div>
-                      <h4 className="font-bold text-sm tracking-wide">Fast Dispatch Available</h4>
-                      <p className="text-[11px] text-white/90 font-medium">Clear payment to confirm your items.</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    {cart.map(item => (
-                      <div key={item.product.id} className="flex gap-4 bg-zinc-900/40 glass p-3.5 rounded-2xl shadow-sm border border-white/5/80 items-center justify-between group hover:shadow-md transition-all hover:border-white/10">
-                        <div className="flex gap-3 items-center">
-                          <div className="w-[4.5rem] h-[4.5rem] p-2 rounded-xl bg-zinc-900/50 border border-white/10/60 shadow-sm relative shrink-0 flex items-center justify-center">
-                            <img src={getPremiumImageUrl(item.product.image)} alt={item.product.name} className="w-full h-full object-contain mix-blend-multiply drop-shadow-sm group-hover:scale-105 transition-transform duration-300" referrerPolicy="no-referrer" />
-                          </div>
-                          <div className="flex flex-col max-w-[140px]">
-                            <h4 className="font-bold text-zinc-200 text-sm line-clamp-2 leading-tight mb-1">{item.product.name}</h4>
-                            <p className="font-black text-amber-500 text-sm tracking-tight">₹{Math.round(item.product.price)}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1 bg-zinc-800/50 p-1 rounded-xl border border-white/10/60 shadow-inner shrink-0">
-                          <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)} className="p-2 text-zinc-400 hover:text-amber-500 hover:bg-zinc-900/40 glass hover:shadow-sm rounded-lg transition-all active:scale-90"><Minus className="w-3.5 h-3.5" /></button>
-                          <span className="font-bold text-zinc-200 text-xs min-w-[20px] text-center">{item.quantity}</span>
-                          <button onClick={() => updateQuantity(item.product.id, item.quantity + 1)} className="p-2 text-zinc-400 hover:text-emerald-500 hover:bg-zinc-900/40 glass hover:shadow-sm rounded-lg transition-all active:scale-90"><Plus className="w-3.5 h-3.5" /></button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Sticky Bottom Checkout Footer */}
-            {cart.length > 0 && (
-              <div className="bg-zinc-900/40 glass border-t border-white/5 shadow-[0_-10px_40px_-5px_rgba(0,0,0,0.08)] z-20 shrink-0 relative flex flex-col max-h-[60vh]">
-                <div className="p-5 sm:p-6 overflow-y-auto hidden-scrollbar pb-6">
-
-                  {/* Delivery Method Selector */}
-                  <div className="mb-5">
-                    <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-2.5 ml-1">{t.deliveryMethod}</p>
-                    <div className="grid grid-cols-2 gap-2 p-1.5 bg-zinc-800/80 rounded-2xl border border-white/10">
-                      <button
-                        onClick={() => setDeliveryMethod('pickup')}
-                        className={`flex flex-col items-center gap-1 py-3 rounded-xl transition-all ${deliveryMethod === 'pickup' ? 'bg-zinc-900/40 glass text-white shadow-md ring-1 ring-stone-200' : 'text-zinc-400 hover:text-stone-700'}`}
-                      >
-                        <Store className="w-4 h-4" />
-                        <span className="text-[10px] font-black uppercase tracking-tighter leading-none">{t.shopPickup}</span>
-                      </button>
-                      <button
-                        onClick={() => {
-                          setDeliveryMethod('home');
-                          if (locationStatus === 'idle') refreshLocation();
-                        }}
-                        className={`flex flex-col items-center gap-1 py-3 rounded-xl transition-all ${deliveryMethod === 'home' ? 'bg-zinc-900/40 glass text-white shadow-md ring-1 ring-stone-200' : 'text-zinc-400 hover:text-stone-700'}`}
-                      >
-                        <Rocket className="w-4 h-4" />
-                        <span className="text-[10px] font-black uppercase tracking-tighter leading-none">{t.homeDelivery}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Delivery Info Section */}
-                  {deliveryMethod === 'home' && (
-                    <div className="bg-zinc-800/50/50 p-4 rounded-2xl border border-white/5 mb-5 space-y-3">
-                      <div className="flex justify-between items-start text-[10px] font-black tracking-widest text-stone-400">
-                        <div className="flex flex-col gap-1.5 uppercase">
-                          {distance !== null ? (
-                            <div className="flex items-center gap-2">
-                              <span className={`flex items-center gap-1.5 ${distance > 5 ? 'text-red-500' : 'text-zinc-400'}`}>
-                                <MapPin className="w-3.5 h-3.5" />
-                                {distance.toFixed(1)}KM {t.distanceToStore}
-                              </span>
-                              <button
-                                onClick={refreshLocation}
-                                className="bg-zinc-800/80 hover:bg-stone-200 p-1.5 rounded-lg text-zinc-400 transition-all active:scale-95"
-                                title={t.refreshLocation}
-                              >
-                                <Aperture className={`w-3.5 h-3.5 ${locationStatus === 'checking' ? 'animate-spin text-amber-500' : ''}`} />
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex flex-col gap-2">
-                              <span className="flex items-center gap-1.5 text-stone-400">
-                                {locationStatus === 'checking' ? (
-                                  <><div className="w-3 h-3 border-2 border-stone-300 border-t-stone-500 rounded-full animate-spin" /> {t.calculatingLocation}</>
-                                ) : (
-                                  <><Info className="w-3.5 h-3.5 text-amber-500" /> {t.locationBlocked}</>
-                                )}
-                              </span>
-                              {locationStatus !== 'checking' && (
-                                <button
-                                  onClick={refreshLocation}
-                                  className="bg-zinc-950 hover:bg-zinc-900 text-white px-3 py-2 rounded-xl flex items-center gap-2 text-[10px] uppercase font-black transition-all shadow-md active:scale-95 w-max"
-                                >
-                                  <Aperture className="w-3.5 h-3.5" /> {t.refreshLocation}
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                        {distance !== null && distance > 5 && (
-                          <span className="text-red-500 font-black animate-pulse px-2 py-1 bg-red-50 rounded-lg border border-red-100">OVER LIMIT</span>
-                        )}
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">{t.deliveryFee}</span>
-                        <span className={`font-black text-sm ${deliveryFee === 0 ? 'text-emerald-500' : 'text-white'}`}>
-                          {deliveryFee === 0 ? t.freeDelivery : `₹${deliveryFee}`}
-                        </span>
-                      </div>
-
-                      <textarea
-                        placeholder={t.enterAddress}
-                        value={deliveryAddress}
-                        onChange={(e) => setDeliveryAddress(e.target.value)}
-                        className={`w-full px-4 py-3 bg-zinc-900/40 glass border rounded-xl text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-rose-500/10 focus:border-rose-500 text-zinc-200 placeholder:text-stone-400 placeholder:font-medium mb-1 resize-none h-20 ${checkoutError && !deliveryAddress ? 'border-red-400 bg-red-50/50' : 'border-white/10'}`}
-                      />
-                    </div>
-                  )}
-
-                  <div className="flex items-end justify-between mb-5">
-                    <span className="text-zinc-400 font-bold uppercase tracking-widest text-[11px] flex items-center gap-1.5"><ShoppingBag className="w-3.5 h-3.5" /> Total Amount</span>
-                    <span className="text-3xl font-black text-white tracking-tight relative group cursor-default">
-                      <span className="absolute -inset-1 bg-gradient-to-r from-amber-500 to-amber-600/10 rounded-lg blur-md opacity-0 group-hover:opacity-100 transition-opacity"></span>
-                      <span className="relative">₹{finalTotal}</span>
-                    </span>
-                  </div>
-
-                  {/* Customer Details Form */}
-                  <div className="bg-zinc-800/50 p-4 rounded-2xl border border-white/10/60 mb-5 relative overflow-hidden transition-all shadow-sm">
-                    <div className="absolute top-0 left-0 w-1.5 h-full bg-purple-500/100"></div>
-                    <div className="space-y-3 pl-1.5">
-                      <div className="relative group">
-                        <input
-                          type="text"
-                          placeholder={t.nameLabel}
-                          value={customerName}
-                          onChange={(e) => setCustomerName(e.target.value)}
-                          className={`w-full px-4 py-3 bg-zinc-900/40 glass border rounded-xl text-sm font-bold outline-none transition-all focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-zinc-200 placeholder:text-stone-400 placeholder:font-medium ${checkoutError && !customerName ? 'border-red-400 bg-red-50/50' : 'border-white/10 group-hover:border-stone-300'}`}
-                        />
-                      </div>
-                      <div className="relative group">
-                        <input
-                          type="tel"
-                          placeholder={t.phoneLabel}
-                          value={customerPhone}
-                          onChange={(e) => {
-                            const val = e.target.value.replace(/[^0-9]/g, '');
-                            if (val !== customerPhone) {
-                              setCustomerPhone(val);
-                              setIsPhoneVerified(false);
-                              if (val.length !== 10) {
-                                setIsOtpSent(false);
-                                setMockOtp(null);
-                              }
-                            }
-                          }}
-                          disabled={isPhoneVerified}
-                          maxLength={10}
-                          className={`w-full px-4 py-3 bg-zinc-900/40 glass border rounded-xl text-sm font-bold tracking-widest outline-none transition-all focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 text-zinc-200 placeholder:text-stone-400 placeholder:font-medium placeholder:tracking-normal ${checkoutError && (!customerPhone || !isPhoneVerified) ? 'border-red-400 bg-red-50/50' : 'border-white/10 group-hover:border-stone-300'} ${isPhoneVerified ? 'bg-zinc-800/80 text-stone-400 border-dashed cursor-not-allowed' : ''}`}
-                        />
-
-                        {!isPhoneVerified && !isOtpSent && customerPhone.length === 10 && (
-                          <button onClick={handleSendOtp} disabled={isSendingOtp} className="mt-2.5 w-full text-xs bg-zinc-950 hover:bg-zinc-900 text-white py-3 rounded-xl font-extrabold uppercase tracking-widest transition-all shadow-md active:scale-95 flex justify-center items-center gap-2">
-                            {isSendingOtp ? 'SENDING...' : t.sendOtp}
-                          </button>
-                        )}
-
-                        {isOtpSent && !isPhoneVerified && (
-                          <div className="flex flex-col gap-2 mt-2.5 animate-in fade-in slide-in-from-top-2">
-                            {mockOtp && (
-                              <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl mb-1">
-                                <p className="text-[10px] font-black text-amber-700 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                                  <Sparkles className="w-3.5 h-3.5" /> Test Mode: Enter this OTP
-                                </p>
-                                <div className="flex gap-2">
-                                  {mockOtp.split('').map((digit, i) => (
-                                    <span key={i} className="flex-1 bg-zinc-900/40 glass border border-amber-300 py-2 rounded-lg text-center font-black text-amber-600 text-lg shadow-sm">{digit}</span>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                            <div className="flex gap-2 items-center">
-                              <input
-                                type="text"
-                                maxLength={4}
-                                value={otpInput}
-                                onChange={e => setOtpInput(e.target.value.replace(/[^0-9]/g, ''))}
-                                placeholder="Enter 4-digit OTP"
-                                className="w-full px-4 py-3 bg-zinc-900/40 glass border border-stone-300 rounded-xl text-lg font-black tracking-[0.3em] text-center outline-none focus:ring-4 focus:ring-rose-500/20 focus:border-rose-500 shadow-inner"
-                              />
-                              <button onClick={handleVerifyOtp} disabled={isVerifyingOtp} className="whitespace-nowrap bg-zinc-950 hover:bg-zinc-900 text-white px-6 py-3 rounded-xl font-extrabold text-[11px] uppercase tracking-widest transition-all shadow-md active:scale-95 shrink-0 flex items-center justify-center min-w-[100px] border border-stone-800">
-                                {isVerifyingOtp ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : t.verifyOtp}
-                              </button>
-                            </div>
-                            <button
-                              onClick={() => { setIsOtpSent(false); setMockOtp(null); }}
-                              className="text-[10px] text-stone-400 font-bold uppercase tracking-widest hover:text-amber-500 transition-colors self-center p-2"
-                            >
-                              Wrong number? Change it
-                            </button>
-                          </div>
-                        )}
-
-                        {isPhoneVerified && (
-                          <p className="text-[11px] text-emerald-600 font-extrabold mt-2 flex items-center gap-1.5 bg-emerald-50 py-2 px-3 rounded-xl border border-emerald-100 w-max tracking-wide uppercase"><ShieldCheck className="w-4 h-4" /> Verified Identity</p>
-                        )}
-                      </div>
-                    </div>
-                    {checkoutError && <p className="text-[11px] text-red-600 bg-red-50 font-bold mt-3 p-2.5 rounded-xl border border-red-100 flex gap-2 items-center tracking-wide"><ShieldCheck className="w-4 h-4 shrink-0 text-red-500" /> {checkoutError}</p>}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="col-span-2 bg-zinc-800/80 p-4 rounded-2xl border border-white/10 flex items-center gap-4 relative overflow-hidden group">
-                      <div className="absolute inset-0 bg-gradient-to-tr from-stone-200/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                      <div className="bg-zinc-900/40 glass p-1.5 rounded-xl shadow-sm border border-white/10 shrink-0 relative z-10">
-                        <img
-                          src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`upi://pay?pa=mohammedazzam200512@okaxis&pn=MOHAMMED AZZAM M&tr=RAPTXN12345&tn=RappaniStore&am=${Math.round(cartTotalAmount)}&cu=INR`)}`}
-                          alt="Scan to Pay"
-                          className="w-14 h-14 rounded-lg mix-blend-multiply"
-                        />
-                      </div>
-                      <div className="relative z-10 overflow-hidden">
-                        <p className="text-[10px] font-black text-zinc-400 mb-0.5 uppercase tracking-widest">Verify & Scan</p>
-                        <p className="text-[11px] text-zinc-200 font-bold tracking-wider truncate">mohammedazzam200512@okaxis</p>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={handleGPayCheckout}
-                      className="col-span-2 bg-[#202124] hover:bg-black text-white py-4 rounded-2xl font-extrabold text-[15px] transition-all hover:shadow-xl hover:shadow-[#202124]/30 active:scale-[0.98] flex flex-col items-center justify-center gap-0.5 cursor-pointer relative overflow-hidden group"
-                    >
-                      <div className="absolute inset-0 flex">
-                        <div className="w-1/2 h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-[200%] group-hover:translate-x-[200%] transition-transform duration-1000 ease-in-out"></div>
-                      </div>
-                      <div className="flex items-center gap-2 relative z-10">
-                        📋 COPY UPI ID & PAY
-                      </div>
-                      <span className="text-[9px] font-bold text-stone-400 uppercase tracking-[0.2em] relative z-10">100% Secure • Bank Bypass</span>
-                    </button>
-
-                    <button
-                      onClick={handleWhatsAppCheckout}
-                      className="col-span-2 bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 rounded-2xl font-extrabold text-[15px] transition-all hover:shadow-xl hover:shadow-[#25D366]/30 active:scale-[0.98] flex items-center justify-center gap-2 relative overflow-hidden group"
-                    >
-                      <div className="absolute inset-0 flex">
-                        <div className="w-1/2 h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[200%] group-hover:translate-x-[200%] transition-transform duration-1000 ease-in-out"></div>
-                      </div>
-                      <MessageCircle className="w-5 h-5 fill-white/20 relative z-10" /> <span className="relative z-10 uppercase tracking-wide">Buy through WhatsApp</span>
-                    </button>
-                  </div>
-
-                  {showGPayConfirm && (
-                    <div className="mt-2 bg-[#1C1C1E] p-5 sm:p-6 rounded-2xl border border-stone-800 flex flex-col items-center justify-center transition-all animate-in zoom-in-95 duration-300 text-center shadow-2xl relative overflow-hidden">
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl translate-x-12 -translate-y-12 pointer-events-none"></div>
-                      <p className="font-extrabold text-white text-sm mb-2 flex items-center gap-2 uppercase tracking-wide"><ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" /> Secure Verification</p>
-                      <p className="text-[11px] text-stone-400 mb-5 font-medium px-2 leading-relaxed tracking-wide">Please copy and paste the 12-digit UPI Reference / UTR Number from your banking app to confirm the order.</p>
-                      <input
-                        type="text"
-                        placeholder="e.g. 412345678901"
-                        maxLength={12}
-                        value={utrNumber}
-                        onChange={(e) => setUtrNumber(e.target.value.replace(/[^0-9]/g, ''))}
-                        className="w-full text-center tracking-[0.25em] font-mono p-4 bg-black/50 text-emerald-400 rounded-xl border border-stone-700 mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all font-black placeholder:text-stone-700 text-lg shadow-inner"
-                      />
-                      <button
-                        onClick={handleGPayConfirm}
-                        className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-black py-4 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.3)] transition-all active:scale-95 flex items-center justify-center gap-2 text-sm uppercase tracking-widest relative overflow-hidden group"
-                      >
-                        <span className="relative z-10 flex items-center gap-2">Confirm Payment <ShieldCheck className="w-4 h-4" /></span>
-                        <div className="absolute inset-0 bg-zinc-900/40 glass/20 w-full h-full -translate-x-full group-hover:translate-x-full transition-transform duration-500 ease-in-out blur-md"></div>
-                      </button>
-                      <button onClick={() => setShowGPayConfirm(false)} className="mt-4 text-[11px] text-zinc-400 hover:text-white uppercase font-bold tracking-[0.1em] transition-colors p-2">Close / Go Back</button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-      {/* Product Detail Modal */}
-      <AnimatePresence>
-        {selectedProduct && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 sm:p-6 lg:p-8">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSelectedProduct(null)}
-              className="absolute inset-0 bg-stone-950/80 backdrop-blur-xl"
-            />
-
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-4xl bg-zinc-900/40 glass rounded-[3rem] shadow-2xl overflow-hidden flex flex-col md:grid md:grid-cols-2 max-h-[90vh]"
-            >
-              <button
-                onClick={() => setSelectedProduct(null)}
-                className="absolute top-6 right-6 w-12 h-12 bg-zinc-900/40 glass/80 backdrop-blur-md hover:bg-rose-100 text-zinc-400 hover:text-rose-600 rounded-full flex items-center justify-center transition-all z-20 shadow-md border border-white/5"
-              >
-                <X className="w-6 h-6" />
-              </button>
-
-              <div className="h-full bg-zinc-900/50 flex items-center justify-center p-8 md:p-14 relative overflow-hidden xl:border-r border-white/5">
-                <div className="absolute inset-6 md:inset-8 border border-white/10/80 rounded-2xl pointer-events-none z-20"></div>
-                <img
-                  src={getPremiumImageUrl(selectedProduct.image)}
-                  alt={selectedProduct.name}
-                  className="w-full h-full object-contain mix-blend-multiply drop-shadow-xl relative z-10 hover:scale-105 transition-transform duration-700"
-                  referrerPolicy="no-referrer"
-                />
-              </div>
-
-              <div className="p-8 md:p-12 flex flex-col h-full overflow-y-auto">
-                <div className="flex items-center gap-3 mb-6">
-                  <span className="px-4 py-1.5 bg-amber-500/10 text-rose-600 rounded-full text-xs font-black uppercase tracking-widest border border-rose-100">
-                    {getCategoryName(selectedProduct.category)}
-                  </span>
-                  {selectedProduct.stock !== undefined && selectedProduct.stock > 0 ? (
-                    <span className="px-4 py-1.5 bg-emerald-50 text-emerald-600 rounded-full text-xs font-black uppercase tracking-widest border border-emerald-100 flex items-center gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> {t.stockAvailable}
-                    </span>
-                  ) : (
-                    <span className="px-4 py-1.5 bg-red-50 text-red-600 rounded-full text-xs font-black uppercase tracking-widest border border-red-100">
-                      {t.outOfStock}
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-1 mb-2">
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Star key={s} className={`w-4 h-4 ${s <= 4 ? 'text-amber-400 fill-amber-400' : 'text-stone-200 fill-stone-200'}`} />
-                  ))}
-                  <span className="text-xs font-bold text-stone-400 ml-2">(4.8/5)</span>
-                  <span className="ml-auto bg-zinc-950 text-white text-[9px] font-black uppercase px-2 py-1 rounded flex items-center gap-1 leading-none tracking-tighter">
-                    <TrendingUp className="w-3 h-3 text-rose-400" /> Best Seller
-                  </span>
-                </div>
-
-                <h2 className="text-3xl md:text-4xl font-black text-white mb-6 leading-tight">{selectedProduct.name}</h2>
-
-                <div className="flex items-end gap-3 mb-10 pb-10 border-b border-white/5">
-                  <span className="text-5xl font-black text-white tracking-tighter">₹{Math.round(selectedProduct.price)}</span>
-                  {selectedProduct.originalPrice && selectedProduct.originalPrice > selectedProduct.price && (
-                    <div className="flex flex-col mb-1">
-                      <span className="text-base text-stone-400 line-through decoration-rose-500 font-bold tracking-tight">₹{Math.round(selectedProduct.originalPrice)}</span>
-                      <span className="text-emerald-500 text-xs font-black uppercase tracking-widest">
-                        Save {Math.round(((selectedProduct.originalPrice - selectedProduct.price) / selectedProduct.originalPrice) * 100)}% OFF
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-auto flex flex-col gap-4">
-                  {cart.find(c => c.product.id === selectedProduct.id) ? (
-                    <div className="flex items-center justify-between bg-zinc-800/50 p-6 rounded-3xl border border-white/5 shadow-inner">
-                      <div className="flex flex-col">
-                        <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">In your cart</span>
-                        <span className="text-zinc-200 font-black text-xl">{cart.find(c => c.product.id === selectedProduct.id)?.quantity} Items</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => updateQuantity(selectedProduct.id, (cart.find(c => c.product.id === selectedProduct.id)?.quantity || 1) - 1)} className="w-12 h-12 flex items-center justify-center bg-zinc-900/40 glass rounded-2xl text-amber-500 shadow-sm hover:bg-amber-500/10 transition-all border border-white/5">
-                          <Minus className="w-5 h-5 font-bold" />
-                        </button>
-                        <button onClick={() => updateQuantity(selectedProduct.id, (cart.find(c => c.product.id === selectedProduct.id)?.quantity || 1) + 1)} disabled={selectedProduct.stock !== undefined && (cart.find(c => c.product.id === selectedProduct.id)?.quantity || 0) >= selectedProduct.stock} className="w-12 h-12 flex items-center justify-center bg-zinc-950 rounded-2xl text-white shadow-xl hover:bg-zinc-900 transition-all disabled:opacity-50">
-                          <Plus className="w-5 h-5 font-bold" />
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => addToCart(selectedProduct)}
-                      disabled={selectedProduct.stock !== undefined && selectedProduct.stock <= 0}
-                      className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white py-6 rounded-[2rem] font-black text-xl shadow-2xl shadow-amber-500/30 transition-all active:scale-[0.98] flex items-center justify-center gap-4 disabled:opacity-50"
-                    >
-                      <ShoppingCart className="w-6 h-6" /> {t.addToCart}
-                    </button>
-                  )}
-
-                  <a
-                    href={`https://wa.me/${settings.whatsapp_1 || '916384137974'}?text=Hi, I'm interested in: ${selectedProduct.name}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full bg-zinc-800/50 hover:bg-[#25D366] text-zinc-400 hover:text-white py-5 rounded-[2rem] font-bold text-base transition-all flex items-center justify-center gap-3 border border-white/10 hover:border-transparent group"
-                  >
-                    <MessageCircle className="w-5 h-5 text-[#25D366] group-hover:text-white" /> {t.shareProduct}
-                  </a>
-
-                  {/* Related Products */}
-                  <div className="mt-10 pt-10 border-t border-white/5">
-                    <h3 className="text-sm font-black text-white uppercase tracking-widest mb-6 flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-amber-500" /> You might also like
-                    </h3>
-                    <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-                      {products
-                        .filter(p => p.category === selectedProduct.category && p.id !== selectedProduct.id)
-                        .slice(0, 4)
-                        .map(p => (
-                          <div
-                            key={p.id}
-                            onClick={() => setSelectedProduct(p)}
-                            className="min-w-[140px] group cursor-pointer"
-                          >
-                            <div className="aspect-square bg-zinc-900/50 rounded-xl p-3 mb-3 border border-white/10/60 shadow-sm group-hover:border-stone-300 transition-all overflow-hidden flex items-center justify-center relative">
-                              <img src={getPremiumImageUrl(p.image)} alt={p.name} className="w-full h-full object-contain mix-blend-multiply drop-shadow-sm group-hover:scale-110 transition-transform duration-500" />
-                            </div>
-                            <h4 className="text-xs font-bold text-zinc-200 line-clamp-1 group-hover:text-amber-500 transition-colors uppercase tracking-tight">{p.name}</h4>
-                            <p className="text-xs font-black text-white mt-0.5">₹{Math.round(p.price)}</p>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Bottom Navigation Bar */}
+      <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 pb-safe pt-2 px-6 flex justify-between items-center z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] h-16">
+         <button onClick={() => setCurrentTab('home')} className={`flex flex-col items-center gap-1 w-16 ${currentTab === 'home' ? 'text-green-600' : 'text-gray-400'}`}>
+           <Home className={`w-6 h-6 ${currentTab === 'home' ? 'fill-green-100' : ''}`} />
+           <span className="text-[10px] font-bold">Home</span>
+         </button>
+         <button onClick={() => setCurrentTab('offers')} className={`flex flex-col items-center gap-1 w-16 ${currentTab === 'offers' ? 'text-green-600' : 'text-gray-400'}`}>
+           <Sparkles className={`w-6 h-6 ${currentTab === 'offers' ? 'fill-green-100' : ''}`} />
+           <span className="text-[10px] font-bold">Offers</span>
+         </button>
+         <button onClick={() => setCurrentTab('cart')} className={`relative flex flex-col items-center gap-1 w-16 ${currentTab === 'cart' ? 'text-green-600' : 'text-gray-400'}`}>
+           <div className="relative">
+             <ShoppingBag className={`w-6 h-6 ${currentTab === 'cart' ? 'fill-green-100' : ''}`} />
+             {cartItemsCount > 0 && (
+               <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white">
+                 {cartItemsCount}
+               </span>
+             )}
+           </div>
+           <span className="text-[10px] font-bold">Cart</span>
+         </button>
+         <button className="flex flex-col items-center gap-1 w-16 text-gray-400 cursor-not-allowed">
+           <Heart className="w-6 h-6" />
+           <span className="text-[10px] font-bold">Favorites</span>
+         </button>
+         <button onClick={() => setCurrentTab('account')} className={`flex flex-col items-center gap-1 w-16 ${currentTab === 'account' ? 'text-green-600' : 'text-gray-400'}`}>
+           <User className={`w-6 h-6 ${currentTab === 'account' ? 'fill-green-100' : ''}`} />
+           <span className="text-[10px] font-bold">Account</span>
+         </button>
+      </nav>
     </div>
   );
 }

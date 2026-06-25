@@ -19,11 +19,11 @@
   }
   
   body {
-    @apply antialiased bg-zinc-950 text-zinc-300 font-sans selection:bg-amber-500/30 selection:text-amber-200;
+    @apply antialiased bg-gray-50 text-gray-900 font-sans selection:bg-green-500/30 selection:text-green-900;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-heading tracking-tight text-white;
+    @apply font-heading tracking-tight text-gray-900;
   }
 }
 
@@ -37,18 +37,18 @@
   }
   
   .glass {
-    @apply bg-zinc-900/40 backdrop-blur-2xl border border-white/5 shadow-2xl;
+    @apply bg-white/80 backdrop-blur-xl border border-gray-100 shadow-md;
   }
   
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600;
+    @apply text-green-600 font-bold;
   }
 
   .premium-card {
-    @apply bg-zinc-900/40 backdrop-blur-2xl border border-white/5 shadow-2xl rounded-3xl transition-all duration-500 hover:scale-[1.02] hover:border-amber-500/20 hover:shadow-[0_0_40px_rgba(245,158,11,0.1)];
+    @apply bg-white border border-gray-100 shadow-[0_4px_12px_rgba(0,0,0,0.05)] rounded-2xl transition-all duration-300 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)];
   }
 
   .premium-button {
-    @apply bg-gradient-to-r from-amber-500 to-amber-700 text-white font-medium rounded-full transition-all duration-300 hover:shadow-[0_0_20px_rgba(245,158,11,0.4)] hover:scale-105 active:scale-95 flex items-center justify-center;
+    @apply bg-green-600 text-white font-medium rounded-full transition-all duration-300 hover:bg-green-700 active:scale-95 flex items-center justify-center;
   }
 }
