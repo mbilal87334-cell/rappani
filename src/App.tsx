@@ -369,6 +369,26 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
   const [deliveryMethod, setDeliveryMethod] = useState<'home' | 'pickup'>('pickup');
   const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [savedAddresses, setSavedAddresses] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('rappani_saved_addresses');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('rappani_saved_addresses', JSON.stringify(savedAddresses));
+    } catch (e) {
+      console.error("Failed to save addresses", e);
+    }
+  }, [savedAddresses]);
+  
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [newSavedAddress, setNewSavedAddress] = useState('');
+
 
   useEffect(() => {
     localStorage.setItem('rappani_customer_name', customerName);
@@ -1217,7 +1237,67 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
            <span className="text-[10px] font-bold">Account</span>
          </button>
       </nav>
-    </div>
+    
+      {isAddressModalOpen && (
+        <div className="fixed inset-0 z-[100] flex flex-col bg-gray-100">
+          <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center gap-3 shadow-sm pt-safe">
+            <button onClick={() => setIsAddressModalOpen(false)} className="p-2 -ml-2 rounded-full hover:bg-gray-50">
+              <ChevronRight className="w-6 h-6 text-gray-900 rotate-180" />
+            </button>
+            <h2 className="font-black text-xl text-gray-900">Saved Addresses</h2>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {savedAddresses.length === 0 ? (
+              <div className="text-center py-12 text-gray-400">
+                <MapPin className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                <p>No saved addresses yet</p>
+              </div>
+            ) : (
+              savedAddresses.map((addr, idx) => (
+                <div key={idx} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex gap-3 relative">
+                  <div className="w-10 h-10 bg-green-50 text-green-600 rounded-full flex items-center justify-center shrink-0">
+                    <MapPin className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1 pr-8">
+                    <h4 className="font-bold text-gray-900 mb-1">Address {idx + 1}</h4>
+                    <p className="text-sm text-gray-600 whitespace-pre-wrap">{addr}</p>
+                  </div>
+                  <button 
+                    onClick={() => setSavedAddresses(savedAddresses.filter((_, i) => i !== idx))}
+                    className="absolute top-4 right-4 p-2 text-rose-500 bg-rose-50 rounded-full"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))
+            )}
+            
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mt-6">
+              <h4 className="font-bold text-gray-900 mb-3">Add New Address</h4>
+              <textarea 
+                className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-green-500 h-24 resize-none transition-shadow mb-3" 
+                placeholder="Enter Full Delivery Address" 
+                value={newSavedAddress}
+                onChange={e => setNewSavedAddress(e.target.value)}
+              />
+              <button 
+                onClick={() => {
+                  if(newSavedAddress.trim()) {
+                    setSavedAddresses([...savedAddresses, newSavedAddress.trim()]);
+                    setNewSavedAddress('');
+                  }
+                }}
+                disabled={!newSavedAddress.trim()}
+                className="w-full bg-green-600 text-white rounded-xl py-3 font-bold disabled:opacity-50 disabled:bg-gray-300 flex items-center justify-center gap-2"
+              >
+                <Plus className="w-5 h-5" /> Save Address
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+</div>
   );
 }
 
