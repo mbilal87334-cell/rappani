@@ -371,6 +371,16 @@ async function startServer() {
     }
   });
 
+  app.get("/api/orders/customer/:phone", async (req, res) => {
+    try {
+      const { phone } = req.params;
+      const orders = await Order.find({ customerPhone: phone }, '-_id -__v').sort({ createdAt: -1 });
+      res.json(orders);
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
   app.get("/api/orders", async (req, res) => {
     try {
       const orders = await Order.find({}, '-_id -__v').sort({ createdAt: -1 });
