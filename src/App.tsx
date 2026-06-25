@@ -814,8 +814,8 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
       {/* Top Header */}
       <header className="sticky top-0 z-50 bg-white shadow-sm px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-600">
-            <Store className="w-6 h-6" />
+          <div className="w-10 h-10 bg-gradient-to-br from-green-600 to-green-800 rounded-xl shadow-md flex items-center justify-center text-white border border-green-500/30">
+            <span className="font-serif font-bold text-2xl" style={{ fontFamily: 'Georgia, serif' }}>R</span>
           </div>
           <div>
             <h1 className="font-bold text-lg leading-tight text-gray-900">{t.storeName}</h1>
