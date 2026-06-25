@@ -334,6 +334,30 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
     }
   }, [cart]);
 
+  
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('rappani_favorites');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('rappani_favorites', JSON.stringify(favorites));
+    } catch (e) {
+      console.error("Failed to save favorites to localStorage", e);
+    }
+  }, [favorites]);
+
+  const toggleFavorite = (productId: string) => {
+    setFavorites(prev => 
+      prev.includes(productId) ? prev.filter(id => id !== productId) : [...prev, productId]
+    );
+  };
+
   const [customerName, setCustomerName] = useState(() => localStorage.getItem('rappani_customer_name') || '');
   const [customerPhone, setCustomerPhone] = useState(() => localStorage.getItem('rappani_customer_phone') || '');
   const [isPhoneVerified, setIsPhoneVerified] = useState(() => localStorage.getItem('rappani_is_verified') === 'true');
@@ -368,7 +392,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
   }, [isPhoneVerified]);
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [currentTab, setCurrentTab] = useState<'home' | 'offers' | 'cart' | 'account'>('home');
+  const [currentTab, setCurrentTab] = useState<'home' | 'offers' | 'cart' | 'favorites' | 'account'>('home');
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [lang, setLang] = useState<'en' | 'ta'>('en');
@@ -836,6 +860,9 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                   const qty = cartItem ? cartItem.quantity : 0;
                   return (
                     <div key={product.id} className="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col relative">
+                       <button onClick={() => toggleFavorite(product.id)} className="absolute top-4 right-4 z-10 p-1.5 bg-white/80 backdrop-blur-md rounded-full shadow-sm">
+                         <Heart className={`w-4 h-4 ${favorites.includes(product.id) ? 'fill-rose-500 text-rose-500' : 'text-gray-400'}`} />
+                       </button>
                        <div className="w-full aspect-square bg-gray-50 rounded-xl mb-3 overflow-hidden">
                          <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400?text=No+Image"} alt={product.name} className="w-full h-full object-cover" />
                        </div>
@@ -903,6 +930,9 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                   const qty = cartItem ? cartItem.quantity : 0;
                   return (
                     <div key={product.id} className="bg-white p-3 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-gray-100 flex gap-4 relative">
+                      <button onClick={() => toggleFavorite(product.id)} className="absolute top-2 right-2 z-10 p-1.5 bg-white/80 backdrop-blur-md rounded-full shadow-sm">
+                         <Heart className={`w-4 h-4 ${favorites.includes(product.id) ? 'fill-rose-500 text-rose-500' : 'text-gray-400'}`} />
+                      </button>
                       <div className="w-24 h-24 bg-gray-50 rounded-xl overflow-hidden shrink-0">
                         <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400"} alt={product.name} className="w-full h-full object-cover" />
                       </div>
@@ -912,6 +942,54 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                          {product.originalPrice && product.originalPrice > product.price && (
                             <div className="text-xs text-gray-400 line-through mb-1">₹{product.originalPrice}</div>
                          )}
+                         <div className="mt-auto flex items-center justify-between">
+                           <span className="font-black text-green-600 text-lg">₹{product.price}</span>
+                           {qty > 0 ? (
+                              <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-2 py-1 shadow-sm">
+                                <button onClick={() => updateQuantity(product.id, qty - 1)} className="text-green-600 w-6 h-6 flex items-center justify-center font-bold text-lg">-</button>
+                                <span className="text-sm font-bold text-gray-900 w-4 text-center">{qty}</span>
+                                <button onClick={() => updateQuantity(product.id, qty + 1)} className="text-green-600 w-6 h-6 flex items-center justify-center font-bold text-lg">+</button>
+                              </div>
+                           ) : (
+                              <button onClick={() => addToCart(product)} className="bg-green-50 text-green-600 px-4 py-1.5 rounded-xl border border-green-200 hover:bg-green-100 transition-colors font-bold text-sm shadow-sm">
+                                Add +
+                              </button>
+                           )}
+                         </div>
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          </div>
+        )}
+
+        
+        {currentTab === 'favorites' && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-gray-900">Your Favorites</h2>
+            <div className="space-y-3">
+              {products.filter(p => favorites.includes(p.id)).length === 0 ? (
+                <div className="text-center py-12 text-gray-400">
+                  <Heart className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>No favorites yet</p>
+                </div>
+              ) : (
+                products.filter(p => favorites.includes(p.id)).map(product => {
+                  const cartItem = cart.find(item => item.product.id === product.id);
+                  const qty = cartItem ? cartItem.quantity : 0;
+                  return (
+                    <div key={product.id} className="bg-white p-3 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-gray-100 flex gap-4 relative">
+                      <button onClick={() => toggleFavorite(product.id)} className="absolute top-2 right-2 z-10 p-1.5 bg-white/80 backdrop-blur-md rounded-full shadow-sm">
+                         <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
+                      </button>
+                      <div className="w-24 h-24 bg-gray-50 rounded-xl overflow-hidden shrink-0">
+                        <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400"} alt={product.name} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="flex-1 flex flex-col justify-center py-1">
+                         <h4 className="font-bold text-gray-900 text-[15px] leading-tight mb-1">{product.name}</h4>
+                         <p className="text-xs text-gray-500 mb-2">{product.category}</p>
                          <div className="mt-auto flex items-center justify-between">
                            <span className="font-black text-green-600 text-lg">₹{product.price}</span>
                            {qty > 0 ? (
@@ -1130,8 +1208,8 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
            </div>
            <span className="text-[10px] font-bold">Cart</span>
          </button>
-         <button className="flex flex-col items-center gap-1 w-16 text-gray-400 cursor-not-allowed">
-           <Heart className="w-6 h-6" />
+         <button onClick={() => setCurrentTab('favorites')} className={`flex flex-col items-center gap-1 w-16 ${currentTab === 'favorites' ? 'text-green-600' : 'text-gray-400'}`}>
+           <Heart className={`w-6 h-6 ${currentTab === 'favorites' ? 'fill-green-100' : ''}`} />
            <span className="text-[10px] font-bold">Favorites</span>
          </button>
          <button onClick={() => setCurrentTab('account')} className={`flex flex-col items-center gap-1 w-16 ${currentTab === 'account' ? 'text-green-600' : 'text-gray-400'}`}>
