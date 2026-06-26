@@ -400,6 +400,41 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
   }, [isOrdersModalOpen, customerPhone]);
 
   const [newSavedAddress, setNewSavedAddress] = useState('');
+  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+
+  const fetchCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
+      return;
+    }
+
+    setIsFetchingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+          const data = await res.json();
+          if (data && data.display_name) {
+            setNewSavedAddress(data.display_name);
+          } else {
+            alert("Could not fetch address details.");
+          }
+        } catch (err) {
+          console.error(err);
+          alert("Error fetching address details.");
+        } finally {
+          setIsFetchingLocation(false);
+        }
+      },
+      (err) => {
+        console.error(err);
+        alert("Please allow location access in your browser.");
+        setIsFetchingLocation(false);
+      }
+    );
+  };
+
 
 
   useEffect(() => {
