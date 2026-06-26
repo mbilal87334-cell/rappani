@@ -174,14 +174,20 @@ async function startServer() {
 
   app.post("/api/auth/change-password", async (req, res) => {
     try {
-      const { currentPassword, newPassword } = req.body;
+      const { currentPassword, newPassword, newPhone } = req.body;
       const setting = await Setting.findOne({ key: 'admin_password' });
+      const currentAdminPassword = setting ? setting.value : 'rappani123';
 
-      if (!setting || currentPassword !== setting.value) {
+      if (currentPassword !== currentAdminPassword) {
         return res.status(401).json({ success: false, error: "Current password incorrect" });
       }
 
-      await Setting.updateOne({ key: 'admin_password' }, { value: newPassword });
+      if (newPassword) {
+        await Setting.updateOne({ key: 'admin_password' }, { value: newPassword }, { upsert: true });
+      }
+      if (newPhone) {
+        await Setting.updateOne({ key: 'admin_phone' }, { value: newPhone }, { upsert: true });
+      }
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });
