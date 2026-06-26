@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
-import { Phone, Mail, Instagram, MessageCircle, MapPin, Lock, LogOut, Plus, Edit, Trash2, Store, ShoppingBag, Menu, X, Camera, Aperture, Globe, Database, Search, ArrowUp, Package, LayoutGrid, ShoppingCart, Minus, Image, ShieldCheck, Gift, Sparkles, Sticker, Rocket, Coffee, Eye, Star, TrendingUp, CheckCircle2, Info , Home, Heart, User, ChevronRight, CreditCard} from 'lucide-react';
+import { Phone, Mail, Instagram, MessageCircle, MapPin, Map, Lock, LogOut, Plus, Edit, Trash2, Store, ShoppingBag, Menu, X, Camera, Aperture, Globe, Database, Search, ArrowUp, Package, LayoutGrid, ShoppingCart, Minus, Image, ShieldCheck, Gift, Sparkles, Sticker, Rocket, Coffee, Eye, Star, TrendingUp, CheckCircle2, Info , Home, Heart, User, ChevronRight, CreditCard} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import LocationMap from './LocationMap';
 
 
 // --- Types ---
@@ -361,6 +362,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
   const [customerName, setCustomerName] = useState(() => localStorage.getItem('rappani_customer_name') || '');
   const [customerPhone, setCustomerPhone] = useState(() => localStorage.getItem('rappani_customer_phone') || '');
   const [isPhoneVerified, setIsPhoneVerified] = useState(() => localStorage.getItem('rappani_is_verified') === 'true');
+  const [showLocationMap, setShowLocationMap] = useState<'checkout' | 'account' | null>(null);
 
   const [isFirstOrder, setIsFirstOrder] = useState<boolean | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number, lon: number } | null>(null);
@@ -1214,6 +1216,12 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                                 >
                                   <MapPin className="w-3 h-3" /> {isFetchingLocationCheckout ? "Fetching..." : "Use Current Location"}
                                 </button>
+                                <button 
+                                  onClick={() => setShowLocationMap('checkout')}
+                                  className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md flex items-center gap-1"
+                                >
+                                  <Map className="w-3 h-3" /> Pick from Map
+                                </button>
                              </div>
                              <textarea 
                                 placeholder="Enter Full Delivery Address" 
@@ -1511,6 +1519,26 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
           </div>
         </div>
       )}
+
+      {showLocationMap === 'checkout' && (
+        <LocationMap 
+          onCancel={() => setShowLocationMap(null)}
+          onConfirm={(address) => {
+            setDeliveryAddress(address);
+            setShowLocationMap(null);
+          }}
+        />
+      )}
+      {showLocationMap === 'account' && (
+        <LocationMap 
+          onCancel={() => setShowLocationMap(null)}
+          onConfirm={(address) => {
+            setNewSavedAddress(address);
+            setShowLocationMap(null);
+          }}
+        />
+      )}
+
 </div>
   );
 }
