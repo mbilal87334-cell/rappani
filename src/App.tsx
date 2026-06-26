@@ -1557,7 +1557,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
   const navigate = useNavigate();
 
   // Admin section Tabs
-  const [adminTab, setAdminTab] = useState<'products' | 'orders'>('products');
+  const [adminTab, setAdminTab] = useState<'dashboard' | 'products' | 'orders' | 'settings' | 'security'>('dashboard');
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
 
@@ -2027,33 +2027,59 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
   }
 
   return (
-    <div className="min-h-screen bg-zinc-800/50 pb-12">
-      <header className="bg-zinc-950 text-white shadow-md sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Store className="w-6 h-6 text-rose-400" />
-            <h1 className="text-xl font-bold">Admin Dashboard</h1>
+    <div className="min-h-screen bg-zinc-950 flex flex-col md:flex-row font-sans">
+      {/* Sidebar Navigation */}
+      <aside className="w-full md:w-64 bg-zinc-900 border-b md:border-b-0 md:border-r border-white/5 flex flex-col z-20 md:sticky md:top-0 md:h-screen">
+        <div className="p-4 md:p-6 flex items-center justify-between md:justify-start">
+          <div className="flex items-center gap-3 text-white">
+            <Store className="w-6 h-6 md:w-8 md:h-8 text-amber-500" />
+            <h1 className="text-xl md:text-2xl font-black tracking-tight">Admin</h1>
           </div>
-          <div className="flex items-center gap-2 sm:gap-4">
-            <button
-              onClick={() => setShowPasswordChange(!showPasswordChange)}
-              className="flex items-center gap-2 bg-zinc-900 hover:bg-stone-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-rose-400 border border-rose-500/30"
-            >
-              <Lock className="w-4 h-4" />
-              <span>Change Login</span>
-            </button>
-            <div className="hidden lg:flex items-center gap-2 text-xs text-stone-400 bg-zinc-900 px-3 py-1 rounded-full border border-stone-700">
-              <Database className="w-3 h-3" /> Dedicated Storage Active
-            </div>
-
-            <button onClick={handleLogout} className="flex items-center gap-2 bg-zinc-900 hover:bg-stone-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-              <LogOut className="w-4 h-4" /> <span className="hidden sm:inline">Logout</span>
-            </button>
-          </div>
+          <button onClick={handleLogout} className="md:hidden flex items-center gap-2 px-3 py-1.5 rounded-lg font-bold text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all text-sm border border-white/10">
+            <LogOut className="w-4 h-4" /> Logout
+          </button>
         </div>
-      </header>
+        
+        <nav className="flex-1 overflow-x-auto md:overflow-y-auto px-4 md:px-6 pb-4 md:pb-6 flex md:flex-col gap-2 md:gap-2 no-scrollbar">
+          <button onClick={() => setAdminTab('dashboard')} className={`flex-shrink-0 flex items-center gap-2 md:gap-3 px-4 py-2.5 md:py-3 rounded-xl font-bold transition-all ${adminTab === 'dashboard' ? 'bg-amber-500 text-zinc-950 shadow-lg shadow-amber-500/20' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}>
+            <LayoutGrid className="w-4 h-4 md:w-5 md:h-5" /> <span className="hidden md:inline">Dashboard</span>
+            <span className="md:hidden text-xs">Home</span>
+          </button>
+          <button onClick={() => setAdminTab('products')} className={`flex-shrink-0 flex items-center gap-2 md:gap-3 px-4 py-2.5 md:py-3 rounded-xl font-bold transition-all ${adminTab === 'products' ? 'bg-amber-500 text-zinc-950 shadow-lg shadow-amber-500/20' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}>
+            <Package className="w-4 h-4 md:w-5 md:h-5" /> Products
+          </button>
+          <button onClick={() => setAdminTab('orders')} className={`flex-shrink-0 flex items-center gap-2 md:gap-3 px-4 py-2.5 md:py-3 rounded-xl font-bold transition-all ${adminTab === 'orders' ? 'bg-amber-500 text-zinc-950 shadow-lg shadow-amber-500/20' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}>
+            <ShoppingBag className="w-4 h-4 md:w-5 md:h-5" /> Orders
+            {orders.length > 0 && <span className="ml-auto bg-rose-500 text-white text-[10px] md:text-xs px-2 py-0.5 rounded-full">{orders.filter(o => o.status === 'Pending').length}</span>}
+          </button>
+          <button onClick={() => setAdminTab('settings')} className={`flex-shrink-0 flex items-center gap-2 md:gap-3 px-4 py-2.5 md:py-3 rounded-xl font-bold transition-all ${adminTab === 'settings' ? 'bg-amber-500 text-zinc-950 shadow-lg shadow-amber-500/20' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}>
+            <Database className="w-4 h-4 md:w-5 md:h-5" /> Settings
+          </button>
+          <button onClick={() => setAdminTab('security')} className={`flex-shrink-0 flex items-center gap-2 md:gap-3 px-4 py-2.5 md:py-3 rounded-xl font-bold transition-all ${adminTab === 'security' ? 'bg-amber-500 text-zinc-950 shadow-lg shadow-amber-500/20' : 'text-zinc-400 hover:text-white hover:bg-zinc-800'}`}>
+            <Lock className="w-4 h-4 md:w-5 md:h-5" /> Security
+          </button>
+        </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="hidden md:block mt-auto p-6 border-t border-white/5">
+          <button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-bold text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all border border-transparent hover:border-white/10">
+            <LogOut className="w-5 h-5" /> Logout
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <main className="flex-1 overflow-y-auto h-[calc(100vh-80px)] md:h-screen p-4 md:p-8 bg-zinc-950">
+        <div className="max-w-6xl mx-auto pb-20 md:pb-8">
+          {formError && (
+            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 text-red-400 rounded-2xl flex items-center gap-3 animate-in fade-in duration-300">
+              <X className="w-5 h-5 flex-shrink-0 cursor-pointer hover:text-white" onClick={() => setFormError('')} />
+              <p className="text-sm font-semibold">{formError}</p>
+            </div>
+          )}
+
+        {adminTab === 'dashboard' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <h2 className="text-2xl md:text-3xl font-black text-white mb-6">Dashboard Overview</h2>
         {/* Dashboard Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-zinc-900/40 glass p-6 rounded-2xl shadow-sm border border-white/10 flex items-center gap-4">
@@ -2122,6 +2148,12 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
             </div>
           </div>
         </div>
+        </div>
+        )}
+
+        {adminTab === 'settings' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <h2 className="text-2xl md:text-3xl font-black text-white mb-6">Store Settings</h2>
 
         {/* WhatsApp Management */}
         <div className="bg-zinc-900/40 glass p-6 rounded-2xl shadow-sm border border-white/10 mb-8">
@@ -2201,9 +2233,13 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
             <p className="mt-4 text-green-600 font-medium text-sm animate-in fade-in slide-in-from-top-2">{upiSuccess}</p>
           )}
         </div>
+        </div>
+        )}
 
-        {showPasswordChange && (
-          <div className="mb-8 bg-zinc-900/40 glass p-6 rounded-2xl shadow-sm border border-white/10 animate-in fade-in slide-in-from-top-4 duration-300">
+        {adminTab === 'security' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <h2 className="text-2xl md:text-3xl font-black text-white mb-6">Security Settings</h2>
+          <div className="mb-8 bg-zinc-900/40 glass p-6 rounded-2xl shadow-sm border border-white/10">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <Lock className="w-5 h-5 text-amber-500" /> Change Login Credentials
@@ -2260,32 +2296,17 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
             {passError && <p className="mt-2 text-red-500 text-sm font-medium">{passError}</p>}
             {passSuccess && <p className="mt-2 text-green-600 text-sm font-medium">{passSuccess}</p>}
           </div>
-        )}
-
-        {formError && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl flex items-center gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
-            <X className="w-5 h-5 flex-shrink-0 cursor-pointer" onClick={() => setFormError('')} />
-            <p className="text-sm font-semibold">{formError}</p>
           </div>
         )}
 
-        <div className="flex gap-4 mb-6 border-b border-white/10 pb-4">
-          <button
-            onClick={() => setAdminTab('products')}
-            className={`px-6 py-2 font-bold rounded-lg transition-colors ${adminTab === 'products' ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md' : 'bg-zinc-900/40 glass text-zinc-400 hover:bg-zinc-800/80'}`}
-          >
-            Manage Products
-          </button>
-          <button
-            onClick={() => setAdminTab('orders')}
-            className={`px-6 py-2 font-bold rounded-lg transition-colors flex items-center gap-2 ${adminTab === 'orders' ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md' : 'bg-zinc-900/40 glass text-zinc-400 hover:bg-zinc-800/80'}`}
-          >
-            Manage Orders
-            {orders.length > 0 && adminTab !== 'orders' && <span className="bg-gradient-to-r from-amber-500 to-amber-600 text-white text-xs px-2 py-0.5 rounded-full">{orders.filter(o => o.status === 'Pending').length}</span>}
-          </button>
-        </div>
-
-        {adminTab === 'products' ? (
+        {adminTab === 'products' && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl md:text-3xl font-black text-white">Manage Products</h2>
+              <button onClick={() => setIsEditing(false)} className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg shadow-amber-500/20 transition-all">
+                <Plus className="w-4 h-4" /> Add Product
+              </button>
+            </div>
           <div className="grid lg:grid-cols-3 gap-8 items-start">
             <div className="lg:col-span-1">
               <div className="bg-zinc-900/40 glass p-6 rounded-2xl shadow-sm border border-white/10 lg:sticky lg:top-24">
@@ -2501,8 +2522,11 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
               </div>
             </div>
           </div>
-        ) : (
-          <div className="bg-zinc-900/40 glass rounded-2xl shadow-sm border border-white/10 overflow-hidden">
+          </div>
+        )}
+
+        {adminTab === 'orders' && (
+          <div className="bg-zinc-900/40 glass rounded-2xl shadow-sm border border-white/10 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="p-6 border-b border-white/10 bg-zinc-800/50 flex items-center justify-between">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
                 <Package className="w-5 h-5 text-amber-500" /> Recent Orders
@@ -2596,10 +2620,10 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
               </div>
             )}
           </div>
-        )
-        }
-      </main >
-    </div >
+        )}
+        </div>
+      </main>
+    </div>
   );
 }
 
