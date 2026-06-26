@@ -1321,7 +1321,17 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
             )}
             
             <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mt-6">
-              <h4 className="font-bold text-gray-900 mb-3">Add New Address</h4>
+              <div className="flex justify-between items-center mb-3">
+                <h4 className="font-bold text-gray-900">Add New Address</h4>
+                <button 
+                  onClick={fetchCurrentLocation}
+                  disabled={isFetchingLocation}
+                  className="flex items-center gap-1 text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg disabled:opacity-50"
+                >
+                  <MapPin className="w-3 h-3" />
+                  {isFetchingLocation ? "Fetching..." : "Use Current Location"}
+                </button>
+              </div>
               <textarea 
                 className="w-full bg-gray-50 border-0 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-green-500 h-24 resize-none transition-shadow mb-3" 
                 placeholder="Enter Full Delivery Address" 
