@@ -1298,14 +1298,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                    </div>
                    <ChevronRight className="w-5 h-5 text-gray-300" />
                 </div>
-                <div className="p-4 flex items-center gap-4 hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => window.location.href = '/admin'}>
-                   <div className="w-10 h-10 bg-gray-100 text-gray-600 rounded-full flex items-center justify-center shrink-0"><Lock className="w-5 h-5" /></div>
-                   <div className="flex-1">
-                     <h4 className="font-bold text-gray-900">Admin Panel</h4>
-                     <p className="text-xs text-gray-500">Store owner login</p>
-                   </div>
-                   <ChevronRight className="w-5 h-5 text-gray-300" />
-                </div>
+
              </div>
              
              
@@ -2021,9 +2014,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
             <button type="submit" className="w-full bg-zinc-950 hover:bg-zinc-900 text-white py-4 rounded-2xl font-bold transition-all hover:shadow-xl active:scale-[0.98] flex items-center justify-center gap-2">
               Unlock Dashboard <ArrowUp className="w-5 h-5 rotate-90" />
             </button>
-            <button type="button" onClick={() => navigate('/')} className="w-full text-stone-400 hover:text-zinc-400 py-2 text-sm font-bold transition-colors">
-              ← Return to Store
-            </button>
+
           </form>
         </div>
       </div>
@@ -2049,7 +2040,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
             <div className="hidden lg:flex items-center gap-2 text-xs text-stone-400 bg-zinc-900 px-3 py-1 rounded-full border border-stone-700">
               <Database className="w-3 h-3" /> Dedicated Storage Active
             </div>
-            <button onClick={() => navigate('/')} className="text-sm font-medium text-stone-300 hover:text-white transition-colors hidden sm:block">View Store</button>
+
             <button onClick={handleLogout} className="flex items-center gap-2 bg-zinc-900 hover:bg-stone-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
               <LogOut className="w-4 h-4" /> <span className="hidden sm:inline">Logout</span>
             </button>
