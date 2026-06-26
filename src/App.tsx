@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from 'react
 import { Phone, Mail, Instagram, MessageCircle, MapPin, Map, Lock, LogOut, Plus, Edit, Trash2, Store, ShoppingBag, Menu, X, Camera, Aperture, Globe, Database, Search, ArrowUp, Package, LayoutGrid, ShoppingCart, Minus, Image, ShieldCheck, Gift, Sparkles, Sticker, Rocket, Coffee, Eye, Star, TrendingUp, CheckCircle2, Info , Home, Heart, User, ChevronRight, CreditCard} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import LocationMap from './LocationMap';
+import { removeBackground as imglyRemoveBackground } from '@imgly/background-removal';
 
 
 // --- Types ---
@@ -1669,6 +1670,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
   };
 
   const [isUploading, setIsUploading] = useState(false);
+  const [isRemovingBackground, setIsRemovingBackground] = useState(false);
 
   const [showPasswordChange, setShowPasswordChange] = useState(false);
   const [passForm, setPassForm] = useState({ current: '', new: '', confirm: '' });
@@ -1728,8 +1730,13 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setIsUploading(true);
       try {
+        setIsRemovingBackground(true);
+        // Remove background using AI locally in browser
+        const bgRemovedBlob = await imglyRemoveBackground(file);
+        setIsRemovingBackground(false);
+        
+        setIsUploading(true);
         const reader = new FileReader();
         reader.onloadend = async () => {
           try {
@@ -1744,10 +1751,11 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
             setIsUploading(false);
           }
         };
-        reader.readAsDataURL(file);
+        reader.readAsDataURL(bgRemovedBlob);
       } catch (err) {
-        console.error("Upload failed", err);
-        setFormError("Image upload failed. Please try again.");
+        console.error("Upload or Background Removal failed", err);
+        setFormError("AI Background Removal or upload failed. Please try again.");
+        setIsRemovingBackground(false);
         setIsUploading(false);
       }
     }
