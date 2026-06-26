@@ -156,16 +156,19 @@ async function startServer() {
   // Auth Routes
   app.post("/api/auth/login", async (req, res) => {
     try {
-      const { password } = req.body;
-      const setting = await Setting.findOne({ key: 'admin_password' });
-      if (setting && password === setting.value) {
-        res.json({ success: true });
+      const { phone, password } = req.body;
+      const passSetting = await Setting.findOne({ key: 'admin_password' });
+      const phoneSetting = await Setting.findOne({ key: 'admin_phone' });
+      const currentPassword = passSetting ? passSetting.value : 'rappani123';
+      const currentPhone = phoneSetting ? phoneSetting.value : '9876543210';
+      
+      if (password === currentPassword && phone === currentPhone) {
+        res.json({ success: true, token: "admin_token_xyz" });
       } else {
-        res.status(401).json({ success: false, error: "Invalid password" });
+        res.status(401).json({ error: "Invalid phone number or password" });
       }
-    } catch (err: any) {
-      console.error("[SERVER] Login err:", err);
-      res.status(500).json({ success: false, error: err?.message || "Server error" });
+    } catch (err) {
+      res.status(500).json({ error: "Server error" });
     }
   });
 
@@ -602,6 +605,10 @@ async function seedInitialData() {
     const passExists = await Setting.findOne({ key: 'admin_password' });
     if (!passExists) {
       await Setting.create({ key: 'admin_password', value: 'rappani123' });
+    }
+    const phoneExists = await Setting.findOne({ key: 'admin_phone' });
+    if (!phoneExists) {
+      await Setting.create({ key: 'admin_phone', value: '9876543210' });
     }
     // Forcibly update UPI ID to ensure synchronization between code and database
     await Setting.updateOne({ key: 'upi_id' }, { value: 'mohammedazzam200512@okaxis' }, { upsert: true });

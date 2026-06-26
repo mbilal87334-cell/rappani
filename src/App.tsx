@@ -1558,6 +1558,7 @@ const getCategoryColor = (category: string) => {
 // --- Admin Panel ---
 function AdminPanel({ products, setProducts, settings, setSettings }: { products: Product[], setProducts: React.Dispatch<React.SetStateAction<Product[]>>, settings: Record<string, string>, setSettings: React.Dispatch<React.SetStateAction<Record<string, string>>> }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -1861,7 +1862,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password })
+        body: JSON.stringify({ phone, password })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Login failed');
@@ -1985,6 +1986,20 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
 
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
+              <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest ml-1">Phone Number</label>
+              <div className="relative">
+                <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full pl-12 pr-4 py-4 rounded-2xl border-2 border-white/5 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 outline-none transition-all bg-zinc-800/50/50 text-white"
+                  placeholder="9876543210"
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
               <label className="block text-xs font-bold text-stone-400 uppercase tracking-widest ml-1">Password</label>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
@@ -1992,7 +2007,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-12 pr-4 py-4 rounded-2xl border-2 border-white/5 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 outline-none transition-all bg-zinc-800/50/50"
+                  className="w-full pl-12 pr-4 py-4 rounded-2xl border-2 border-white/5 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 outline-none transition-all bg-zinc-800/50/50 text-white"
                   placeholder="••••••••"
                   required
                 />
