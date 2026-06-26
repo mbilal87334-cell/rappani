@@ -1279,7 +1279,8 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                       
                       <button 
                         onClick={() => setIsProfileModalOpen(false)}
-                        className="w-full bg-green-600 text-white rounded-xl py-3 mt-4 font-bold disabled:opacity-50 flex items-center justify-center gap-2"
+                        disabled={customerPhone.length !== 10}
+                        className="w-full bg-green-600 text-white rounded-xl py-3 mt-4 font-bold disabled:opacity-50 disabled:bg-gray-400 flex items-center justify-center gap-2 transition-colors"
                       >
                         <User className="w-5 h-5" /> Save Profile
                       </button>
