@@ -1667,7 +1667,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
   const [isRemovingBackground, setIsRemovingBackground] = useState(false);
 
   const [showPasswordChange, setShowPasswordChange] = useState(false);
-  const [passForm, setPassForm] = useState({ current: '', new: '', confirm: '' });
+  const [passForm, setPassForm] = useState({ current: '', newPhone: '', new: '', confirm: '' });
   const [passError, setPassError] = useState('');
   const [passSuccess, setPassSuccess] = useState('');
 
@@ -1872,8 +1872,12 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
     setPassError('');
     setPassSuccess('');
 
-    if (passForm.new !== passForm.confirm) {
+    if (passForm.new && passForm.new !== passForm.confirm) {
       setPassError('New passwords do not match');
+      return;
+    }
+    if (!passForm.new && !passForm.newPhone) {
+      setPassError('Please enter a new phone number or a new password');
       return;
     }
 
@@ -1883,7 +1887,8 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           currentPassword: passForm.current,
-          newPassword: passForm.new
+          newPassword: passForm.new || undefined,
+          newPhone: passForm.newPhone || undefined
         })
       });
 
@@ -1891,7 +1896,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
       if (!res.ok) throw new Error(data.error || 'Failed to change password');
 
       setPassSuccess('Password changed successfully!');
-      setPassForm({ current: '', new: '', confirm: '' });
+      setPassForm({ current: '', newPhone: '', new: '', confirm: '' });
       setTimeout(() => {
         setShowPasswordChange(false);
         setPassSuccess('');
@@ -2035,7 +2040,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
               className="flex items-center gap-2 bg-zinc-900 hover:bg-stone-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-rose-400 border border-rose-500/30"
             >
               <Lock className="w-4 h-4" />
-              <span>Change Password</span>
+              <span>Change Login</span>
             </button>
             <div className="hidden lg:flex items-center gap-2 text-xs text-stone-400 bg-zinc-900 px-3 py-1 rounded-full border border-stone-700">
               <Database className="w-3 h-3" /> Dedicated Storage Active
@@ -2201,31 +2206,40 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
           <div className="mb-8 bg-zinc-900/40 glass p-6 rounded-2xl shadow-sm border border-white/10 animate-in fade-in slide-in-from-top-4 duration-300">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Lock className="w-5 h-5 text-amber-500" /> Change Admin Password
+                <Lock className="w-5 h-5 text-amber-500" /> Change Login Credentials
               </h3>
               <button onClick={() => setShowPasswordChange(false)} className="text-stone-400 hover:text-zinc-400">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handlePasswordChange} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+            <form onSubmit={handlePasswordChange} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
               <div>
-                <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Current Password</label>
+                <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">Current Password *</label>
                 <input
                   type="password"
                   value={passForm.current}
                   onChange={(e) => setPassForm({ ...passForm, current: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg border border-white/10 focus:ring-2 focus:ring-rose-500 outline-none"
+                  className="w-full px-4 py-2 rounded-lg border border-zinc-700 bg-zinc-900 focus:ring-2 focus:ring-amber-500 outline-none text-white"
                   required
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">New Password</label>
+                <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">New Phone (Optional)</label>
+                <input
+                  type="tel"
+                  value={passForm.newPhone}
+                  onChange={(e) => setPassForm({ ...passForm, newPhone: e.target.value })}
+                  className="w-full px-4 py-2 rounded-lg border border-zinc-700 bg-zinc-900 focus:ring-2 focus:ring-amber-500 outline-none text-white"
+                  placeholder="9876543210"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-zinc-400 uppercase mb-1">New Password (Optional)</label>
                 <input
                   type="password"
                   value={passForm.new}
                   onChange={(e) => setPassForm({ ...passForm, new: e.target.value })}
-                  className="w-full px-4 py-2 rounded-lg border border-white/10 focus:ring-2 focus:ring-rose-500 outline-none"
-                  required
+                  className="w-full px-4 py-2 rounded-lg border border-zinc-700 bg-zinc-900 focus:ring-2 focus:ring-amber-500 outline-none text-white"
                 />
               </div>
               <div className="flex gap-4 items-end">
@@ -2235,11 +2249,10 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
                     type="password"
                     value={passForm.confirm}
                     onChange={(e) => setPassForm({ ...passForm, confirm: e.target.value })}
-                    className="w-full px-4 py-2 rounded-lg border border-white/10 focus:ring-2 focus:ring-rose-500 outline-none"
-                    required
+                    className="w-full px-4 py-2 rounded-lg border border-zinc-700 bg-zinc-900 focus:ring-2 focus:ring-amber-500 outline-none text-white"
                   />
                 </div>
-                <button type="submit" className="bg-zinc-950 text-white px-6 py-2 rounded-lg font-bold hover:bg-zinc-900 transition-colors">
+                <button type="submit" className="bg-amber-500 text-zinc-950 px-6 py-2 rounded-lg font-bold hover:bg-amber-400 transition-colors">
                   Update
                 </button>
               </div>
