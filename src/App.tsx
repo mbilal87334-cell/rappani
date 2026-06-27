@@ -1555,7 +1555,13 @@ const getCategoryColor = (category: string) => {
 
 // --- Admin Panel ---
 function AdminPanel({ products, setProducts, settings, setSettings }: { products: Product[], setProducts: React.Dispatch<React.SetStateAction<Product[]>>, settings: Record<string, string>, setSettings: React.Dispatch<React.SetStateAction<Record<string, string>>> }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem('rappani_admin_auth') === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('rappani_admin_auth', isAuthenticated.toString());
+  }, [isAuthenticated]);
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
