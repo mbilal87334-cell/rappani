@@ -889,24 +889,47 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
   return (
     <div className="bg-gray-50 font-sans text-gray-900 pb-20 min-h-screen">
       {/* Top Header */}
-      <header className="sticky top-0 z-50 bg-white shadow-sm px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-green-600 to-green-800 rounded-xl shadow-md flex items-center justify-center text-white border border-green-500/30">
-            <span className="font-serif font-bold text-2xl" style={{ fontFamily: 'Georgia, serif' }}>R</span>
+      <header className="sticky top-0 z-50 bg-[#2874F0] text-white shadow-md">
+        <div className="px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-yellow-400 rounded-lg flex items-center justify-center text-[#2874F0] font-black text-xl italic shadow-sm">
+              R
+            </div>
+            <div>
+              <h1 className="font-bold text-lg leading-tight italic tracking-wide">{t.storeName}</h1>
+              <p className="text-[10px] text-blue-100 flex items-center gap-1 opacity-90 italic">
+                Explore Plus <Sparkles className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-bold text-lg leading-tight text-gray-900">{t.storeName}</h1>
-            <p className="text-xs text-gray-500 flex items-center gap-1">
-              <MapPin className="w-3 h-3 text-green-500" /> Melapalayam, Tirunelveli
-            </p>
+          <div className="flex items-center gap-4">
+            <button onClick={toggleLanguage} className="text-[10px] font-bold text-white bg-blue-700/50 px-2 py-1 rounded">
+               {lang === 'en' ? 'தமிழ்' : 'EN'}
+            </button>
+            <div onClick={() => setCurrentTab('account')} className="flex items-center gap-1 cursor-pointer font-medium text-sm">
+              Login
+            </div>
+            <div onClick={() => setCurrentTab('cart')} className="relative cursor-pointer md:hidden">
+              <ShoppingCart className="w-6 h-6 text-white" />
+              {cartItemsCount > 0 && (
+                <span className="absolute -top-1.5 -right-2 bg-yellow-500 text-black text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-white">
+                  {cartItemsCount}
+                </span>
+              )}
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <button onClick={toggleLanguage} className="text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded border border-green-200">
-             {lang === 'en' ? 'தமிழ்' : 'EN'}
-          </button>
-          <div className="w-10 h-10 bg-gray-200 rounded-full overflow-hidden border-2 border-white shadow-sm flex items-center justify-center">
-            <div className="w-5 h-5 bg-gray-400 rounded-full shrink-0 mt-2"></div>
+        {/* Search Bar - Sticky below top bar */}
+        <div className="px-4 pb-3">
+          <div className="relative">
+            <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input 
+              type="text" 
+              placeholder="Search for Products, Brands and More" 
+              className="w-full bg-white text-gray-900 border-0 rounded-sm py-2.5 pl-10 pr-4 focus:outline-none shadow-inner text-sm"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
         </div>
       </header>
@@ -914,42 +937,30 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
       {/* Main Content Area based on Tab */}
       <main className="px-4 py-4 space-y-6">
         {currentTab === 'home' && (
-          <div className="space-y-6">
-            {/* Search Bar */}
-            <div className="relative">
-              <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input 
-                type="text" 
-                placeholder={t.searchPlaceholder} 
-                className="w-full bg-white border border-gray-200 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all shadow-sm"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-
-            {/* Banner Slider (Mocked as single banner for now) */}
-            <div className="relative w-full h-40 bg-gradient-to-r from-green-500 to-green-400 rounded-2xl overflow-hidden shadow-md flex items-center px-6">
+          <div className="space-y-4 bg-gray-100 -mx-4 px-4 pb-4">
+            {/* Banner Slider */}
+            <div className="relative w-full h-44 bg-[#2874F0] rounded-sm overflow-hidden shadow-sm flex items-center px-6 mt-4">
               <div className="z-10 text-white w-2/3">
-                <span className="text-xs font-bold uppercase tracking-wider bg-white/20 px-2 py-1 rounded inline-block mb-2">Special Offer</span>
-                <h2 className="text-xl font-bold leading-tight mb-2">Get 10% Off on All Stationary</h2>
-                <button className="bg-white text-green-600 text-xs font-bold px-4 py-2 rounded-full shadow-sm hover:scale-105 transition-transform" onClick={() => setCurrentTab('products')}>Shop Now</button>
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-yellow-400 text-black px-2 py-1 rounded inline-block mb-2">Big Deal</span>
+                <h2 className="text-xl font-bold leading-tight mb-2">Super Value Days</h2>
+                <button className="bg-white text-[#2874F0] text-xs font-bold px-4 py-2 shadow-sm uppercase" onClick={() => setCurrentTab('products')}>Shop Now</button>
               </div>
-              <div className="absolute right-0 bottom-0 opacity-50 translate-x-4 translate-y-4">
-                 <Store className="w-40 h-40" />
+              <div className="absolute right-0 bottom-0 opacity-20 translate-x-4 translate-y-4">
+                 <Sparkles className="w-48 h-48 text-white" />
               </div>
             </div>
 
             {/* Categories */}
-            <div>
-              <div className="flex justify-between items-end mb-4">
-                <h3 className="text-lg font-bold text-gray-900">Categories</h3>
+            <div className="bg-white rounded-sm shadow-sm p-3 -mx-2">
+              <div className="flex justify-between items-center mb-3 px-2">
+                <h3 className="text-sm font-bold text-gray-900">Shop by Category</h3>
               </div>
-              <div className="grid grid-cols-4 gap-4">
+              <div className="flex overflow-x-auto no-scrollbar gap-4 px-2 pb-2">
                 {categories.map((cat, idx) => (
-                  <div key={idx} onClick={() => { setSelectedCategory(cat.id); setCurrentTab('products'); }} className="flex flex-col items-center gap-2 cursor-pointer group">
-                    <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center text-green-500 border border-gray-100 group-hover:bg-green-50 group-hover:border-green-200 transition-colors relative">
+                  <div key={idx} onClick={() => { setSelectedCategory(cat.id); setCurrentTab('products'); }} className="flex flex-col items-center gap-1 cursor-pointer min-w-[70px]">
+                    <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 border border-blue-100 transition-colors relative">
                        {cat.icon}
-                       {idx === 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">New</span>}
+                       {idx === 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full">New</span>}
                     </div>
                     <span className="text-[10px] font-medium text-center text-gray-700 leading-tight">{getCategoryName(cat.id)}</span>
                   </div>
@@ -968,28 +979,43 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                   const cartItem = cart.find(item => item.product.id === product.id);
                   const qty = cartItem ? cartItem.quantity : 0;
                   return (
-                    <div key={product.id} className="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col relative">
-                       <button onClick={() => toggleFavorite(product.id)} className="absolute top-4 right-4 z-10 p-1.5 bg-white/80 backdrop-blur-md rounded-full shadow-sm">
-                         <Heart className={`w-4 h-4 ${favorites.includes(product.id) ? 'fill-rose-500 text-rose-500' : 'text-gray-400'}`} />
+                    <div key={product.id} className="bg-white p-2 rounded-sm shadow-sm border border-gray-100 flex flex-col relative">
+                       <button onClick={() => toggleFavorite(product.id)} className="absolute top-2 right-2 z-10 p-1.5 bg-white/80 backdrop-blur-md rounded-full text-gray-400">
+                         <Heart className={`w-4 h-4 ${favorites.includes(product.id) ? 'fill-rose-500 text-rose-500' : 'text-gray-300'}`} />
                        </button>
-                       <div className="w-full aspect-square bg-gray-50 rounded-xl mb-3 overflow-hidden">
-                         <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400?text=No+Image"} alt={product.name} className="w-full h-full object-cover" />
+                       <div className="w-full aspect-square bg-white mb-2 overflow-hidden flex items-center justify-center relative p-2">
+                         <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400?text=No+Image"} alt={product.name} className="w-full h-full object-contain mix-blend-multiply" />
+                         {product.originalPrice && product.originalPrice > product.price && (
+                           <span className="absolute bottom-0 left-0 bg-green-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-tr-lg">
+                             {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
+                           </span>
+                         )}
                        </div>
-                       <h4 className="font-bold text-gray-900 text-sm mb-1 truncate">{product.name}</h4>
-                       <p className="text-xs text-gray-500 mb-2 truncate">{product.category}</p>
-                       <div className="mt-auto flex items-center justify-between">
-                         <span className="font-black text-green-600">₹{product.price}</span>
+                       <h4 className="font-medium text-gray-700 text-xs mb-1 line-clamp-2 leading-tight h-8">{product.name}</h4>
+                       <div className="flex items-center gap-1 mb-2">
+                         <span className="bg-green-600 text-white text-[9px] font-bold px-1 py-0.5 rounded flex items-center gap-0.5">4.2 <Star className="w-2 h-2 fill-white" /></span>
+                         <span className="text-[9px] text-gray-400">(84)</span>
+                       </div>
+                       <div className="mt-auto">
+                         <div className="flex items-baseline gap-1.5 flex-wrap">
+                           <span className="font-bold text-gray-900 text-sm">₹{product.price}</span>
+                           {product.originalPrice && product.originalPrice > product.price && (
+                             <span className="text-[10px] text-gray-500 line-through">₹{product.originalPrice}</span>
+                           )}
+                         </div>
+                         <div className="mt-2">
                          {qty > 0 ? (
-                            <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-2 py-1">
-                              <button onClick={() => updateQuantity(product.id, qty - 1)} className="text-green-600 w-5 h-5 flex items-center justify-center font-bold">-</button>
-                              <span className="text-sm font-bold text-gray-900">{qty}</span>
-                              <button onClick={() => updateQuantity(product.id, qty + 1)} className="text-green-600 w-5 h-5 flex items-center justify-center font-bold">+</button>
+                            <div className="flex items-center justify-between border border-gray-300 rounded-sm overflow-hidden h-7">
+                              <button onClick={() => updateQuantity(product.id, qty - 1)} className="bg-gray-100 text-gray-600 w-8 h-full flex items-center justify-center font-bold">-</button>
+                              <span className="text-xs font-bold text-gray-900">{qty}</span>
+                              <button onClick={() => updateQuantity(product.id, qty + 1)} className="bg-gray-100 text-gray-600 w-8 h-full flex items-center justify-center font-bold">+</button>
                             </div>
                          ) : (
-                            <button onClick={() => addToCart(product)} className="bg-green-50 text-green-600 p-1.5 rounded-lg border border-green-200 hover:bg-green-100 transition-colors">
-                              <Plus className="w-4 h-4" />
+                            <button onClick={() => addToCart(product)} className="w-full bg-white text-[#2874F0] text-xs font-bold py-1.5 rounded-sm border border-[#2874F0] hover:bg-blue-50 transition-colors uppercase">
+                              Add
                             </button>
                          )}
+                         </div>
                        </div>
                     </div>
                   )
@@ -1001,25 +1027,13 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
         {currentTab === 'products' && (
           <div className="space-y-4">
-             {/* Search Bar */}
-             <div className="relative mb-4">
-              <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input 
-                type="text" 
-                placeholder={t.searchPlaceholder} 
-                className="w-full bg-white border border-gray-200 rounded-xl py-3 pl-10 pr-4 focus:outline-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all shadow-sm"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-
             {/* Filter Chips */}
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
               {categories.map(cat => (
                  <button 
                    key={cat.id}
                    onClick={() => setSelectedCategory(cat.id)}
-                   className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-all shadow-sm border ${selectedCategory === cat.id ? 'bg-green-600 text-white border-green-600' : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'}`}
+                   className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm border ${selectedCategory === cat.id ? 'bg-[#2874F0] text-white border-[#2874F0]' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}
                  >
                    {getCategoryName(cat.id)}
                  </button>
@@ -1038,30 +1052,38 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                   const cartItem = cart.find(item => item.product.id === product.id);
                   const qty = cartItem ? cartItem.quantity : 0;
                   return (
-                    <div key={product.id} className="bg-white p-3 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-gray-100 flex gap-4 relative">
-                      <button onClick={() => toggleFavorite(product.id)} className="absolute top-2 right-2 z-10 p-1.5 bg-white/80 backdrop-blur-md rounded-full shadow-sm">
-                         <Heart className={`w-4 h-4 ${favorites.includes(product.id) ? 'fill-rose-500 text-rose-500' : 'text-gray-400'}`} />
+                    <div key={product.id} className="bg-white p-3 rounded-sm shadow-sm border-b border-gray-100 flex gap-4 relative">
+                      <button onClick={() => toggleFavorite(product.id)} className="absolute top-2 right-2 z-10 p-1.5 text-gray-400">
+                         <Heart className={`w-5 h-5 ${favorites.includes(product.id) ? 'fill-rose-500 text-rose-500' : 'text-gray-300'}`} />
                       </button>
-                      <div className="w-24 h-24 bg-gray-50 rounded-xl overflow-hidden shrink-0">
-                        <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400"} alt={product.name} className="w-full h-full object-cover" />
+                      <div className="w-28 h-28 bg-white shrink-0 relative flex items-center justify-center p-1">
+                        <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400"} alt={product.name} className="w-full h-full object-contain mix-blend-multiply" />
                       </div>
-                      <div className="flex-1 flex flex-col justify-center py-1">
-                         <h4 className="font-bold text-gray-900 text-[15px] leading-tight mb-1">{product.name}</h4>
-                         <p className="text-xs text-gray-500 mb-2">{product.category}</p>
-                         {product.originalPrice && product.originalPrice > product.price && (
-                            <div className="text-xs text-gray-400 line-through mb-1">₹{product.originalPrice}</div>
-                         )}
-                         <div className="mt-auto flex items-center justify-between">
-                           <span className="font-black text-green-600 text-lg">₹{product.price}</span>
+                      <div className="flex-1 flex flex-col justify-start py-1">
+                         <h4 className="font-medium text-gray-800 text-sm leading-tight mb-1 pr-6">{product.name}</h4>
+                         <div className="flex items-center gap-1 mb-1">
+                           <span className="bg-green-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">4.2 <Star className="w-2.5 h-2.5 fill-white" /></span>
+                           <span className="text-[10px] text-gray-500">(84)</span>
+                         </div>
+                         <div className="flex items-baseline gap-2 mb-2">
+                           <span className="font-bold text-gray-900 text-lg">₹{product.price}</span>
+                           {product.originalPrice && product.originalPrice > product.price && (
+                             <>
+                               <span className="text-sm text-gray-500 line-through">₹{product.originalPrice}</span>
+                               <span className="text-xs font-bold text-green-600">{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% off</span>
+                             </>
+                           )}
+                         </div>
+                         <div className="mt-auto">
                            {qty > 0 ? (
-                              <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-2 py-1 shadow-sm">
-                                <button onClick={() => updateQuantity(product.id, qty - 1)} className="text-green-600 w-6 h-6 flex items-center justify-center font-bold text-lg">-</button>
-                                <span className="text-sm font-bold text-gray-900 w-4 text-center">{qty}</span>
-                                <button onClick={() => updateQuantity(product.id, qty + 1)} className="text-green-600 w-6 h-6 flex items-center justify-center font-bold text-lg">+</button>
+                              <div className="flex items-center gap-0 border border-gray-300 rounded-sm overflow-hidden w-fit">
+                                <button onClick={() => updateQuantity(product.id, qty - 1)} className="bg-gray-100 text-gray-600 px-3 py-1 flex items-center justify-center font-bold text-lg">-</button>
+                                <span className="text-sm font-bold text-gray-900 w-8 text-center">{qty}</span>
+                                <button onClick={() => updateQuantity(product.id, qty + 1)} className="bg-gray-100 text-gray-600 px-3 py-1 flex items-center justify-center font-bold text-lg">+</button>
                               </div>
                            ) : (
-                              <button onClick={() => addToCart(product)} className="bg-green-50 text-green-600 px-4 py-1.5 rounded-xl border border-green-200 hover:bg-green-100 transition-colors font-bold text-sm shadow-sm">
-                                Add +
+                              <button onClick={() => addToCart(product)} className="bg-white text-[#2874F0] px-6 py-1.5 rounded-sm border border-gray-200 shadow-sm hover:shadow transition-all font-bold text-sm uppercase">
+                                Add
                               </button>
                            )}
                          </div>
@@ -1089,27 +1111,38 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                   const cartItem = cart.find(item => item.product.id === product.id);
                   const qty = cartItem ? cartItem.quantity : 0;
                   return (
-                    <div key={product.id} className="bg-white p-3 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-gray-100 flex gap-4 relative">
-                      <button onClick={() => toggleFavorite(product.id)} className="absolute top-2 right-2 z-10 p-1.5 bg-white/80 backdrop-blur-md rounded-full shadow-sm">
-                         <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
+                    <div key={product.id} className="bg-white p-3 rounded-sm shadow-sm border-b border-gray-100 flex gap-4 relative">
+                      <button onClick={() => toggleFavorite(product.id)} className="absolute top-2 right-2 z-10 p-1.5 text-gray-400">
+                         <Heart className="w-5 h-5 fill-rose-500 text-rose-500" />
                       </button>
-                      <div className="w-24 h-24 bg-gray-50 rounded-xl overflow-hidden shrink-0">
-                        <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400"} alt={product.name} className="w-full h-full object-cover" />
+                      <div className="w-28 h-28 bg-white shrink-0 relative flex items-center justify-center p-1">
+                        <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400"} alt={product.name} className="w-full h-full object-contain mix-blend-multiply" />
                       </div>
-                      <div className="flex-1 flex flex-col justify-center py-1">
-                         <h4 className="font-bold text-gray-900 text-[15px] leading-tight mb-1">{product.name}</h4>
-                         <p className="text-xs text-gray-500 mb-2">{product.category}</p>
-                         <div className="mt-auto flex items-center justify-between">
-                           <span className="font-black text-green-600 text-lg">₹{product.price}</span>
+                      <div className="flex-1 flex flex-col justify-start py-1">
+                         <h4 className="font-medium text-gray-800 text-sm leading-tight mb-1 pr-6">{product.name}</h4>
+                         <div className="flex items-center gap-1 mb-1">
+                           <span className="bg-green-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">4.2 <Star className="w-2.5 h-2.5 fill-white" /></span>
+                           <span className="text-[10px] text-gray-500">(84)</span>
+                         </div>
+                         <div className="flex items-baseline gap-2 mb-2">
+                           <span className="font-bold text-gray-900 text-lg">₹{product.price}</span>
+                           {product.originalPrice && product.originalPrice > product.price && (
+                             <>
+                               <span className="text-sm text-gray-500 line-through">₹{product.originalPrice}</span>
+                               <span className="text-xs font-bold text-green-600">{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% off</span>
+                             </>
+                           )}
+                         </div>
+                         <div className="mt-auto">
                            {qty > 0 ? (
-                              <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-2 py-1 shadow-sm">
-                                <button onClick={() => updateQuantity(product.id, qty - 1)} className="text-green-600 w-6 h-6 flex items-center justify-center font-bold text-lg">-</button>
-                                <span className="text-sm font-bold text-gray-900 w-4 text-center">{qty}</span>
-                                <button onClick={() => updateQuantity(product.id, qty + 1)} className="text-green-600 w-6 h-6 flex items-center justify-center font-bold text-lg">+</button>
+                              <div className="flex items-center gap-0 border border-gray-300 rounded-sm overflow-hidden w-fit">
+                                <button onClick={() => updateQuantity(product.id, qty - 1)} className="bg-gray-100 text-gray-600 px-3 py-1 flex items-center justify-center font-bold text-lg">-</button>
+                                <span className="text-sm font-bold text-gray-900 w-8 text-center">{qty}</span>
+                                <button onClick={() => updateQuantity(product.id, qty + 1)} className="bg-gray-100 text-gray-600 px-3 py-1 flex items-center justify-center font-bold text-lg">+</button>
                               </div>
                            ) : (
-                              <button onClick={() => addToCart(product)} className="bg-green-50 text-green-600 px-4 py-1.5 rounded-xl border border-green-200 hover:bg-green-100 transition-colors font-bold text-sm shadow-sm">
-                                Add +
+                              <button onClick={() => addToCart(product)} className="bg-white text-[#2874F0] px-6 py-1.5 rounded-sm border border-gray-200 shadow-sm hover:shadow transition-all font-bold text-sm uppercase">
+                                Add
                               </button>
                            )}
                          </div>
@@ -1381,32 +1414,32 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
       </main>
 
       {/* Bottom Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 pb-safe pt-2 px-6 flex justify-between items-center z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] h-16">
-         <button onClick={() => setCurrentTab('home')} className={`flex flex-col items-center gap-1 w-16 ${currentTab === 'home' ? 'text-green-600' : 'text-gray-400'}`}>
-           <Home className={`w-6 h-6 ${currentTab === 'home' ? 'fill-green-100' : ''}`} />
+      <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 pb-safe pt-2 px-6 flex justify-between items-center z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] h-16 md:hidden">
+         <button onClick={() => setCurrentTab('home')} className={`flex flex-col items-center gap-1 w-16 ${currentTab === 'home' ? 'text-[#2874F0]' : 'text-gray-400'}`}>
+           <Home className={`w-6 h-6 ${currentTab === 'home' ? 'fill-blue-100' : ''}`} />
            <span className="text-[10px] font-bold">Home</span>
          </button>
-         <button onClick={() => setCurrentTab('products')} className={`flex flex-col items-center gap-1 w-16 ${currentTab === 'products' ? 'text-green-600' : 'text-gray-400'}`}>
-           <LayoutGrid className={`w-6 h-6 ${currentTab === 'products' ? 'fill-green-100' : ''}`} />
-           <span className="text-[10px] font-bold">Products</span>
+         <button onClick={() => setCurrentTab('products')} className={`flex flex-col items-center gap-1 w-16 ${currentTab === 'products' ? 'text-[#2874F0]' : 'text-gray-400'}`}>
+           <LayoutGrid className={`w-6 h-6 ${currentTab === 'products' ? 'fill-blue-100' : ''}`} />
+           <span className="text-[10px] font-bold">Categories</span>
          </button>
-         <button onClick={() => setCurrentTab('cart')} className={`relative flex flex-col items-center gap-1 w-16 ${currentTab === 'cart' ? 'text-green-600' : 'text-gray-400'}`}>
+         <button onClick={() => setCurrentTab('cart')} className={`relative flex flex-col items-center gap-1 w-16 ${currentTab === 'cart' ? 'text-[#2874F0]' : 'text-gray-400'}`}>
            <div className="relative">
-             <ShoppingBag className={`w-6 h-6 ${currentTab === 'cart' ? 'fill-green-100' : ''}`} />
+             <ShoppingCart className={`w-6 h-6 ${currentTab === 'cart' ? 'fill-blue-100' : ''}`} />
              {cartItemsCount > 0 && (
-               <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center ring-2 ring-white">
+               <span className="absolute -top-1 -right-2 bg-yellow-500 text-black text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-white">
                  {cartItemsCount}
                </span>
              )}
            </div>
            <span className="text-[10px] font-bold">Cart</span>
          </button>
-         <button onClick={() => setCurrentTab('favorites')} className={`flex flex-col items-center gap-1 w-16 ${currentTab === 'favorites' ? 'text-green-600' : 'text-gray-400'}`}>
-           <Heart className={`w-6 h-6 ${currentTab === 'favorites' ? 'fill-green-100' : ''}`} />
+         <button onClick={() => setCurrentTab('favorites')} className={`flex flex-col items-center gap-1 w-16 ${currentTab === 'favorites' ? 'text-[#2874F0]' : 'text-gray-400'}`}>
+           <Heart className={`w-6 h-6 ${currentTab === 'favorites' ? 'fill-blue-100' : ''}`} />
            <span className="text-[10px] font-bold">Favorites</span>
          </button>
-         <button onClick={() => setCurrentTab('account')} className={`flex flex-col items-center gap-1 w-16 ${currentTab === 'account' ? 'text-green-600' : 'text-gray-400'}`}>
-           <User className={`w-6 h-6 ${currentTab === 'account' ? 'fill-green-100' : ''}`} />
+         <button onClick={() => setCurrentTab('account')} className={`flex flex-col items-center gap-1 w-16 ${currentTab === 'account' ? 'text-[#2874F0]' : 'text-gray-400'}`}>
+           <User className={`w-6 h-6 ${currentTab === 'account' ? 'fill-blue-100' : ''}`} />
            <span className="text-[10px] font-bold">Account</span>
          </button>
       </nav>
