@@ -521,6 +521,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
   const slideProducts = products.slice(0, 3); // top 3 products for the banner
   
   useEffect(() => {
+    if (slideProducts.length === 0) return;
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slideProducts.length);
     }, 3000);
