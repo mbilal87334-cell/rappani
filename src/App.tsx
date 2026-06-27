@@ -2082,7 +2082,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
             <h2 className="text-2xl md:text-3xl font-black text-white mb-6">Dashboard Overview</h2>
         {/* Dashboard Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-zinc-900/40 glass p-6 rounded-2xl shadow-sm border border-white/10 flex items-center gap-4">
+          <div className="bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl border border-white/5 shadow-lg flex items-center gap-4">
             <div className="bg-amber-500/10 p-3 rounded-xl text-amber-500">
               <Package className="w-6 h-6" />
             </div>
@@ -2091,7 +2091,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
               <h3 className="text-2xl font-bold text-white">{products.length}</h3>
             </div>
           </div>
-          <div className="bg-zinc-900/40 glass p-6 rounded-2xl shadow-sm border border-white/10 flex items-center gap-4">
+          <div className="bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl border border-white/5 shadow-lg flex items-center gap-4">
             <div className="bg-purple-500/10 p-3 rounded-xl text-purple-400">
               <LayoutGrid className="w-6 h-6" />
             </div>
@@ -2100,8 +2100,8 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
               <h3 className="text-2xl font-bold text-white">{new Set(products.map(p => p.category)).size}</h3>
             </div>
           </div>
-          <div className="bg-zinc-900/40 glass p-6 rounded-2xl shadow-sm border border-white/10 flex items-center gap-4">
-            <div className="bg-emerald-50 p-3 rounded-xl text-emerald-500">
+          <div className="bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl border border-white/5 shadow-lg flex items-center gap-4">
+            <div className="bg-emerald-500/10 p-3 rounded-xl text-emerald-400">
               <Database className="w-6 h-6" />
             </div>
             <div>
@@ -2110,9 +2110,9 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
             </div>
           </div>
 
-          <div className="bg-zinc-900/40 glass p-6 rounded-2xl shadow-sm border border-white/10 flex items-center justify-between gap-4">
+          <div className="bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl border border-white/5 shadow-lg flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="bg-orange-50 p-3 rounded-xl text-orange-500">
+              <div className="bg-orange-500/10 p-3 rounded-xl text-orange-400">
                 <MapPin className="w-6 h-6" />
               </div>
               <div>
@@ -2129,9 +2129,9 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
             </div>
           </div>
 
-          <div className="bg-zinc-900/40 glass p-6 rounded-2xl shadow-sm border border-white/10 flex items-center justify-between gap-4">
+          <div className="bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl border border-white/5 shadow-lg flex items-center justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="bg-purple-50 p-3 rounded-xl text-purple-500">
+              <div className="bg-purple-500/10 p-3 rounded-xl text-purple-400">
                 <Store className="w-6 h-6" />
               </div>
               <div>
@@ -2156,7 +2156,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
             <h2 className="text-2xl md:text-3xl font-black text-white mb-6">Store Settings</h2>
 
         {/* WhatsApp Management */}
-        <div className="bg-zinc-900/40 glass p-6 rounded-2xl shadow-sm border border-white/10 mb-8">
+        <div className="bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl border border-white/5 shadow-lg mb-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="bg-[#25D366]/10 p-2 rounded-xl text-[#25D366]">
               <MessageCircle className="w-6 h-6" />
@@ -2200,7 +2200,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
         </div>
 
         {/* UPI Management */}
-        <div className="bg-zinc-900/40 glass p-6 rounded-2xl shadow-sm border border-white/10 mb-8">
+        <div className="bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl border border-white/5 shadow-lg mb-8">
           <div className="flex items-center gap-3 mb-6">
             <div className="bg-[#1A73E8]/10 p-2 rounded-xl text-[#1A73E8] flex items-center justify-center">
               <span className="text-xl font-bold">₹</span>
@@ -2239,7 +2239,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
         {adminTab === 'security' && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <h2 className="text-2xl md:text-3xl font-black text-white mb-6">Security Settings</h2>
-          <div className="mb-8 bg-zinc-900/40 glass p-6 rounded-2xl shadow-sm border border-white/10">
+          <div className="mb-8 bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl border border-white/5 shadow-lg">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <Lock className="w-5 h-5 text-amber-500" /> Change Login Credentials
@@ -2309,7 +2309,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
             </div>
           <div className="grid lg:grid-cols-3 gap-8 items-start">
             <div className="lg:col-span-1">
-              <div className="bg-zinc-900/40 glass p-6 rounded-2xl shadow-sm border border-white/10 lg:sticky lg:top-24">
+              <div className="bg-zinc-900/40 backdrop-blur-md p-6 rounded-2xl border border-white/5 shadow-lg lg:sticky lg:top-24">
                 <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                   {isEditing ? <Edit className="w-5 h-5 text-amber-500" /> : <Plus className="w-5 h-5 text-amber-500" />}
                   {isEditing ? 'Edit Product' : 'Add New Product'}
@@ -2439,7 +2439,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
             </div>
 
             <div className="lg:col-span-2">
-              <div className="bg-zinc-900/40 glass rounded-2xl shadow-sm border border-white/10 overflow-hidden">
+              <div className="bg-zinc-900/40 backdrop-blur-md rounded-2xl border border-white/5 shadow-lg overflow-hidden">
                 <div className="p-6 border-b border-white/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <h2 className="text-xl font-bold text-white">Manage Products</h2>
                   <div className="flex items-center gap-3">
@@ -2526,7 +2526,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
         )}
 
         {adminTab === 'orders' && (
-          <div className="bg-zinc-900/40 glass rounded-2xl shadow-sm border border-white/10 overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-zinc-900/40 backdrop-blur-md rounded-2xl border border-white/5 shadow-lg overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="p-6 border-b border-white/10 bg-zinc-800/50 flex items-center justify-between">
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
                 <Package className="w-5 h-5 text-amber-500" /> Recent Orders
