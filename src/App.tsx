@@ -2326,12 +2326,12 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
                 </h2>
                 <form onSubmit={handleSaveProduct} className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-stone-700 mb-1">Product Name</label>
-                    <input type="text" value={currentProduct.name} onChange={e => setCurrentProduct({ ...currentProduct, name: e.target.value })} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-rose-500 outline-none" placeholder="e.g., Premium Notebook" required />
+                    <label className="block text-sm font-medium text-zinc-400 mb-1">Product Name</label>
+                    <input type="text" value={currentProduct.name} onChange={e => setCurrentProduct({ ...currentProduct, name: e.target.value })} className="w-full px-4 py-2 rounded-lg border border-white/10 bg-black/20 text-white placeholder:text-zinc-500 focus:ring-2 focus:ring-rose-500 outline-none" placeholder="e.g., Premium Notebook" required />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-stone-700 mb-1">Category</label>
-                    <select value={currentProduct.category} onChange={e => setCurrentProduct({ ...currentProduct, category: e.target.value })} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-rose-500 outline-none">
+                    <label className="block text-sm font-medium text-zinc-400 mb-1">Category</label>
+                    <select value={currentProduct.category} onChange={e => setCurrentProduct({ ...currentProduct, category: e.target.value })} className="w-full px-4 py-2 rounded-lg border border-white/10 bg-zinc-800 text-white focus:ring-2 focus:ring-rose-500 outline-none">
                       <option value="Stationary">Stationary</option>
                       <option value="Fancy">Fancy</option>
                       <option value="Toys">Toys</option>
@@ -2342,16 +2342,16 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
                   </div>
                   <div className="flex gap-4">
                     <div className="flex-1">
-                      <label className="block text-sm font-medium text-stone-700 mb-1">Price (₹)</label>
-                      <input type="number" value={currentProduct.price || ''} onChange={e => setCurrentProduct({ ...currentProduct, price: Number(e.target.value) })} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-rose-500 outline-none" placeholder="150" required min="1" />
+                      <label className="block text-sm font-medium text-zinc-400 mb-1">Price (₹)</label>
+                      <input type="number" value={currentProduct.price || ''} onChange={e => setCurrentProduct({ ...currentProduct, price: Number(e.target.value) })} className="w-full px-4 py-2 rounded-lg border border-white/10 bg-black/20 text-white placeholder:text-zinc-500 focus:ring-2 focus:ring-rose-500 outline-none" placeholder="150" required min="1" />
                     </div>
                     <div className="flex-1">
-                      <label className="block text-sm font-medium text-stone-700 mb-1">Original Price (₹)</label>
-                      <input type="number" value={currentProduct.originalPrice || ''} onChange={e => setCurrentProduct({ ...currentProduct, originalPrice: Number(e.target.value) || undefined })} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Optional" min="1" />
+                      <label className="block text-sm font-medium text-zinc-400 mb-1">Original Price (₹)</label>
+                      <input type="number" value={currentProduct.originalPrice || ''} onChange={e => setCurrentProduct({ ...currentProduct, originalPrice: Number(e.target.value) || undefined })} className="w-full px-4 py-2 rounded-lg border border-white/10 bg-black/20 text-white placeholder:text-zinc-500 focus:ring-2 focus:ring-emerald-500 outline-none" placeholder="Optional" min="1" />
                     </div>
                     <div className="flex-1">
-                      <label className="block text-sm font-medium text-stone-700 mb-1">Stock (Max Qty)</label>
-                      <input type="number" value={currentProduct.stock === undefined ? '' : currentProduct.stock} onChange={e => setCurrentProduct({ ...currentProduct, stock: e.target.value !== '' ? Number(e.target.value) : undefined })} className="w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-purple-500 outline-none" placeholder="Unlimited" min="0" />
+                      <label className="block text-sm font-medium text-zinc-400 mb-1">Stock (Max Qty)</label>
+                      <input type="number" value={currentProduct.stock === undefined ? '' : currentProduct.stock} onChange={e => setCurrentProduct({ ...currentProduct, stock: e.target.value !== '' ? Number(e.target.value) : undefined })} className="w-full px-4 py-2 rounded-lg border border-white/10 bg-black/20 text-white placeholder:text-zinc-500 focus:ring-2 focus:ring-purple-500 outline-none" placeholder="Unlimited" min="0" />
                     </div>
                   </div>
                   <div className="relative">
@@ -2380,7 +2380,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
                     {!isCameraOpen ? (
                       <div className="flex flex-col gap-3">
                         <div className="flex gap-2">
-                          <input type="text" value={currentProduct.image} onChange={e => setCurrentProduct({ ...currentProduct, image: e.target.value })} className="flex-1 w-full px-4 py-2 rounded-lg border border-stone-300 focus:ring-2 focus:ring-rose-500 outline-none" placeholder="Image URL or take photo" required />
+                          <input type="text" value={currentProduct.image} onChange={e => setCurrentProduct({ ...currentProduct, image: e.target.value })} className="flex-1 w-full px-4 py-2 rounded-lg border border-white/10 bg-black/20 text-white placeholder:text-zinc-500 focus:ring-2 focus:ring-rose-500 outline-none" placeholder="Image URL or take photo" required />
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                           <button type="button" onClick={triggerGallery} className="w-full bg-purple-500/10 hover:bg-blue-100 text-blue-600 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 border-2 border-dashed border-blue-200 transition-all">
@@ -2429,7 +2429,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
                   )}
 
                   {formError && (
-                    <div className="p-3 bg-red-50 text-red-600 border border-red-100 rounded-lg text-sm font-medium">
+                    <div className="p-3 bg-red-500/10 text-red-400 border border-red-500/20 rounded-lg text-sm font-medium">
                       {formError}
                     </div>
                   )}
