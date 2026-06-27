@@ -1735,11 +1735,6 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
     const file = e.target.files?.[0];
     if (file) {
       try {
-        setIsRemovingBackground(true);
-        // Remove background using AI locally in browser
-        const bgRemovedBlob = await imglyRemoveBackground(file);
-        setIsRemovingBackground(false);
-        
         setIsUploading(true);
         const reader = new FileReader();
         reader.onloadend = async () => {
@@ -1755,11 +1750,10 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
             setIsUploading(false);
           }
         };
-        reader.readAsDataURL(bgRemovedBlob);
+        reader.readAsDataURL(file);
       } catch (err) {
-        console.error("Upload or Background Removal failed", err);
-        setFormError("AI Background Removal or upload failed. Please try again.");
-        setIsRemovingBackground(false);
+        console.error("Upload failed", err);
+        setFormError("Upload failed. Please try again.");
         setIsUploading(false);
       }
     }
