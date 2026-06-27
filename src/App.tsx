@@ -516,6 +516,16 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
   const [showGPayConfirm, setShowGPayConfirm] = useState(false);
   const [utrNumber, setUtrNumber] = useState('');
   const [mockOtp, setMockOtp] = useState<string | null>(null);
+
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const slideProducts = products.slice(0, 3); // top 3 products for the banner
+  
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slideProducts.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [slideProducts.length]);
   const t = translations[lang];
 
   const refreshLocation = () => {
@@ -947,16 +957,31 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
           >
         {currentTab === 'home' && (
           <div className="space-y-4 bg-gray-100 -mx-4 px-4 pb-4">
-            {/* Banner Slider */}
-            <div className="relative w-full h-44 bg-[#2874F0] rounded-sm overflow-hidden shadow-sm flex items-center px-6 mt-4">
-              <div className="z-10 text-white w-2/3">
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-yellow-400 text-black px-2 py-1 rounded inline-block mb-2">Big Deal</span>
-                <h2 className="text-xl font-bold leading-tight mb-2">Super Value Days</h2>
-                <button className="bg-white text-[#2874F0] text-xs font-bold px-4 py-2 shadow-sm uppercase" onClick={() => setCurrentTab('products')}>Shop Now</button>
-              </div>
-              <div className="absolute right-0 bottom-0 opacity-20 translate-x-4 translate-y-4">
-                 <Sparkles className="w-48 h-48 text-white" />
-              </div>
+            {/* Auto-Sliding Banner */}
+            <div className="relative w-full h-48 bg-white rounded-sm overflow-hidden shadow-sm mt-4 group">
+               <div className="flex w-full h-full transition-transform duration-500 ease-in-out" style={{ transform: `translateX(-${currentSlide * 100}%)` }}>
+                  {slideProducts.map((product, idx) => (
+                    <div key={idx} className="w-full h-full flex-shrink-0 relative bg-gradient-to-r from-blue-50 to-indigo-50 flex items-center p-4 cursor-pointer" onClick={() => setSelectedProduct(product)}>
+                       <div className="w-1/2 z-10 pl-2">
+                         <span className="text-[10px] font-bold uppercase tracking-wider bg-red-500 text-white px-2 py-1 rounded inline-block mb-2 shadow-sm">Featured</span>
+                         <h2 className="text-lg font-bold leading-tight mb-2 text-gray-900 line-clamp-2">{product.name}</h2>
+                         <div className="flex items-baseline gap-1 mb-3">
+                           <span className="text-lg font-black text-[#2874F0]">₹{product.price}</span>
+                           {product.originalPrice && <span className="text-xs text-gray-400 line-through">₹{product.originalPrice}</span>}
+                         </div>
+                         <button className="bg-[#2874F0] text-white text-[10px] font-bold px-4 py-2 shadow-sm rounded-sm uppercase tracking-wide">Buy Now</button>
+                       </div>
+                       <div className="w-1/2 h-full flex justify-end items-center relative pr-2">
+                          <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400?text=No+Image"} alt={product.name} className="h-full max-h-36 object-contain mix-blend-multiply drop-shadow-md" />
+                       </div>
+                    </div>
+                  ))}
+               </div>
+               <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
+                 {slideProducts.map((_, idx) => (
+                   <div key={idx} onClick={() => setCurrentSlide(idx)} className={`w-6 h-1 rounded-full cursor-pointer transition-colors ${currentSlide === idx ? 'bg-[#2874F0]' : 'bg-gray-300'}`} />
+                 ))}
+               </div>
             </div>
 
             {/* Categories */}
