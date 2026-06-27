@@ -516,6 +516,21 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
   const [showGPayConfirm, setShowGPayConfirm] = useState(false);
   const [utrNumber, setUtrNumber] = useState('');
   const [mockOtp, setMockOtp] = useState<string | null>(null);
+  const [flashSaleTimeLeft, setFlashSaleTimeLeft] = useState(3600 * 5 + 45 * 60 + 10);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setFlashSaleTimeLeft(prev => prev > 0 ? prev - 1 : 0);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
   const t = translations[lang];
 
   const refreshLocation = () => {
@@ -935,7 +950,16 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
       </header>
 
       {/* Main Content Area based on Tab */}
-      <main className="px-4 py-4 space-y-6">
+      <main className="px-4 py-4 space-y-6 overflow-hidden pb-24">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentTab}
+            initial={{ opacity: 0, x: 15 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -15 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="w-full"
+          >
         {currentTab === 'home' && (
           <div className="space-y-4 bg-gray-100 -mx-4 px-4 pb-4">
             {/* Banner Slider */}
@@ -968,6 +992,41 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
               </div>
             </div>
             
+            {/* Deal of the Day (Flash Sale) */}
+            <div className="bg-white rounded-sm shadow-sm p-3 -mx-2 mt-2">
+              <div className="flex justify-between items-center mb-3 px-2">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-bold text-gray-900">Deal of the Day</h3>
+                  <div className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-sm flex items-center gap-1">
+                     <svg className="w-3 h-3 animate-pulse" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd"></path></svg>
+                     {formatTime(flashSaleTimeLeft)}
+                  </div>
+                </div>
+                <button className="text-sm bg-[#2874F0] text-white px-3 py-1 rounded-sm font-bold shadow-sm" onClick={() => setCurrentTab('products')}>SALE</button>
+              </div>
+              <div className="grid grid-cols-2 gap-3 px-2">
+                {products.filter(p => p.originalPrice).slice(0, 2).map(product => {
+                  const discount = product.originalPrice ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : 0;
+                  return (
+                    <div key={product.id} className="bg-gray-50 p-2 rounded-sm border border-gray-100 flex flex-col items-center cursor-pointer" onClick={() => setSelectedProductForModal(product)}>
+                       <div className="w-full aspect-square bg-white mb-2 overflow-hidden flex items-center justify-center relative p-2 rounded-sm shadow-sm">
+                          {discount > 0 && (
+                            <div className="absolute top-0 left-0 bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 z-10 shadow-sm rounded-br-lg rounded-tl-sm">
+                              {discount}% OFF
+                            </div>
+                          )}
+                          <img src={product.image} alt={product.name} className="object-contain w-full h-full mix-blend-multiply hover:scale-110 transition-transform duration-300" />
+                       </div>
+                       <h4 className="font-medium text-gray-900 text-xs text-center line-clamp-1 w-full">{product.name}</h4>
+                       <div className="flex items-center gap-1 mt-1">
+                          <span className="font-bold text-gray-900 text-sm">₹{product.price}</span>
+                       </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            
             {/* Featured Products (Home Tab) */}
             <div>
                <div className="flex justify-between items-end mb-4">
@@ -983,15 +1042,17 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                        <button onClick={() => toggleFavorite(product.id)} className="absolute top-2 right-2 z-10 p-1.5 bg-white/80 backdrop-blur-md rounded-full text-gray-400">
                          <Heart className={`w-4 h-4 ${favorites.includes(product.id) ? 'fill-rose-500 text-rose-500' : 'text-gray-300'}`} />
                        </button>
-                       <div className="w-full aspect-square bg-white mb-2 overflow-hidden flex items-center justify-center relative p-2">
-                         <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400?text=No+Image"} alt={product.name} className="w-full h-full object-contain mix-blend-multiply" />
-                         {product.originalPrice && product.originalPrice > product.price && (
-                           <span className="absolute bottom-0 left-0 bg-green-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-tr-lg">
-                             {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
-                           </span>
-                         )}
+                       <div className="cursor-pointer group" onClick={() => setSelectedProduct(product)}>
+                         <div className="w-full aspect-square bg-white mb-2 overflow-hidden flex items-center justify-center relative p-2">
+                           <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400?text=No+Image"} alt={product.name} className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-300" />
+                           {product.originalPrice && product.originalPrice > product.price && (
+                             <span className="absolute bottom-0 left-0 bg-green-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-tr-lg z-10">
+                               {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
+                             </span>
+                           )}
+                         </div>
+                         <h4 className="font-medium text-gray-700 text-xs mb-1 line-clamp-2 leading-tight h-8 group-hover:text-[#2874F0] transition-colors">{product.name}</h4>
                        </div>
-                       <h4 className="font-medium text-gray-700 text-xs mb-1 line-clamp-2 leading-tight h-8">{product.name}</h4>
                        <div className="flex items-center gap-1 mb-2">
                          <span className="bg-green-600 text-white text-[9px] font-bold px-1 py-0.5 rounded flex items-center gap-0.5">4.2 <Star className="w-2 h-2 fill-white" /></span>
                          <span className="text-[9px] text-gray-400">(84)</span>
@@ -1056,15 +1117,17 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                        <button onClick={() => toggleFavorite(product.id)} className="absolute top-2 right-2 z-10 p-1.5 bg-white/80 backdrop-blur-md rounded-full text-gray-400">
                          <Heart className={`w-4 h-4 ${favorites.includes(product.id) ? 'fill-rose-500 text-rose-500' : 'text-gray-300'}`} />
                        </button>
-                       <div className="w-full aspect-square bg-white mb-2 overflow-hidden flex items-center justify-center relative p-2">
-                         <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400?text=No+Image"} alt={product.name} className="w-full h-full object-contain mix-blend-multiply" />
-                         {product.originalPrice && product.originalPrice > product.price && (
-                           <span className="absolute bottom-0 left-0 bg-green-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-tr-lg">
-                             {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
-                           </span>
-                         )}
+                       <div className="cursor-pointer group" onClick={() => setSelectedProduct(product)}>
+                         <div className="w-full aspect-square bg-white mb-2 overflow-hidden flex items-center justify-center relative p-2">
+                           <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400?text=No+Image"} alt={product.name} className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-300" />
+                           {product.originalPrice && product.originalPrice > product.price && (
+                             <span className="absolute bottom-0 left-0 bg-green-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-tr-lg z-10">
+                               {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
+                             </span>
+                           )}
+                         </div>
+                         <h4 className="font-medium text-gray-700 text-xs mb-1 line-clamp-2 leading-tight h-8 group-hover:text-[#2874F0] transition-colors">{product.name}</h4>
                        </div>
-                       <h4 className="font-medium text-gray-700 text-xs mb-1 line-clamp-2 leading-tight h-8">{product.name}</h4>
                        <div className="flex items-center gap-1 mb-2">
                          <span className="bg-green-600 text-white text-[9px] font-bold px-1 py-0.5 rounded flex items-center gap-0.5">4.2 <Star className="w-2 h-2 fill-white" /></span>
                          <span className="text-[9px] text-gray-400">(84)</span>
@@ -1117,15 +1180,17 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                        <button onClick={() => toggleFavorite(product.id)} className="absolute top-2 right-2 z-10 p-1.5 bg-white/80 backdrop-blur-md rounded-full text-gray-400">
                          <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
                        </button>
-                       <div className="w-full aspect-square bg-white mb-2 overflow-hidden flex items-center justify-center relative p-2">
-                         <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400?text=No+Image"} alt={product.name} className="w-full h-full object-contain mix-blend-multiply" />
-                         {product.originalPrice && product.originalPrice > product.price && (
-                           <span className="absolute bottom-0 left-0 bg-green-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-tr-lg">
-                             {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
-                           </span>
-                         )}
+                       <div className="cursor-pointer group" onClick={() => setSelectedProduct(product)}>
+                         <div className="w-full aspect-square bg-white mb-2 overflow-hidden flex items-center justify-center relative p-2">
+                           <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400?text=No+Image"} alt={product.name} className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-300" />
+                           {product.originalPrice && product.originalPrice > product.price && (
+                             <span className="absolute bottom-0 left-0 bg-green-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-tr-lg z-10">
+                               {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
+                             </span>
+                           )}
+                         </div>
+                         <h4 className="font-medium text-gray-700 text-xs mb-1 line-clamp-2 leading-tight h-8 group-hover:text-[#2874F0] transition-colors">{product.name}</h4>
                        </div>
-                       <h4 className="font-medium text-gray-700 text-xs mb-1 line-clamp-2 leading-tight h-8">{product.name}</h4>
                        <div className="flex items-center gap-1 mb-2">
                          <span className="bg-green-600 text-white text-[9px] font-bold px-1 py-0.5 rounded flex items-center gap-0.5">4.2 <Star className="w-2 h-2 fill-white" /></span>
                          <span className="text-[9px] text-gray-400">(84)</span>
@@ -1448,7 +1513,104 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
              )}
            </div>
         )}
+          </motion.div>
+        </AnimatePresence>
       </main>
+
+      {/* Product Details Modal (Quick View) */}
+      <AnimatePresence>
+        {selectedProduct && (
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="fixed inset-0 z-[200] bg-white flex flex-col"
+          >
+            {/* Header */}
+            <div className="bg-white px-4 py-3 flex items-center justify-between shadow-sm sticky top-0 z-10 pt-safe">
+               <button onClick={() => setSelectedProduct(null)} className="p-2 -ml-2 rounded-full hover:bg-gray-50">
+                 <ChevronRight className="w-6 h-6 text-gray-900 rotate-180" />
+               </button>
+               <h2 className="font-bold text-lg line-clamp-1">{selectedProduct.name}</h2>
+               <button onClick={() => toggleFavorite(selectedProduct.id)} className="p-2 -mr-2 rounded-full hover:bg-gray-50 text-gray-400">
+                 <Heart className={`w-6 h-6 ${favorites.includes(selectedProduct.id) ? 'fill-rose-500 text-rose-500' : 'text-gray-300'}`} />
+               </button>
+            </div>
+            
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto pb-24">
+               {/* Image */}
+               <div className="w-full aspect-square bg-gray-50 flex items-center justify-center p-8 relative">
+                 {selectedProduct.originalPrice && (
+                    <div className="absolute top-4 left-4 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded shadow-sm">
+                      {Math.round(((selectedProduct.originalPrice - selectedProduct.price) / selectedProduct.originalPrice) * 100)}% OFF
+                    </div>
+                 )}
+                 <img src={selectedProduct.image} alt={selectedProduct.name} className="object-contain w-full h-full mix-blend-multiply" />
+               </div>
+               
+               {/* Details */}
+               <div className="p-4 space-y-4">
+                 <div>
+                   <h1 className="text-2xl font-bold text-gray-900 leading-tight mb-2">{selectedProduct.name}</h1>
+                   <div className="flex items-end gap-2 mb-2">
+                     <span className="text-3xl font-black text-gray-900">₹{selectedProduct.price}</span>
+                     {selectedProduct.originalPrice && (
+                       <>
+                         <span className="text-lg text-gray-500 line-through mb-1">₹{selectedProduct.originalPrice}</span>
+                         <span className="text-sm font-bold text-green-600 mb-1">Save ₹{selectedProduct.originalPrice - selectedProduct.price}</span>
+                       </>
+                     )}
+                   </div>
+                   <div className="flex items-center gap-2 mb-4">
+                      <div className="bg-green-600 text-white text-xs font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
+                        4.4 <Star className="w-3 h-3 fill-current" />
+                      </div>
+                      <span className="text-xs text-gray-500">1,244 Ratings & 144 Reviews</span>
+                   </div>
+                 </div>
+
+                 {/* Highlights */}
+                 <div className="border-t border-gray-100 pt-4 space-y-3">
+                   <h3 className="font-bold text-gray-900">Highlights</h3>
+                   <ul className="space-y-2 text-sm text-gray-600 list-disc list-inside">
+                     <li>Premium quality {selectedProduct.category}</li>
+                     <li>Durable and long-lasting material</li>
+                     <li>100% Genuine Product</li>
+                     <li>7 Days Replacement Policy</li>
+                     <li>Cash on Delivery available</li>
+                   </ul>
+                 </div>
+               </div>
+            </div>
+            
+            {/* Action Bar */}
+            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 pb-safe flex gap-3 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+               <button 
+                 onClick={() => {
+                   addToCart(selectedProduct);
+                   setSelectedProduct(null);
+                   setCurrentTab('cart');
+                 }}
+                 className="flex-1 bg-white border-2 border-gray-200 text-gray-900 py-3.5 rounded-xl font-bold text-base flex items-center justify-center gap-2"
+               >
+                 <ShoppingCart className="w-5 h-5" /> Add to Cart
+               </button>
+               <button 
+                 onClick={() => {
+                   addToCart(selectedProduct);
+                   setSelectedProduct(null);
+                   setCurrentTab('cart');
+                 }}
+                 className="flex-1 bg-amber-500 hover:bg-amber-600 text-white py-3.5 rounded-xl font-bold text-base flex items-center justify-center gap-2 shadow-sm"
+               >
+                 <Gift className="w-5 h-5" /> Buy Now
+               </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Bottom Navigation Bar */}
       <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 pb-safe pt-2 px-6 flex justify-between items-center z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] h-16 md:hidden">
