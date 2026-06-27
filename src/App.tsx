@@ -1041,9 +1041,9 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
             </div>
 
             {/* Product List */}
-            <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
               {filteredProducts.length === 0 ? (
-                <div className="text-center py-12 text-gray-400">
+                <div className="col-span-2 text-center py-12 text-gray-400">
                   <Package className="w-12 h-12 mx-auto mb-2 opacity-50" />
                   <p>{t.noProducts}</p>
                 </div>
@@ -1052,42 +1052,44 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                   const cartItem = cart.find(item => item.product.id === product.id);
                   const qty = cartItem ? cartItem.quantity : 0;
                   return (
-                    <div key={product.id} className="bg-white p-3 rounded-sm shadow-sm border-b border-gray-100 flex gap-4 relative">
-                      <button onClick={() => toggleFavorite(product.id)} className="absolute top-2 right-2 z-10 p-1.5 text-gray-400">
-                         <Heart className={`w-5 h-5 ${favorites.includes(product.id) ? 'fill-rose-500 text-rose-500' : 'text-gray-300'}`} />
-                      </button>
-                      <div className="w-28 h-28 bg-white shrink-0 relative flex items-center justify-center p-1">
-                        <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400"} alt={product.name} className="w-full h-full object-contain mix-blend-multiply" />
-                      </div>
-                      <div className="flex-1 flex flex-col justify-start py-1">
-                         <h4 className="font-medium text-gray-800 text-sm leading-tight mb-1 pr-6">{product.name}</h4>
-                         <div className="flex items-center gap-1 mb-1">
-                           <span className="bg-green-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">4.2 <Star className="w-2.5 h-2.5 fill-white" /></span>
-                           <span className="text-[10px] text-gray-500">(84)</span>
-                         </div>
-                         <div className="flex items-baseline gap-2 mb-2">
-                           <span className="font-bold text-gray-900 text-lg">₹{product.price}</span>
+                    <div key={product.id} className="bg-white p-2 rounded-sm shadow-sm border border-gray-100 flex flex-col relative">
+                       <button onClick={() => toggleFavorite(product.id)} className="absolute top-2 right-2 z-10 p-1.5 bg-white/80 backdrop-blur-md rounded-full text-gray-400">
+                         <Heart className={`w-4 h-4 ${favorites.includes(product.id) ? 'fill-rose-500 text-rose-500' : 'text-gray-300'}`} />
+                       </button>
+                       <div className="w-full aspect-square bg-white mb-2 overflow-hidden flex items-center justify-center relative p-2">
+                         <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400?text=No+Image"} alt={product.name} className="w-full h-full object-contain mix-blend-multiply" />
+                         {product.originalPrice && product.originalPrice > product.price && (
+                           <span className="absolute bottom-0 left-0 bg-green-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-tr-lg">
+                             {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
+                           </span>
+                         )}
+                       </div>
+                       <h4 className="font-medium text-gray-700 text-xs mb-1 line-clamp-2 leading-tight h-8">{product.name}</h4>
+                       <div className="flex items-center gap-1 mb-2">
+                         <span className="bg-green-600 text-white text-[9px] font-bold px-1 py-0.5 rounded flex items-center gap-0.5">4.2 <Star className="w-2 h-2 fill-white" /></span>
+                         <span className="text-[9px] text-gray-400">(84)</span>
+                       </div>
+                       <div className="mt-auto">
+                         <div className="flex items-baseline gap-1.5 flex-wrap">
+                           <span className="font-bold text-gray-900 text-sm">₹{product.price}</span>
                            {product.originalPrice && product.originalPrice > product.price && (
-                             <>
-                               <span className="text-sm text-gray-500 line-through">₹{product.originalPrice}</span>
-                               <span className="text-xs font-bold text-green-600">{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% off</span>
-                             </>
+                             <span className="text-[10px] text-gray-500 line-through">₹{product.originalPrice}</span>
                            )}
                          </div>
-                         <div className="mt-auto">
-                           {qty > 0 ? (
-                              <div className="flex items-center gap-0 border border-gray-300 rounded-sm overflow-hidden w-fit">
-                                <button onClick={() => updateQuantity(product.id, qty - 1)} className="bg-gray-100 text-gray-600 px-3 py-1 flex items-center justify-center font-bold text-lg">-</button>
-                                <span className="text-sm font-bold text-gray-900 w-8 text-center">{qty}</span>
-                                <button onClick={() => updateQuantity(product.id, qty + 1)} className="bg-gray-100 text-gray-600 px-3 py-1 flex items-center justify-center font-bold text-lg">+</button>
-                              </div>
-                           ) : (
-                              <button onClick={() => addToCart(product)} className="bg-white text-[#2874F0] px-6 py-1.5 rounded-sm border border-gray-200 shadow-sm hover:shadow transition-all font-bold text-sm uppercase">
-                                Add
-                              </button>
-                           )}
+                         <div className="mt-2">
+                         {qty > 0 ? (
+                            <div className="flex items-center justify-between border border-gray-300 rounded-sm overflow-hidden h-7">
+                              <button onClick={() => updateQuantity(product.id, qty - 1)} className="bg-gray-100 text-gray-600 w-8 h-full flex items-center justify-center font-bold">-</button>
+                              <span className="text-xs font-bold text-gray-900">{qty}</span>
+                              <button onClick={() => updateQuantity(product.id, qty + 1)} className="bg-gray-100 text-gray-600 w-8 h-full flex items-center justify-center font-bold">+</button>
+                            </div>
+                         ) : (
+                            <button onClick={() => addToCart(product)} className="w-full bg-white text-[#2874F0] text-xs font-bold py-1.5 rounded-sm border border-[#2874F0] hover:bg-blue-50 transition-colors uppercase">
+                              Add
+                            </button>
+                         )}
                          </div>
-                      </div>
+                       </div>
                     </div>
                   )
                 })
@@ -1100,9 +1102,9 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
         {currentTab === 'favorites' && (
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-gray-900">Your Favorites</h2>
-            <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
               {products.filter(p => favorites.includes(p.id)).length === 0 ? (
-                <div className="text-center py-12 text-gray-400">
+                <div className="col-span-2 text-center py-12 text-gray-400">
                   <Heart className="w-12 h-12 mx-auto mb-2 opacity-50" />
                   <p>No favorites yet</p>
                 </div>
@@ -1111,42 +1113,44 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                   const cartItem = cart.find(item => item.product.id === product.id);
                   const qty = cartItem ? cartItem.quantity : 0;
                   return (
-                    <div key={product.id} className="bg-white p-3 rounded-sm shadow-sm border-b border-gray-100 flex gap-4 relative">
-                      <button onClick={() => toggleFavorite(product.id)} className="absolute top-2 right-2 z-10 p-1.5 text-gray-400">
-                         <Heart className="w-5 h-5 fill-rose-500 text-rose-500" />
-                      </button>
-                      <div className="w-28 h-28 bg-white shrink-0 relative flex items-center justify-center p-1">
-                        <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400"} alt={product.name} className="w-full h-full object-contain mix-blend-multiply" />
-                      </div>
-                      <div className="flex-1 flex flex-col justify-start py-1">
-                         <h4 className="font-medium text-gray-800 text-sm leading-tight mb-1 pr-6">{product.name}</h4>
-                         <div className="flex items-center gap-1 mb-1">
-                           <span className="bg-green-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5">4.2 <Star className="w-2.5 h-2.5 fill-white" /></span>
-                           <span className="text-[10px] text-gray-500">(84)</span>
-                         </div>
-                         <div className="flex items-baseline gap-2 mb-2">
-                           <span className="font-bold text-gray-900 text-lg">₹{product.price}</span>
+                    <div key={product.id} className="bg-white p-2 rounded-sm shadow-sm border border-gray-100 flex flex-col relative">
+                       <button onClick={() => toggleFavorite(product.id)} className="absolute top-2 right-2 z-10 p-1.5 bg-white/80 backdrop-blur-md rounded-full text-gray-400">
+                         <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
+                       </button>
+                       <div className="w-full aspect-square bg-white mb-2 overflow-hidden flex items-center justify-center relative p-2">
+                         <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400?text=No+Image"} alt={product.name} className="w-full h-full object-contain mix-blend-multiply" />
+                         {product.originalPrice && product.originalPrice > product.price && (
+                           <span className="absolute bottom-0 left-0 bg-green-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-tr-lg">
+                             {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
+                           </span>
+                         )}
+                       </div>
+                       <h4 className="font-medium text-gray-700 text-xs mb-1 line-clamp-2 leading-tight h-8">{product.name}</h4>
+                       <div className="flex items-center gap-1 mb-2">
+                         <span className="bg-green-600 text-white text-[9px] font-bold px-1 py-0.5 rounded flex items-center gap-0.5">4.2 <Star className="w-2 h-2 fill-white" /></span>
+                         <span className="text-[9px] text-gray-400">(84)</span>
+                       </div>
+                       <div className="mt-auto">
+                         <div className="flex items-baseline gap-1.5 flex-wrap">
+                           <span className="font-bold text-gray-900 text-sm">₹{product.price}</span>
                            {product.originalPrice && product.originalPrice > product.price && (
-                             <>
-                               <span className="text-sm text-gray-500 line-through">₹{product.originalPrice}</span>
-                               <span className="text-xs font-bold text-green-600">{Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% off</span>
-                             </>
+                             <span className="text-[10px] text-gray-500 line-through">₹{product.originalPrice}</span>
                            )}
                          </div>
-                         <div className="mt-auto">
-                           {qty > 0 ? (
-                              <div className="flex items-center gap-0 border border-gray-300 rounded-sm overflow-hidden w-fit">
-                                <button onClick={() => updateQuantity(product.id, qty - 1)} className="bg-gray-100 text-gray-600 px-3 py-1 flex items-center justify-center font-bold text-lg">-</button>
-                                <span className="text-sm font-bold text-gray-900 w-8 text-center">{qty}</span>
-                                <button onClick={() => updateQuantity(product.id, qty + 1)} className="bg-gray-100 text-gray-600 px-3 py-1 flex items-center justify-center font-bold text-lg">+</button>
-                              </div>
-                           ) : (
-                              <button onClick={() => addToCart(product)} className="bg-white text-[#2874F0] px-6 py-1.5 rounded-sm border border-gray-200 shadow-sm hover:shadow transition-all font-bold text-sm uppercase">
-                                Add
-                              </button>
-                           )}
+                         <div className="mt-2">
+                         {qty > 0 ? (
+                            <div className="flex items-center justify-between border border-gray-300 rounded-sm overflow-hidden h-7">
+                              <button onClick={() => updateQuantity(product.id, qty - 1)} className="bg-gray-100 text-gray-600 w-8 h-full flex items-center justify-center font-bold">-</button>
+                              <span className="text-xs font-bold text-gray-900">{qty}</span>
+                              <button onClick={() => updateQuantity(product.id, qty + 1)} className="bg-gray-100 text-gray-600 w-8 h-full flex items-center justify-center font-bold">+</button>
+                            </div>
+                         ) : (
+                            <button onClick={() => addToCart(product)} className="w-full bg-white text-[#2874F0] text-xs font-bold py-1.5 rounded-sm border border-[#2874F0] hover:bg-blue-50 transition-colors uppercase">
+                              Add
+                            </button>
+                         )}
                          </div>
-                      </div>
+                       </div>
                     </div>
                   )
                 })
