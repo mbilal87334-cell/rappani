@@ -496,7 +496,12 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
   }, [isPhoneVerified]);
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [currentTab, setCurrentTab] = useState<'home' | 'offers' | 'cart' | 'favorites' | 'account'>('home');
+  const [currentTab, setCurrentTab] = useState<'home' | 'offers' | 'cart' | 'favorites' | 'account'>(
+    () => (localStorage.getItem('rappani_current_tab') as any) || 'home'
+  );
+  useEffect(() => {
+    localStorage.setItem('rappani_current_tab', currentTab);
+  }, [currentTab]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [lang, setLang] = useState<'en' | 'ta'>('en');
@@ -1557,7 +1562,12 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
   const navigate = useNavigate();
 
   // Admin section Tabs
-  const [adminTab, setAdminTab] = useState<'dashboard' | 'products' | 'orders' | 'settings' | 'security'>('dashboard');
+  const [adminTab, setAdminTab] = useState<'dashboard' | 'products' | 'orders' | 'settings' | 'security'>(
+    () => (localStorage.getItem('rappani_admin_tab') as any) || 'dashboard'
+  );
+  useEffect(() => {
+    localStorage.setItem('rappani_admin_tab', adminTab);
+  }, [adminTab]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoadingOrders, setIsLoadingOrders] = useState(false);
 
