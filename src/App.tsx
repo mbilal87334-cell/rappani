@@ -496,7 +496,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
   }, [isPhoneVerified]);
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [currentTab, setCurrentTab] = useState<'home' | 'offers' | 'cart' | 'favorites' | 'account'>(
+  const [currentTab, setCurrentTab] = useState<'home' | 'products' | 'cart' | 'favorites' | 'account'>(
     () => (localStorage.getItem('rappani_current_tab') as any) || 'home'
   );
   useEffect(() => {
@@ -932,7 +932,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
               <div className="z-10 text-white w-2/3">
                 <span className="text-xs font-bold uppercase tracking-wider bg-white/20 px-2 py-1 rounded inline-block mb-2">Special Offer</span>
                 <h2 className="text-xl font-bold leading-tight mb-2">Get 10% Off on All Stationary</h2>
-                <button className="bg-white text-green-600 text-xs font-bold px-4 py-2 rounded-full shadow-sm hover:scale-105 transition-transform" onClick={() => setCurrentTab('offers')}>Shop Now</button>
+                <button className="bg-white text-green-600 text-xs font-bold px-4 py-2 rounded-full shadow-sm hover:scale-105 transition-transform" onClick={() => setCurrentTab('products')}>Shop Now</button>
               </div>
               <div className="absolute right-0 bottom-0 opacity-50 translate-x-4 translate-y-4">
                  <Store className="w-40 h-40" />
@@ -946,7 +946,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
               </div>
               <div className="grid grid-cols-4 gap-4">
                 {categories.map((cat, idx) => (
-                  <div key={idx} onClick={() => { setSelectedCategory(cat.id); setCurrentTab('offers'); }} className="flex flex-col items-center gap-2 cursor-pointer group">
+                  <div key={idx} onClick={() => { setSelectedCategory(cat.id); setCurrentTab('products'); }} className="flex flex-col items-center gap-2 cursor-pointer group">
                     <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center text-green-500 border border-gray-100 group-hover:bg-green-50 group-hover:border-green-200 transition-colors relative">
                        {cat.icon}
                        {idx === 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">New</span>}
@@ -961,7 +961,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
             <div>
                <div className="flex justify-between items-end mb-4">
                 <h3 className="text-lg font-bold text-gray-900">Popular Now</h3>
-                <button className="text-sm text-green-600 font-bold" onClick={() => setCurrentTab('offers')}>See All</button>
+                <button className="text-sm text-green-600 font-bold" onClick={() => setCurrentTab('products')}>See All</button>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {products.slice(0, 4).map(product => {
@@ -999,7 +999,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
           </div>
         )}
 
-        {currentTab === 'offers' && (
+        {currentTab === 'products' && (
           <div className="space-y-4">
              {/* Search Bar */}
              <div className="relative mb-4">
@@ -1386,9 +1386,9 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
            <Home className={`w-6 h-6 ${currentTab === 'home' ? 'fill-green-100' : ''}`} />
            <span className="text-[10px] font-bold">Home</span>
          </button>
-         <button onClick={() => setCurrentTab('offers')} className={`flex flex-col items-center gap-1 w-16 ${currentTab === 'offers' ? 'text-green-600' : 'text-gray-400'}`}>
-           <Sparkles className={`w-6 h-6 ${currentTab === 'offers' ? 'fill-green-100' : ''}`} />
-           <span className="text-[10px] font-bold">Offers</span>
+         <button onClick={() => setCurrentTab('products')} className={`flex flex-col items-center gap-1 w-16 ${currentTab === 'products' ? 'text-green-600' : 'text-gray-400'}`}>
+           <LayoutGrid className={`w-6 h-6 ${currentTab === 'products' ? 'fill-green-100' : ''}`} />
+           <span className="text-[10px] font-bold">Products</span>
          </button>
          <button onClick={() => setCurrentTab('cart')} className={`relative flex flex-col items-center gap-1 w-16 ${currentTab === 'cart' ? 'text-green-600' : 'text-gray-400'}`}>
            <div className="relative">
