@@ -1003,41 +1003,6 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
               </div>
             </div>
             
-            {/* Deal of the Day (Flash Sale) */}
-            <div className="bg-white rounded-sm shadow-sm p-3 -mx-2 mt-2">
-              <div className="flex justify-between items-center mb-3 px-2">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-bold text-gray-900">Deal of the Day</h3>
-                  <div className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-sm flex items-center gap-1">
-                     <svg className="w-3 h-3 animate-pulse" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd"></path></svg>
-                     {formatTime(flashSaleTimeLeft)}
-                  </div>
-                </div>
-                <button className="text-sm bg-[#2874F0] text-white px-3 py-1 rounded-sm font-bold shadow-sm" onClick={() => setCurrentTab('products')}>SALE</button>
-              </div>
-              <div className="grid grid-cols-2 gap-3 px-2">
-                {products.filter(p => p.originalPrice).slice(0, 2).map(product => {
-                  const discount = product.originalPrice ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : 0;
-                  return (
-                    <div key={product.id} className="bg-gray-50 p-2 rounded-sm border border-gray-100 flex flex-col items-center cursor-pointer" onClick={() => setSelectedProductForModal(product)}>
-                       <div className="w-full aspect-square bg-white mb-2 overflow-hidden flex items-center justify-center relative p-2 rounded-sm shadow-sm">
-                          {discount > 0 && (
-                            <div className="absolute top-0 left-0 bg-green-500 text-white text-[10px] font-bold px-1.5 py-0.5 z-10 shadow-sm rounded-br-lg rounded-tl-sm">
-                              {discount}% OFF
-                            </div>
-                          )}
-                          <img src={product.image} alt={product.name} className="object-contain w-full h-full mix-blend-multiply hover:scale-110 transition-transform duration-300" />
-                       </div>
-                       <h4 className="font-medium text-gray-900 text-xs text-center line-clamp-1 w-full">{product.name}</h4>
-                       <div className="flex items-center gap-1 mt-1">
-                          <span className="font-bold text-gray-900 text-sm">₹{product.price}</span>
-                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            
             {/* Featured Products (Home Tab) */}
             <div>
                <div className="flex justify-between items-end mb-4">
