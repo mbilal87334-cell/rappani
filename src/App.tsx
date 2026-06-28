@@ -909,21 +909,21 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
   return (
     <div className="bg-gray-50 font-sans text-gray-900 pb-20 min-h-screen">
       {/* Top Header */}
-      <header className="sticky top-0 z-50 bg-[#2874F0] text-white shadow-md">
+      <header className="sticky top-0 z-50 bg-[#7C3AED] text-white shadow-md">
         <div className="px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-yellow-400 rounded-lg flex items-center justify-center text-[#2874F0] font-black text-xl italic shadow-sm">
+            <div className="w-9 h-9 bg-yellow-400 rounded-lg flex items-center justify-center text-[#7C3AED] font-black text-xl italic shadow-sm">
               R
             </div>
             <div>
               <h1 className="font-bold text-lg leading-tight italic tracking-wide">{t.storeName}</h1>
-              <p className="text-[10px] text-blue-100 flex items-center gap-1 opacity-90 italic">
+              <p className="text-[10px] text-violet-100 flex items-center gap-1 opacity-90 italic">
                 Explore Plus <Sparkles className="w-3 h-3 text-yellow-400 fill-yellow-400" />
               </p>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={toggleLanguage} className="text-[10px] font-bold text-white bg-blue-700/50 px-2 py-1 rounded">
+            <button onClick={toggleLanguage} className="text-[10px] font-bold text-white bg-violet-700/50 px-2 py-1 rounded">
                {lang === 'en' ? 'தமிழ்' : 'EN'}
             </button>
             <div onClick={() => setCurrentTab('account')} className="flex items-center gap-1 cursor-pointer font-medium text-sm">
@@ -971,15 +971,15 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
             <div className="relative w-full h-48 bg-white rounded-sm overflow-hidden shadow-sm mt-4 group">
                <div className="flex w-full h-full transition-transform duration-500 ease-in-out" style={{ transform: `translateX(-${currentSlide * 100}%)` }}>
                   {slideProducts.map((product, idx) => (
-                    <div key={idx} className="w-full h-full flex-shrink-0 relative bg-gradient-to-r from-blue-50 to-indigo-50 flex items-center p-4 cursor-pointer" onClick={() => setSelectedProduct(product)}>
+                    <div key={idx} className="w-full h-full flex-shrink-0 relative bg-gradient-to-r from-violet-50 to-indigo-50 flex items-center p-4 cursor-pointer" onClick={() => setSelectedProduct(product)}>
                        <div className="w-1/2 z-10 pl-2">
                          <span className="text-[10px] font-bold uppercase tracking-wider bg-red-500 text-white px-2 py-1 rounded inline-block mb-2 shadow-sm">Featured</span>
                          <h2 className="text-lg font-bold leading-tight mb-2 text-gray-900 line-clamp-2">{product.name}</h2>
                          <div className="flex items-baseline gap-1 mb-3">
-                           <span className="text-lg font-black text-[#2874F0]">₹{product.price}</span>
+                           <span className="text-lg font-black text-[#7C3AED]">₹{product.price}</span>
                            {product.originalPrice && <span className="text-xs text-gray-400 line-through">₹{product.originalPrice}</span>}
                          </div>
-                         <button className="bg-[#2874F0] text-white text-[10px] font-bold px-4 py-2 shadow-sm rounded-sm uppercase tracking-wide">Buy Now</button>
+                         <button className="bg-[#7C3AED] text-white text-[10px] font-bold px-4 py-2 shadow-sm rounded-sm uppercase tracking-wide">Buy Now</button>
                        </div>
                        <div className="w-1/2 h-full flex justify-end items-center relative pr-2">
                           <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400?text=No+Image"} alt={product.name} className="h-full max-h-36 object-contain mix-blend-multiply drop-shadow-md" />
@@ -989,7 +989,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                </div>
                <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
                  {slideProducts.map((_, idx) => (
-                   <div key={idx} onClick={() => setCurrentSlide(idx)} className={`w-6 h-1 rounded-full cursor-pointer transition-colors ${currentSlide === idx ? 'bg-[#2874F0]' : 'bg-gray-300'}`} />
+                   <div key={idx} onClick={() => setCurrentSlide(idx)} className={`w-6 h-1 rounded-full cursor-pointer transition-colors ${currentSlide === idx ? 'bg-[#7C3AED]' : 'bg-gray-300'}`} />
                  ))}
                </div>
             </div>
@@ -1002,7 +1002,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
               <div className="flex overflow-x-auto no-scrollbar gap-4 px-2 pb-2">
                 {categories.map((cat, idx) => (
                   <div key={idx} onClick={() => { setSelectedCategory(cat.id); setCurrentTab('products'); }} className="flex flex-col items-center gap-1 cursor-pointer min-w-[70px]">
-                    <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 border border-blue-100 transition-colors relative">
+                    <div className="w-14 h-14 bg-violet-50 rounded-full flex items-center justify-center text-violet-600 border border-violet-100 transition-colors relative">
                        {cat.icon}
                        {idx === 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full">New</span>}
                     </div>
@@ -1036,7 +1036,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                              </span>
                            )}
                          </div>
-                         <h4 className="font-medium text-gray-700 text-xs mb-1 line-clamp-2 leading-tight h-8 group-hover:text-[#2874F0] transition-colors">{product.name}</h4>
+                         <h4 className="font-medium text-gray-700 text-xs mb-1 line-clamp-2 leading-tight h-8 group-hover:text-[#7C3AED] transition-colors">{product.name}</h4>
                        </div>
                        <div className="flex items-center gap-1 mb-2">
                          <span className="bg-green-600 text-white text-[9px] font-bold px-1 py-0.5 rounded flex items-center gap-0.5">4.2 <Star className="w-2 h-2 fill-white" /></span>
@@ -1057,7 +1057,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                               <button onClick={() => updateQuantity(product.id, qty + 1)} className="bg-gray-100 text-gray-600 w-8 h-full flex items-center justify-center font-bold">+</button>
                             </div>
                          ) : (
-                            <button onClick={() => addToCart(product)} className="w-full bg-white text-[#2874F0] text-xs font-bold py-1.5 rounded-sm border border-[#2874F0] hover:bg-blue-50 transition-colors uppercase">
+                            <button onClick={() => addToCart(product)} className="w-full bg-white text-[#7C3AED] text-xs font-bold py-1.5 rounded-sm border border-[#7C3AED] hover:bg-violet-50 transition-colors uppercase">
                               Add
                             </button>
                          )}
@@ -1079,7 +1079,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                  <button 
                    key={cat.id}
                    onClick={() => setSelectedCategory(cat.id)}
-                   className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm border ${selectedCategory === cat.id ? 'bg-[#2874F0] text-white border-[#2874F0]' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}
+                   className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm border ${selectedCategory === cat.id ? 'bg-[#7C3AED] text-white border-[#7C3AED]' : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'}`}
                  >
                    {getCategoryName(cat.id)}
                  </button>
@@ -1111,7 +1111,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                              </span>
                            )}
                          </div>
-                         <h4 className="font-medium text-gray-700 text-xs mb-1 line-clamp-2 leading-tight h-8 group-hover:text-[#2874F0] transition-colors">{product.name}</h4>
+                         <h4 className="font-medium text-gray-700 text-xs mb-1 line-clamp-2 leading-tight h-8 group-hover:text-[#7C3AED] transition-colors">{product.name}</h4>
                        </div>
                        <div className="flex items-center gap-1 mb-2">
                          <span className="bg-green-600 text-white text-[9px] font-bold px-1 py-0.5 rounded flex items-center gap-0.5">4.2 <Star className="w-2 h-2 fill-white" /></span>
@@ -1132,7 +1132,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                               <button onClick={() => updateQuantity(product.id, qty + 1)} className="bg-gray-100 text-gray-600 w-8 h-full flex items-center justify-center font-bold">+</button>
                             </div>
                          ) : (
-                            <button onClick={() => addToCart(product)} className="w-full bg-white text-[#2874F0] text-xs font-bold py-1.5 rounded-sm border border-[#2874F0] hover:bg-blue-50 transition-colors uppercase">
+                            <button onClick={() => addToCart(product)} className="w-full bg-white text-[#7C3AED] text-xs font-bold py-1.5 rounded-sm border border-[#7C3AED] hover:bg-violet-50 transition-colors uppercase">
                               Add
                             </button>
                          )}
@@ -1174,7 +1174,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                              </span>
                            )}
                          </div>
-                         <h4 className="font-medium text-gray-700 text-xs mb-1 line-clamp-2 leading-tight h-8 group-hover:text-[#2874F0] transition-colors">{product.name}</h4>
+                         <h4 className="font-medium text-gray-700 text-xs mb-1 line-clamp-2 leading-tight h-8 group-hover:text-[#7C3AED] transition-colors">{product.name}</h4>
                        </div>
                        <div className="flex items-center gap-1 mb-2">
                          <span className="bg-green-600 text-white text-[9px] font-bold px-1 py-0.5 rounded flex items-center gap-0.5">4.2 <Star className="w-2 h-2 fill-white" /></span>
@@ -1195,7 +1195,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                               <button onClick={() => updateQuantity(product.id, qty + 1)} className="bg-gray-100 text-gray-600 w-8 h-full flex items-center justify-center font-bold">+</button>
                             </div>
                          ) : (
-                            <button onClick={() => addToCart(product)} className="w-full bg-white text-[#2874F0] text-xs font-bold py-1.5 rounded-sm border border-[#2874F0] hover:bg-blue-50 transition-colors uppercase">
+                            <button onClick={() => addToCart(product)} className="w-full bg-white text-[#7C3AED] text-xs font-bold py-1.5 rounded-sm border border-[#7C3AED] hover:bg-violet-50 transition-colors uppercase">
                               Add
                             </button>
                          )}
@@ -1287,7 +1287,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                                  <button onClick={handleVerifyOtp} disabled={isVerifyingOtp} className="bg-green-600 text-white px-4 rounded-xl font-bold whitespace-nowrap">{isVerifyingOtp ? '...' : 'Verify'}</button>
                                </div>
                             ) : (
-                               <button onClick={handleSendOtp} disabled={isSendingOtp} className="w-full bg-blue-50 text-blue-600 border border-blue-200 py-3 rounded-xl font-bold shadow-sm">{isSendingOtp ? 'Sending...' : 'Send OTP'}</button>
+                               <button onClick={handleSendOtp} disabled={isSendingOtp} className="w-full bg-violet-50 text-violet-600 border border-violet-200 py-3 rounded-xl font-bold shadow-sm">{isSendingOtp ? 'Sending...' : 'Send OTP'}</button>
                             )}
                           </div>
                        )}
@@ -1305,13 +1305,13 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                                <button 
                                   onClick={fetchLocationForCheckout}
                                   disabled={isFetchingLocationCheckout}
-                                  className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md flex items-center gap-1 disabled:opacity-50"
+                                  className="text-xs font-bold text-violet-600 bg-violet-50 px-2 py-1 rounded-md flex items-center gap-1 disabled:opacity-50"
                                 >
                                   <MapPin className="w-3 h-3" /> {isFetchingLocationCheckout ? "Fetching..." : "Use Current Location"}
                                 </button>
                                 <button 
                                   onClick={() => setShowLocationMap('checkout')}
-                                  className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-md flex items-center gap-1"
+                                  className="text-xs font-bold text-violet-600 bg-violet-50 px-2 py-1 rounded-md flex items-center gap-1"
                                 >
                                   <Map className="w-3 h-3" /> Pick from Map
                                 </button>
@@ -1375,7 +1375,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="p-4 border-b border-gray-50 flex items-center gap-4 hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => setIsOrdersModalOpen(true)}>
-                   <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center shrink-0"><Package className="w-5 h-5" /></div>
+                   <div className="w-10 h-10 bg-violet-50 text-violet-600 rounded-full flex items-center justify-center shrink-0"><Package className="w-5 h-5" /></div>
                    <div className="flex-1">
                      <h4 className="font-bold text-gray-900">My Orders</h4>
                      <p className="text-xs text-gray-500">View order history</p>
@@ -1599,17 +1599,17 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
       {/* Bottom Navigation Bar */}
       <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 pb-safe pt-2 px-6 flex justify-between items-center z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] h-16 md:hidden">
-         <button onClick={() => setCurrentTab('home')} className={`flex flex-col items-center gap-1 w-16 ${currentTab === 'home' ? 'text-[#2874F0]' : 'text-gray-400'}`}>
-           <Home className={`w-6 h-6 ${currentTab === 'home' ? 'fill-blue-100' : ''}`} />
+         <button onClick={() => setCurrentTab('home')} className={`flex flex-col items-center gap-1 w-16 ${currentTab === 'home' ? 'text-[#7C3AED]' : 'text-gray-400'}`}>
+           <Home className={`w-6 h-6 ${currentTab === 'home' ? 'fill-violet-100' : ''}`} />
            <span className="text-[10px] font-bold">Home</span>
          </button>
-         <button onClick={() => setCurrentTab('products')} className={`flex flex-col items-center gap-1 w-16 ${currentTab === 'products' ? 'text-[#2874F0]' : 'text-gray-400'}`}>
-           <LayoutGrid className={`w-6 h-6 ${currentTab === 'products' ? 'fill-blue-100' : ''}`} />
+         <button onClick={() => setCurrentTab('products')} className={`flex flex-col items-center gap-1 w-16 ${currentTab === 'products' ? 'text-[#7C3AED]' : 'text-gray-400'}`}>
+           <LayoutGrid className={`w-6 h-6 ${currentTab === 'products' ? 'fill-violet-100' : ''}`} />
            <span className="text-[10px] font-bold">Categories</span>
          </button>
-         <button onClick={() => setCurrentTab('cart')} className={`relative flex flex-col items-center gap-1 w-16 ${currentTab === 'cart' ? 'text-[#2874F0]' : 'text-gray-400'}`}>
+         <button onClick={() => setCurrentTab('cart')} className={`relative flex flex-col items-center gap-1 w-16 ${currentTab === 'cart' ? 'text-[#7C3AED]' : 'text-gray-400'}`}>
            <div className="relative">
-             <ShoppingCart className={`w-6 h-6 ${currentTab === 'cart' ? 'fill-blue-100' : ''}`} />
+             <ShoppingCart className={`w-6 h-6 ${currentTab === 'cart' ? 'fill-violet-100' : ''}`} />
              {cartItemsCount > 0 && (
                <span className="absolute -top-1 -right-2 bg-yellow-500 text-black text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-white">
                  {cartItemsCount}
@@ -1618,12 +1618,12 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
            </div>
            <span className="text-[10px] font-bold">Cart</span>
          </button>
-         <button onClick={() => setCurrentTab('favorites')} className={`flex flex-col items-center gap-1 w-16 ${currentTab === 'favorites' ? 'text-[#2874F0]' : 'text-gray-400'}`}>
-           <Heart className={`w-6 h-6 ${currentTab === 'favorites' ? 'fill-blue-100' : ''}`} />
+         <button onClick={() => setCurrentTab('favorites')} className={`flex flex-col items-center gap-1 w-16 ${currentTab === 'favorites' ? 'text-[#7C3AED]' : 'text-gray-400'}`}>
+           <Heart className={`w-6 h-6 ${currentTab === 'favorites' ? 'fill-violet-100' : ''}`} />
            <span className="text-[10px] font-bold">Favorites</span>
          </button>
-         <button onClick={() => setCurrentTab('account')} className={`flex flex-col items-center gap-1 w-16 ${currentTab === 'account' ? 'text-[#2874F0]' : 'text-gray-400'}`}>
-           <User className={`w-6 h-6 ${currentTab === 'account' ? 'fill-blue-100' : ''}`} />
+         <button onClick={() => setCurrentTab('account')} className={`flex flex-col items-center gap-1 w-16 ${currentTab === 'account' ? 'text-[#7C3AED]' : 'text-gray-400'}`}>
+           <User className={`w-6 h-6 ${currentTab === 'account' ? 'fill-violet-100' : ''}`} />
            <span className="text-[10px] font-bold">Account</span>
          </button>
       </nav>
@@ -1669,7 +1669,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                 <button 
                   onClick={fetchCurrentLocation}
                   disabled={isFetchingLocation}
-                  className="flex items-center gap-1 text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg disabled:opacity-50"
+                  className="flex items-center gap-1 text-xs font-bold text-violet-600 bg-violet-50 px-3 py-1.5 rounded-lg disabled:opacity-50"
                 >
                   <MapPin className="w-3 h-3" />
                   {isFetchingLocation ? "Fetching..." : "Use Current Location"}
@@ -1761,7 +1761,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
 const getCategoryColor = (category: string) => {
   switch (category) {
-    case 'Stationary': return 'bg-blue-100 text-blue-700';
+    case 'Stationary': return 'bg-violet-100 text-violet-700';
     case 'Fancy': return 'bg-purple-100 text-purple-700';
     case 'Toys': return 'bg-yellow-100 text-yellow-700';
     case 'Sports Items': return 'bg-orange-100 text-orange-700';
@@ -2573,7 +2573,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
                     </div>
                   </div>
                   <div className="flex items-center gap-3 bg-zinc-800 p-4 rounded-lg border border-white/10">
-                    <input type="checkbox" id="isFeatured" checked={currentProduct.isFeatured || false} onChange={e => setCurrentProduct({ ...currentProduct, isFeatured: e.target.checked })} className="w-5 h-5 rounded text-blue-500 focus:ring-blue-500 bg-zinc-900 border-zinc-700 cursor-pointer" />
+                    <input type="checkbox" id="isFeatured" checked={currentProduct.isFeatured || false} onChange={e => setCurrentProduct({ ...currentProduct, isFeatured: e.target.checked })} className="w-5 h-5 rounded text-violet-500 focus:ring-violet-500 bg-zinc-900 border-zinc-700 cursor-pointer" />
                     <label htmlFor="isFeatured" className="text-sm font-bold text-white cursor-pointer">
                       Show in Top Slider (Featured Product)
                     </label>
@@ -2613,7 +2613,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
                           <input type="text" value={currentProduct.image} onChange={e => setCurrentProduct({ ...currentProduct, image: e.target.value })} className="flex-1 w-full px-4 py-2 rounded-lg border border-white/10 bg-black/20 text-white placeholder:text-zinc-500 focus:ring-2 focus:ring-rose-500 outline-none" placeholder="Image URL or take photo" required />
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                          <button type="button" onClick={triggerGallery} className="w-full bg-purple-500/10 hover:bg-blue-100 text-blue-600 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 border-2 border-dashed border-blue-200 transition-all">
+                          <button type="button" onClick={triggerGallery} className="w-full bg-purple-500/10 hover:bg-violet-100 text-violet-600 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 border-2 border-dashed border-violet-200 transition-all">
                             <Image className="w-5 h-5" /> Gallery
                           </button>
                           <button type="button" onClick={triggerCamera} className="w-full bg-amber-500/10 hover:bg-rose-100 text-rose-600 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 border-2 border-dashed border-rose-200 transition-all">
@@ -2814,7 +2814,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
                         </td>
                         <td className="p-4">
                           <span className="font-bold text-white">₹{Math.round(order.totalAmount)}</span><br />
-                          <span className="text-[10px] uppercase bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded inline-block mt-1">{order.paymentMethod}</span>
+                          <span className="text-[10px] uppercase bg-violet-100 text-violet-700 font-bold px-2 py-0.5 rounded inline-block mt-1">{order.paymentMethod}</span>
                           {order.utrNumber && (
                             <div className="mt-2 bg-stone-800 p-2 rounded-lg border border-stone-700">
                               <p className="text-[9px] text-stone-400 uppercase tracking-wider mb-1 font-bold">UTR / Ref Number:</p>
