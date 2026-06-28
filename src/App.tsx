@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from 'react
 import { Phone, Mail, Instagram, MessageCircle, MapPin, Map, Lock, LogOut, Plus, Edit, Trash2, Store, ShoppingBag, Menu, X, Camera, Aperture, Globe, Database, Search, ArrowUp, Package, LayoutGrid, ShoppingCart, Minus, Image, ShieldCheck, Gift, Sparkles, Sticker, Rocket, Coffee, Eye, Star, TrendingUp, CheckCircle2, Info , Home, Heart, User, ChevronRight, CreditCard} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import LocationMap from './LocationMap';
-import { removeBackground as imglyRemoveBackground } from '@imgly/background-removal';
 
 
 // --- Types ---
@@ -46,9 +45,9 @@ const getPremiumImageUrl = (url: string) => {
   if (!url) return url;
   if (url.includes('res.cloudinary.com')) {
     let transformedUrl = url;
-    // Add quality auto, format auto, background removal, and subtle sharpening for that 'premium' look
+    // Add quality auto, format auto, and subtle sharpening for that 'premium' look
     if (!url.includes('q_auto')) {
-      transformedUrl = transformedUrl.replace('/image/upload/', '/image/upload/e_background_removal,q_auto,f_auto,e_sharpen:50/');
+      transformedUrl = transformedUrl.replace('/image/upload/', '/image/upload/q_auto,f_auto,e_sharpen:50/');
     }
     return transformedUrl;
   }
