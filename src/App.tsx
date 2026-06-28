@@ -45,9 +45,9 @@ const getPremiumImageUrl = (url: string) => {
   if (!url) return url;
   if (url.includes('res.cloudinary.com')) {
     let transformedUrl = url;
-    // Add quality auto, format auto, background removal, and subtle sharpening for that 'premium' look
+    // Add quality auto, format auto, and subtle sharpening for that 'premium' look
     if (!url.includes('q_auto')) {
-      transformedUrl = transformedUrl.replace('/image/upload/', '/image/upload/e_background_removal,q_auto,f_auto,e_sharpen:50/');
+      transformedUrl = transformedUrl.replace('/image/upload/', '/image/upload/q_auto,f_auto,e_sharpen:50/');
     }
     return transformedUrl;
   }
