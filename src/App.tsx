@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from 'react
 import { Phone, Mail, Instagram, MessageCircle, MapPin, Map, Lock, LogOut, Plus, Edit, Trash2, Store, ShoppingBag, Menu, X, Camera, Aperture, Globe, Database, Search, ArrowUp, Package, LayoutGrid, ShoppingCart, Minus, Image, ShieldCheck, Gift, Sparkles, Sticker, Rocket, Coffee, Eye, Star, TrendingUp, CheckCircle2, Info , Home, Heart, User, ChevronRight, CreditCard} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import LocationMap from './LocationMap';
-
+import { removeBackground as imglyRemoveBackground } from '@imgly/background-removal';
 
 // --- Types ---
 interface Product {
@@ -132,13 +132,21 @@ async function deleteOrder(id: string) {
   return res.json();
 }
 
-async function uploadImage(dataUrl: string) {
-  // Convert DataURL to Blob
-  const res = await fetch(dataUrl);
-  const blob = await res.blob();
+async function uploadImage(dataUrl: string, removeBg: boolean = false) {
+  let blob: Blob;
+
+  if (removeBg) {
+    console.log("Removing background locally...");
+    blob = await imglyRemoveBackground(dataUrl);
+    console.log("Background removed successfully!");
+  } else {
+    // Convert DataURL to Blob
+    const res = await fetch(dataUrl);
+    blob = await res.blob();
+  }
 
   const formData = new FormData();
-  formData.append('image', blob, 'upload.jpg');
+  formData.append('image', blob, removeBg ? 'upload.png' : 'upload.jpg');
 
   const uploadRes = await fetch(`${API_BASE}/upload`, {
     method: 'POST',
@@ -1818,6 +1826,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
   // Form State
   const [isEditing, setIsEditing] = useState(false);
   const [currentProduct, setCurrentProduct] = useState<Product>({ id: '', name: '', category: 'Stationary', price: 0, originalPrice: '' as unknown as number, stock: '' as unknown as number, image: '' });
+  const [removeBg, setRemoveBg] = useState(false);
   const [formError, setFormError] = useState('');
 
   // Camera State
@@ -1953,7 +1962,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
         reader.onloadend = async () => {
           try {
             const dataUrl = reader.result as string;
-            const imageUrl = await uploadImage(dataUrl);
+            const imageUrl = await uploadImage(dataUrl, removeBg);
             setCurrentProduct({ ...currentProduct, image: imageUrl });
             setFormError('');
           } catch (err) {
@@ -2052,7 +2061,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
         const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
         setIsUploading(true);
         try {
-          const imageUrl = await uploadImage(dataUrl);
+          const imageUrl = await uploadImage(dataUrl, removeBg);
           setCurrentProduct({ ...currentProduct, image: imageUrl });
           stopCamera();
         } catch (err) {
@@ -2562,7 +2571,13 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
                     </div>
                   </div>
                   <div className="relative">
-                    <label className="block text-sm font-medium text-stone-700 mb-1">Image</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-sm font-medium text-stone-700">Image</label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={removeBg} onChange={(e) => setRemoveBg(e.target.checked)} className="w-4 h-4 rounded text-rose-500 focus:ring-rose-500 bg-zinc-800 border-zinc-700" />
+                        <span className="text-sm text-zinc-400 font-bold">Remove Background (AI)</span>
+                      </label>
+                    </div>
                     <input
                       type="file"
                       ref={fileInputRef}
