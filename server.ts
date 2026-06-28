@@ -52,7 +52,8 @@ const productSchema = new mongoose.Schema({
   price: { type: Number, required: true },
   originalPrice: { type: Number, required: false },
   stock: { type: Number, required: false },
-  image: { type: String, required: true }
+  image: { type: String, required: true },
+  isFeatured: { type: Boolean, default: false }
 });
 const Product = mongoose.model("Product", productSchema);
 

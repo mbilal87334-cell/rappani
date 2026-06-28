@@ -14,6 +14,7 @@ interface Product {
   originalPrice?: number;
   stock?: number;
   image: string;
+  isFeatured?: boolean;
 }
 
 interface CartItem {
@@ -525,7 +526,8 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
   const [mockOtp, setMockOtp] = useState<string | null>(null);
 
   const [currentSlide, setCurrentSlide] = useState(0);
-  const slideProducts = products.slice(0, 3); // top 3 products for the banner
+  const featuredProducts = products.filter(p => p.isFeatured);
+  const slideProducts = featuredProducts.length > 0 ? featuredProducts : products.slice(0, 3); // top 3 products for the banner fallback
   
   useEffect(() => {
     if (slideProducts.length === 0) return;
@@ -1825,7 +1827,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
 
   // Form State
   const [isEditing, setIsEditing] = useState(false);
-  const [currentProduct, setCurrentProduct] = useState<Product>({ id: '', name: '', category: 'Stationary', price: 0, originalPrice: '' as unknown as number, stock: '' as unknown as number, image: '' });
+  const [currentProduct, setCurrentProduct] = useState<Product>({ id: '', name: '', category: 'Stationary', price: 0, originalPrice: '' as unknown as number, stock: '' as unknown as number, image: '', isFeatured: false });
   const [removeBg, setRemoveBg] = useState(false);
   const [formError, setFormError] = useState('');
 
@@ -2569,6 +2571,12 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
                       <label className="block text-sm font-medium text-zinc-400 mb-1">Stock (Max Qty)</label>
                       <input type="number" value={currentProduct.stock === undefined ? '' : currentProduct.stock} onChange={e => setCurrentProduct({ ...currentProduct, stock: e.target.value !== '' ? Number(e.target.value) : undefined })} className="w-full px-4 py-2 rounded-lg border border-white/10 bg-black/20 text-white placeholder:text-zinc-500 focus:ring-2 focus:ring-purple-500 outline-none" placeholder="Unlimited" min="0" />
                     </div>
+                  </div>
+                  <div className="flex items-center gap-3 bg-zinc-800 p-4 rounded-lg border border-white/10">
+                    <input type="checkbox" id="isFeatured" checked={currentProduct.isFeatured || false} onChange={e => setCurrentProduct({ ...currentProduct, isFeatured: e.target.checked })} className="w-5 h-5 rounded text-blue-500 focus:ring-blue-500 bg-zinc-900 border-zinc-700 cursor-pointer" />
+                    <label htmlFor="isFeatured" className="text-sm font-bold text-white cursor-pointer">
+                      Show in Top Slider (Featured Product)
+                    </label>
                   </div>
                   <div className="relative">
                     <div className="flex items-center justify-between mb-1">
