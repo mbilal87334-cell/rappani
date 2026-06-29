@@ -1020,7 +1020,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                 <h3 className="text-lg font-bold text-gray-900">Popular Now</h3>
                 <button className="text-sm text-green-600 font-bold" onClick={() => setCurrentTab('products')}>See All</button>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3">
                 {products.map(product => {
                   const cartItem = cart.find(item => item.product.id === product.id);
                   const qty = cartItem ? cartItem.quantity : 0;
