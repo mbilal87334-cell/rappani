@@ -53,7 +53,13 @@ const productSchema = new mongoose.Schema({
   originalPrice: { type: Number, required: false },
   stock: { type: Number, required: false },
   image: { type: String, required: true },
-  isFeatured: { type: Boolean, default: false }
+  isFeatured: { type: Boolean, default: false },
+  reviews: [{
+    rating: { type: Number, required: true },
+    review: { type: String, required: true },
+    customerName: { type: String, required: true },
+    createdAt: { type: Date, default: Date.now }
+  }]
 });
 const Product = mongoose.model("Product", productSchema);
 
@@ -325,6 +331,27 @@ async function startServer() {
       await Product.updateOne({ id }, { name, category, price, originalPrice, stock, image, isFeatured });
       res.json({ success: true });
     } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  app.post("/api/products/:id/reviews", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { rating, review, customerName } = req.body;
+      
+      if (!rating || !review || !customerName) {
+        return res.status(400).json({ success: false, error: "Missing required fields" });
+      }
+
+      await Product.updateOne(
+        { id },
+        { $push: { reviews: { rating, review, customerName, createdAt: new Date() } } }
+      );
+      
+      res.json({ success: true });
+    } catch (err) {
+      console.error("[SERVER] Add review error:", err);
       res.status(500).json({ success: false, error: "Server error" });
     }
   });

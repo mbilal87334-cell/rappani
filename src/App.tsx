@@ -15,6 +15,14 @@ interface Product {
   stock?: number;
   image: string;
   isFeatured?: boolean;
+  reviews?: Review[];
+}
+
+interface Review {
+  rating: number;
+  review: string;
+  customerName: string;
+  createdAt: string;
 }
 
 interface CartItem {
@@ -504,6 +512,10 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
   }, [isPhoneVerified]);
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [reviewName, setReviewName] = useState('');
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewText, setReviewText] = useState('');
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [currentTab, setCurrentTab] = useState<'home' | 'products' | 'cart' | 'favorites' | 'account'>(
     () => (localStorage.getItem('rappani_current_tab') as any) || 'home'
   );
@@ -1550,12 +1562,18 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                        </>
                      )}
                    </div>
-                   <div className="flex items-center gap-2 mb-4">
-                      <div className="bg-green-600 text-white text-xs font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
-                        4.4 <Star className="w-3 h-3 fill-current" />
-                      </div>
-                      <span className="text-xs text-gray-500">1,244 Ratings & 144 Reviews</span>
-                   </div>
+                   {(() => {
+                     const totalReviews = selectedProduct.reviews?.length || 0;
+                     const avgRating = totalReviews > 0 ? (selectedProduct.reviews!.reduce((sum, r) => sum + r.rating, 0) / totalReviews).toFixed(1) : '5.0';
+                     return (
+                       <div className="flex items-center gap-2 mb-4">
+                         <div className="bg-green-600 text-white text-xs font-bold px-1.5 py-0.5 rounded flex items-center gap-1">
+                           {avgRating} <Star className="w-3 h-3 fill-current" />
+                         </div>
+                         <span className="text-xs text-gray-500">{totalReviews} {totalReviews === 1 ? 'Rating' : 'Ratings'} & Reviews</span>
+                       </div>
+                     );
+                   })()}
                  </div>
 
                  {/* Highlights */}
@@ -1565,9 +1583,54 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                      <li>Premium quality {selectedProduct.category}</li>
                      <li>Durable and long-lasting material</li>
                      <li>100% Genuine Product</li>
-                     <li>7 Days Replacement Policy</li>
+                     <li>2 Days Replacement Policy</li>
                      <li>Cash on Delivery available</li>
                    </ul>
+                 </div>
+                 </div>
+
+                 {/* Reviews Section */}
+                 <div className="border-t border-gray-100 pt-4 space-y-4 pb-20">
+                   <h3 className="font-bold text-gray-900">Customer Reviews</h3>
+                   
+                   {/* Review List */}
+                   {(!selectedProduct.reviews || selectedProduct.reviews.length === 0) ? (
+                     <p className="text-sm text-gray-500 italic">No reviews yet. Be the first to review!</p>
+                   ) : (
+                     <div className="space-y-4">
+                       {selectedProduct.reviews.slice().reverse().map((r, idx) => (
+                         <div key={idx} className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                           <div className="flex justify-between items-start mb-1">
+                             <span className="font-bold text-sm text-gray-800">{r.customerName}</span>
+                             <div className="flex gap-0.5">
+                               {[1,2,3,4,5].map(star => (
+                                 <Star key={star} className={`w-3 h-3 ${star <= r.rating ? 'fill-amber-400 text-amber-400' : 'text-gray-300'}`} />
+                               ))}
+                             </div>
+                           </div>
+                           <p className="text-xs text-gray-600 mb-1">{r.review}</p>
+                           <span className="text-[10px] text-gray-400">{new Date(r.createdAt).toLocaleDateString()}</span>
+                         </div>
+                       ))}
+                     </div>
+                   )}
+
+                   {/* Write Review Form */}
+                   <form onSubmit={handleSubmitReview} className="bg-white border border-gray-200 p-3 rounded-xl shadow-sm mt-4">
+                     <h4 className="font-bold text-sm text-gray-900 mb-3">Write a Review</h4>
+                     <div className="flex gap-1 mb-3">
+                       {[1,2,3,4,5].map(star => (
+                         <button type="button" key={star} onClick={() => setReviewRating(star)} className="focus:outline-none p-1">
+                           <Star className={`w-6 h-6 ${star <= reviewRating ? 'fill-amber-400 text-amber-400 drop-shadow-sm' : 'text-gray-300'}`} />
+                         </button>
+                       ))}
+                     </div>
+                     <input type="text" placeholder="Your Name" required value={reviewName} onChange={e => setReviewName(e.target.value)} className="w-full bg-gray-50 border border-gray-200 text-sm p-2 rounded-lg mb-2 focus:ring-1 focus:ring-amber-500 outline-none" />
+                     <textarea placeholder="Write your experience..." required value={reviewText} onChange={e => setReviewText(e.target.value)} className="w-full bg-gray-50 border border-gray-200 text-sm p-2 rounded-lg mb-3 h-20 resize-none focus:ring-1 focus:ring-amber-500 outline-none" />
+                     <button type="submit" disabled={isSubmittingReview} className="w-full bg-amber-500 text-white font-bold py-2 rounded-lg disabled:opacity-50">
+                       {isSubmittingReview ? 'Submitting...' : 'Submit Review'}
+                     </button>
+                   </form>
                  </div>
                </div>
             </div>
@@ -2139,6 +2202,35 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
   const handleLogout = () => {
     setIsAuthenticated(false);
     setPassword('');
+  };
+
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProduct || !reviewName || !reviewText) return;
+    
+    setIsSubmittingReview(true);
+    try {
+      const res = await fetch(`${API_BASE}/products/${selectedProduct.id}/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rating: reviewRating, review: reviewText, customerName: reviewName })
+      });
+      if (res.ok) {
+        const newReview = { rating: reviewRating, review: reviewText, customerName: reviewName, createdAt: new Date().toISOString() };
+        setSelectedProduct(prev => prev ? { ...prev, reviews: [...(prev.reviews || []), newReview] } : prev);
+        setProducts(prev => prev.map(p => p.id === selectedProduct.id ? { ...p, reviews: [...(p.reviews || []), newReview] } : p));
+        setReviewText('');
+        setReviewRating(5);
+        setReviewName('');
+      } else {
+        alert("Failed to submit review");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error submitting review");
+    } finally {
+      setIsSubmittingReview(false);
+    }
   };
 
   const handleSaveProduct = async (e: React.FormEvent) => {
