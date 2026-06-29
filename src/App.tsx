@@ -918,6 +918,35 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
   };
 
   
+  const handleSubmitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProduct || !reviewName || !reviewText) return;
+    
+    setIsSubmittingReview(true);
+    try {
+      const res = await fetch(`${API_BASE}/products/${selectedProduct.id}/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rating: reviewRating, review: reviewText, customerName: reviewName })
+      });
+      if (res.ok) {
+        const newReview = { rating: reviewRating, review: reviewText, customerName: reviewName, createdAt: new Date().toISOString() };
+        setSelectedProduct(prev => prev ? { ...prev, reviews: [...(prev.reviews || []), newReview] } : prev);
+        setProducts(prev => prev.map(p => p.id === selectedProduct.id ? { ...p, reviews: [...(p.reviews || []), newReview] } : p));
+        setReviewText('');
+        setReviewRating(5);
+        setReviewName('');
+      } else {
+        alert("Failed to submit review");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error submitting review");
+    } finally {
+      setIsSubmittingReview(false);
+    }
+  };
+
   return (
     <div className="bg-gray-50 font-sans text-gray-900 pb-20 min-h-screen">
       {/* Top Header */}
@@ -2201,35 +2230,6 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
   const handleLogout = () => {
     setIsAuthenticated(false);
     setPassword('');
-  };
-
-  const handleSubmitReview = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedProduct || !reviewName || !reviewText) return;
-    
-    setIsSubmittingReview(true);
-    try {
-      const res = await fetch(`${API_BASE}/products/${selectedProduct.id}/reviews`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rating: reviewRating, review: reviewText, customerName: reviewName })
-      });
-      if (res.ok) {
-        const newReview = { rating: reviewRating, review: reviewText, customerName: reviewName, createdAt: new Date().toISOString() };
-        setSelectedProduct(prev => prev ? { ...prev, reviews: [...(prev.reviews || []), newReview] } : prev);
-        setProducts(prev => prev.map(p => p.id === selectedProduct.id ? { ...p, reviews: [...(p.reviews || []), newReview] } : p));
-        setReviewText('');
-        setReviewRating(5);
-        setReviewName('');
-      } else {
-        alert("Failed to submit review");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Error submitting review");
-    } finally {
-      setIsSubmittingReview(false);
-    }
   };
 
   const handleSaveProduct = async (e: React.FormEvent) => {
