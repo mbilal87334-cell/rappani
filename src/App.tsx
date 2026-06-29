@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, {  useState, useEffect, useRef  } from 'react';
+import toast, { Toaster } from 'react-hot-toast';
 import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
 import { Phone, Mail, Instagram, MessageCircle, MapPin, Map, Lock, LogOut, Plus, Edit, Trash2, Store, ShoppingBag, Menu, X, Camera, Aperture, Globe, Database, Search, ArrowUp, Package, LayoutGrid, ShoppingCart, Minus, Image, ShieldCheck, Gift, Sparkles, Sticker, Rocket, Coffee, Eye, Star, TrendingUp, CheckCircle2, Info , Home, Heart, User, ChevronRight, CreditCard} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -426,7 +427,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
   const [isFetchingLocationCheckout, setIsFetchingLocationCheckout] = useState(false);
   const fetchLocationForCheckout = () => {
     if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser");
+      toast.error("Geolocation is not supported by your browser");
       return;
     }
     setIsFetchingLocationCheckout(true);
@@ -439,25 +440,25 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
           if (data && data.display_name) {
             setDeliveryAddress(data.display_name);
           } else {
-            alert("Could not fetch address details.");
+            toast.error("Could not fetch address details.");
           }
         } catch (err) {
           console.error(err);
-          alert("Error fetching address details.");
+          toast.error("Error fetching address details.");
         } finally {
           setIsFetchingLocationCheckout(false);
         }
       },
       (err) => {
         console.error(err);
-        alert("Please allow location access in your browser.");
+        toast.error("Please allow location access in your browser.");
         setIsFetchingLocationCheckout(false);
       }
     );
   };
   const fetchCurrentLocation = () => {
     if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser");
+      toast.error("Geolocation is not supported by your browser");
       return;
     }
 
@@ -471,18 +472,18 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
           if (data && data.display_name) {
             setNewSavedAddress(data.display_name);
           } else {
-            alert("Could not fetch address details.");
+            toast.error("Could not fetch address details.");
           }
         } catch (err) {
           console.error(err);
-          alert("Error fetching address details.");
+          toast.error("Error fetching address details.");
         } finally {
           setIsFetchingLocation(false);
         }
       },
       (err) => {
         console.error(err);
-        alert("Please allow location access in your browser.");
+        toast.error("Please allow location access in your browser.");
         setIsFetchingLocation(false);
       }
     );
@@ -604,7 +605,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
           alert(`SIMULATED SMS\n\nYour Rappani Store OTP is: ${data.mockOtp}`);
         } else {
           setMockOtp(null);
-          alert(`OTP Sent to your mobile successfully! Please check your SMS.`);
+          toast.success("OTP Sent to your mobile successfully!");
         }
       } else {
         setCheckoutError(data.error || "Failed to send OTP");
@@ -893,7 +894,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
     try {
       await navigator.clipboard.writeText('mohammedazzam200512@okaxis');
-      alert(`✅ UPI ID Copied!\n\nPlease open any UPI App (GPay/Paytm/PhonePe), paste this ID, and complete the payment of ₹${Math.round(finalTotal)}`);
+      toast.success("✅ UPI ID Copied!");
     } catch (err) {
       console.log('Clipboard copy failed');
     }
@@ -937,11 +938,11 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
         setReviewRating(5);
         setReviewName('');
       } else {
-        alert("Failed to submit review");
+        toast.error("Failed to submit review");
       }
     } catch (err) {
       console.error(err);
-      alert("Error submitting review");
+      toast.error("Error submitting review");
     } finally {
       setIsSubmittingReview(false);
     }
@@ -949,6 +950,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
 
   return (
     <div className="bg-gray-50 font-sans text-gray-900 pb-20 min-h-screen">
+      <Toaster position="top-center" />
       {/* Top Header */}
       <header className="sticky top-0 z-50 bg-[#7C3AED] text-white shadow-md">
         <div className="px-4 py-3 flex items-center justify-between">
@@ -1950,7 +1952,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
             setSettings(prev => ({ ...prev, location_image: imageUrl }));
           } catch (err) {
             console.error("Upload failed", err);
-            alert("Image upload failed. Please check your connection or Cloudinary settings.");
+            toast.error("Image upload failed.");
           } finally {
             setIsUpdatingLocation(false);
           }
@@ -1977,7 +1979,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
             setSettings(prev => ({ ...prev, hero_image: imageUrl }));
           } catch (err) {
             console.error("Upload failed", err);
-            alert("Image upload failed. Please check your connection or Cloudinary settings.");
+            toast.error("Image upload failed.");
           } finally {
             setIsUpdatingHero(false);
           }
