@@ -1084,8 +1084,16 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                          <h4 className="font-medium text-gray-700 text-xs mb-1 line-clamp-2 leading-tight h-8 group-hover:text-[#7C3AED] transition-colors">{product.name}</h4>
                        </div>
                        <div className="flex items-center gap-1 mb-2">
-                         <span className="bg-green-600 text-white text-[9px] font-bold px-1 py-0.5 rounded flex items-center gap-0.5">4.2 <Star className="w-2 h-2 fill-white" /></span>
-                         <span className="text-[9px] text-gray-400">(84)</span>
+                         {product.reviews && product.reviews.length > 0 ? (
+                           <>
+                             <span className="bg-green-600 text-white text-[9px] font-bold px-1 py-0.5 rounded flex items-center gap-0.5">
+                               {(product.reviews.reduce((sum, r) => sum + r.rating, 0) / product.reviews.length).toFixed(1)} <Star className="w-2 h-2 fill-white" />
+                             </span>
+                             <span className="text-[9px] text-gray-400">({product.reviews.length})</span>
+                           </>
+                         ) : (
+                           <span className="text-[9px] text-gray-400 italic">No Ratings</span>
+                         )}
                        </div>
                        <div className="mt-auto">
                          <div className="flex items-baseline gap-1.5 flex-wrap">
@@ -1159,8 +1167,16 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                          <h4 className="font-medium text-gray-700 text-xs mb-1 line-clamp-2 leading-tight h-8 group-hover:text-[#7C3AED] transition-colors">{product.name}</h4>
                        </div>
                        <div className="flex items-center gap-1 mb-2">
-                         <span className="bg-green-600 text-white text-[9px] font-bold px-1 py-0.5 rounded flex items-center gap-0.5">4.2 <Star className="w-2 h-2 fill-white" /></span>
-                         <span className="text-[9px] text-gray-400">(84)</span>
+                         {product.reviews && product.reviews.length > 0 ? (
+                           <>
+                             <span className="bg-green-600 text-white text-[9px] font-bold px-1 py-0.5 rounded flex items-center gap-0.5">
+                               {(product.reviews.reduce((sum, r) => sum + r.rating, 0) / product.reviews.length).toFixed(1)} <Star className="w-2 h-2 fill-white" />
+                             </span>
+                             <span className="text-[9px] text-gray-400">({product.reviews.length})</span>
+                           </>
+                         ) : (
+                           <span className="text-[9px] text-gray-400 italic">No Ratings</span>
+                         )}
                        </div>
                        <div className="mt-auto">
                          <div className="flex items-baseline gap-1.5 flex-wrap">
@@ -1226,8 +1242,16 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                          <h4 className="font-medium text-gray-700 text-xs mb-1 line-clamp-2 leading-tight h-8 group-hover:text-[#7C3AED] transition-colors">{product.name}</h4>
                        </div>
                        <div className="flex items-center gap-1 mb-2">
-                         <span className="bg-green-600 text-white text-[9px] font-bold px-1 py-0.5 rounded flex items-center gap-0.5">4.2 <Star className="w-2 h-2 fill-white" /></span>
-                         <span className="text-[9px] text-gray-400">(84)</span>
+                         {product.reviews && product.reviews.length > 0 ? (
+                           <>
+                             <span className="bg-green-600 text-white text-[9px] font-bold px-1 py-0.5 rounded flex items-center gap-0.5">
+                               {(product.reviews.reduce((sum, r) => sum + r.rating, 0) / product.reviews.length).toFixed(1)} <Star className="w-2 h-2 fill-white" />
+                             </span>
+                             <span className="text-[9px] text-gray-400">({product.reviews.length})</span>
+                           </>
+                         ) : (
+                           <span className="text-[9px] text-gray-400 italic">No Ratings</span>
+                         )}
                        </div>
                        <div className="mt-auto">
                          <div className="flex items-baseline gap-1.5 flex-wrap">
