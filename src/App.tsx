@@ -1197,9 +1197,13 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
             <h2 className="text-xl font-bold text-gray-900">Your Favorites</h2>
             <div className="grid grid-cols-2 gap-3">
               {products.filter(p => favorites.includes(p.id)).length === 0 ? (
-                <div className="col-span-2 text-center py-12 text-gray-400">
-                  <Heart className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>No favorites yet</p>
+                <div className="col-span-2 text-center py-16 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center justify-center">
+                  <div className="w-24 h-24 bg-rose-50 rounded-full flex items-center justify-center mb-4">
+                    <Heart className="w-12 h-12 text-rose-300" />
+                  </div>
+                  <h3 className="font-bold text-xl text-gray-900 mb-2">No Favorites Yet</h3>
+                  <p className="text-sm text-gray-500 mb-6">Save your favorite items to view them here later.</p>
+                  <button onClick={() => setCurrentTab('home')} className="bg-[#7C3AED] hover:bg-[#6D28D9] text-white px-8 py-3 rounded-full font-bold shadow-md transition-colors">Browse Products</button>
                 </div>
               ) : (
                 products.filter(p => favorites.includes(p.id)).map(product => {
@@ -1258,10 +1262,13 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
            <div className="space-y-6">
              <h2 className="text-xl font-bold text-gray-900">Your Cart</h2>
              {cart.length === 0 ? (
-               <div className="text-center py-12 text-gray-400">
-                  <ShoppingCart className="w-16 h-16 mx-auto mb-4 opacity-30" />
-                  <p className="font-medium text-lg text-gray-500">Your cart is empty</p>
-                  <button onClick={() => setCurrentTab('home')} className="mt-6 bg-green-600 text-white px-6 py-2 rounded-full font-bold shadow-md hover:bg-green-700">Go to Home</button>
+               <div className="text-center py-16 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center justify-center">
+                  <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mb-4">
+                    <ShoppingCart className="w-12 h-12 text-gray-300" />
+                  </div>
+                  <h3 className="font-bold text-xl text-gray-900 mb-2">Your cart is empty</h3>
+                  <p className="text-sm text-gray-500 mb-6">Looks like you haven't added anything to your cart yet.</p>
+                  <button onClick={() => setCurrentTab('home')} className="bg-[#7C3AED] hover:bg-[#6D28D9] text-white px-8 py-3 rounded-full font-bold shadow-md transition-colors">Start Shopping</button>
                </div>
              ) : (
                <>
@@ -1692,6 +1699,11 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
         )}
       </AnimatePresence>
 
+      {/* Floating WhatsApp Widget */}
+      <a href="https://wa.me/918189940301" target="_blank" rel="noreferrer" className="fixed bottom-24 right-4 z-50 bg-green-500 text-white p-3.5 rounded-full shadow-lg hover:bg-green-600 transition-colors flex items-center justify-center animate-bounce">
+        <MessageCircle className="w-6 h-6 fill-white" />
+      </a>
+
       {/* Bottom Navigation Bar */}
       <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 pb-safe pt-2 px-6 flex justify-between items-center z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] h-16 md:hidden">
          <button onClick={() => setCurrentTab('home')} className={`flex flex-col items-center gap-1 w-16 ${currentTab === 'home' ? 'text-[#7C3AED]' : 'text-gray-400'}`}>
@@ -1816,14 +1828,34 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
             ) : (
               customerOrders.map((order, idx) => (
                 <div key={idx} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-xs font-bold text-gray-500">{new Date(order.createdAt).toLocaleDateString()}</span>
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                       <span className="text-xs font-bold text-gray-500">Order Placed: {new Date(order.createdAt).toLocaleDateString()}</span>
+                       <div className="font-black text-lg text-gray-900 mt-0.5">₹{order.totalAmount}</div>
+                    </div>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${order.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
                       {order.status}
                     </span>
                   </div>
-                  <div className="text-sm text-gray-600 mb-2 whitespace-pre-wrap">{order.itemsSummary}</div>
-                  <div className="font-black text-gray-900">₹{order.totalAmount}</div>
+                  <div className="text-xs text-gray-600 mb-5 whitespace-pre-wrap leading-relaxed">{order.itemsSummary}</div>
+                  
+                  {/* Visual Timeline */}
+                  <div className="relative mt-2 mb-2 px-1">
+                     <div className="absolute top-[5px] left-1 right-1 h-1 bg-gray-100 -translate-y-1/2 rounded-full"></div>
+                     <div className="absolute top-[5px] left-1 h-1 bg-[#7C3AED] -translate-y-1/2 rounded-full transition-all duration-500" style={{ width: order.status === 'Pending' ? '25%' : order.status === 'Processing' ? '50%' : order.status === 'Shipped' ? '75%' : order.status === 'Completed' ? '100%' : '0%' }}></div>
+                     <div className="relative flex justify-between z-10">
+                        <div className={`w-2.5 h-2.5 rounded-full border-2 bg-white ${order.status !== 'Cancelled' ? 'border-[#7C3AED]' : 'border-gray-300'}`}></div>
+                        <div className={`w-2.5 h-2.5 rounded-full border-2 bg-white ${['Processing', 'Shipped', 'Completed'].includes(order.status) ? 'border-[#7C3AED]' : 'border-gray-300'}`}></div>
+                        <div className={`w-2.5 h-2.5 rounded-full border-2 bg-white ${['Shipped', 'Completed'].includes(order.status) ? 'border-[#7C3AED]' : 'border-gray-300'}`}></div>
+                        <div className={`w-2.5 h-2.5 rounded-full border-2 bg-white ${order.status === 'Completed' ? 'border-[#7C3AED]' : 'border-gray-300'}`}></div>
+                     </div>
+                     <div className="flex justify-between text-[9px] text-gray-500 font-bold mt-2 px-1">
+                        <span className={order.status !== 'Cancelled' ? 'text-[#7C3AED]' : ''}>Placed</span>
+                        <span className={['Processing', 'Shipped', 'Completed'].includes(order.status) ? 'text-[#7C3AED]' : ''}>Packed</span>
+                        <span className={['Shipped', 'Completed'].includes(order.status) ? 'text-[#7C3AED]' : ''}>Shipped</span>
+                        <span className={order.status === 'Completed' ? 'text-[#7C3AED]' : ''}>Delivered</span>
+                     </div>
+                  </div>
                 </div>
               ))
             )}
