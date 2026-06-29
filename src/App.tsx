@@ -2162,7 +2162,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
         setProducts(prev => [...prev, productToSave]);
       }
 
-      setCurrentProduct({ id: '', name: '', category: 'Stationary', price: 0, originalPrice: '' as unknown as number, image: '' });
+      setCurrentProduct({ id: '', name: '', category: 'Stationary', price: 0, originalPrice: '' as unknown as number, stock: '' as unknown as number, image: '', isFeatured: false });
       setIsEditing(false);
     } catch (err) {
       console.error("Save failed", err);
@@ -2671,7 +2671,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
                       {isEditing ? 'Update Product' : 'Add Product'}
                     </button>
                     {isEditing && (
-                      <button type="button" onClick={() => { setIsEditing(false); setCurrentProduct({ id: '', name: '', category: 'Stationary', price: 0, originalPrice: '' as unknown as number, image: '' }); }} className="px-4 py-3 bg-zinc-800/80 hover:bg-stone-200 text-stone-700 rounded-lg font-semibold transition-colors">
+                      <button type="button" onClick={() => { setIsEditing(false); setCurrentProduct({ id: '', name: '', category: 'Stationary', price: 0, originalPrice: '' as unknown as number, stock: '' as unknown as number, image: '', isFeatured: false }); }} className="px-4 py-3 bg-zinc-800/80 hover:bg-stone-200 text-stone-700 rounded-lg font-semibold transition-colors">
                         Cancel
                       </button>
                     )}
@@ -2685,7 +2685,7 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
                 <div className="p-6 border-b border-white/10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                   <h2 className="text-xl font-bold text-white">Manage Products</h2>
                   <div className="flex items-center gap-3">
-                    <button onClick={() => { setIsEditing(false); setCurrentProduct({ id: '', name: '', category: 'Stationary', price: 0, originalPrice: '' as unknown as number, image: '' }); triggerCamera(); }} className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg shadow-amber-500/20 transition-all hover:scale-105 active:scale-95">
+                    <button onClick={() => { setIsEditing(false); setCurrentProduct({ id: '', name: '', category: 'Stationary', price: 0, originalPrice: '' as unknown as number, stock: '' as unknown as number, image: '', isFeatured: false }); triggerCamera(); }} className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-lg shadow-amber-500/20 transition-all hover:scale-105 active:scale-95">
                       <Camera className="w-4 h-4" /> Take Photo & Add
                     </button>
                     <span className="bg-zinc-800/80 text-zinc-400 px-3 py-1 rounded-full text-sm font-medium">{products.length} Items</span>

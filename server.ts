@@ -310,8 +310,8 @@ async function startServer() {
 
   app.post("/api/products", async (req, res) => {
     try {
-      const { id, name, category, price, originalPrice, stock, image } = req.body;
-      await Product.create({ id, name, category, price, originalPrice, stock, image });
+      const { id, name, category, price, originalPrice, stock, image, isFeatured } = req.body;
+      await Product.create({ id, name, category, price, originalPrice, stock, image, isFeatured });
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });
@@ -321,8 +321,8 @@ async function startServer() {
   app.put("/api/products/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, category, price, originalPrice, stock, image } = req.body;
-      await Product.updateOne({ id }, { name, category, price, originalPrice, stock, image });
+      const { name, category, price, originalPrice, stock, image, isFeatured } = req.body;
+      await Product.updateOne({ id }, { name, category, price, originalPrice, stock, image, isFeatured });
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });
