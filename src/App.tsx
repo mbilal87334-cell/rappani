@@ -987,9 +987,11 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                     </div>
                   ))}
                </div>
-               <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
+               <div className="absolute bottom-1 left-0 right-0 flex justify-center gap-2 z-20">
                  {slideProducts.map((_, idx) => (
-                   <div key={idx} onClick={() => setCurrentSlide(idx)} className={`w-6 h-1 rounded-full cursor-pointer transition-colors ${currentSlide === idx ? 'bg-[#7C3AED]' : 'bg-gray-300'}`} />
+                   <div key={idx} onClick={(e) => { e.stopPropagation(); setCurrentSlide(idx); }} className="p-2 cursor-pointer flex items-center justify-center">
+                     <div className={`w-6 h-1.5 rounded-full transition-colors ${currentSlide === idx ? 'bg-[#7C3AED]' : 'bg-gray-300/80'}`} />
+                   </div>
                  ))}
                </div>
             </div>
