@@ -1,7 +1,7 @@
 import React, {  useState, useEffect, useRef  } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
-import { Phone, Mail, Instagram, MessageCircle, MapPin, Map, Lock, LogOut, Plus, Edit, Trash2, Store, ShoppingBag, Menu, X, Camera, Aperture, Globe, Database, Search, ArrowUp, Package, LayoutGrid, ShoppingCart, Minus, Image, ShieldCheck, Gift, Sparkles, Sticker, Rocket, Coffee, Eye, Star, TrendingUp, CheckCircle2, Info , Home, Heart, User, ChevronRight, CreditCard} from 'lucide-react';
+import { Phone, Mail, Instagram, MessageCircle, MapPin, Map, Lock, LogOut, Plus, Edit, Trash2, Store, ShoppingBag, Menu, X, Camera, Aperture, Globe, Database, Search, ArrowUp, Package, LayoutGrid, ShoppingCart, Minus, Image, ShieldCheck, Gift, Sparkles, Sticker, Rocket, Coffee, Eye, Star, TrendingUp, CheckCircle2, Info , Home, Heart, User, ChevronRight, CreditCard, Briefcase } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import LocationMap from './LocationMap';
 import { removeBackground as imglyRemoveBackground } from '@imgly/background-removal';
@@ -80,8 +80,8 @@ async function updateSetting(key: string, value: string) {
   return res.json();
 }
 
-async function fetchProducts() {
-  const res = await fetch(`${API_BASE}/products`);
+async function fetchProducts(page = 1, limit = 50) {
+  const res = await fetch(`${API_BASE}/products?page=${page}&limit=${limit}`);
   if (!res.ok) throw new Error("Failed to fetch products");
   return res.json();
 }
@@ -335,7 +335,7 @@ function getDistanceInKm(lat1: number, lon1: number, lat2: number, lon2: number)
 }
 
 // --- Visitor Panel ---
-function VisitorPanel({ products, settings, setProducts }: { products: Product[], settings: Record<string, string>, setProducts: React.Dispatch<React.SetStateAction<Product[]>> }) {
+function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore, loadMoreProducts }: { products: Product[], settings: Record<string, string>, setProducts: React.Dispatch<React.SetStateAction<Product[]>>, hasMore?: boolean, isLoadingMore?: boolean, loadMoreProducts?: () => void }) {
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem('rappani_cart');
@@ -674,6 +674,7 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
     { id: 'Offers', icon: <Sparkles className="w-5 h-5" /> },
     { id: 'Stationary', icon: <Edit className="w-5 h-5" /> },
     { id: 'Fancy', icon: <Gift className="w-5 h-5" /> },
+    { id: 'Bags', icon: <Briefcase className="w-5 h-5" /> },
     { id: 'Toys', icon: <Rocket className="w-5 h-5" /> },
     { id: 'Sports Items', icon: <TrendingUp className="w-5 h-5" /> },
     { id: 'Snacks', icon: <Coffee className="w-5 h-5" /> }
@@ -1204,6 +1205,22 @@ function VisitorPanel({ products, settings, setProducts }: { products: Product[]
                 })
               )}
             </div>
+            
+            {hasMore && (
+              <div className="flex justify-center mt-6 mb-8">
+                <button 
+                  onClick={loadMoreProducts} 
+                  disabled={isLoadingMore}
+                  className="bg-white border-2 border-[#7C3AED] text-[#7C3AED] font-bold py-2.5 px-8 rounded-full shadow-sm hover:bg-violet-50 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isLoadingMore ? (
+                    <><div className="w-4 h-4 border-2 border-[#7C3AED] border-t-transparent rounded-full animate-spin"></div> Loading...</>
+                  ) : (
+                    "Load More Products"
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -3021,17 +3038,40 @@ function AdminPanel({ products, setProducts, settings, setSettings }: { products
 // --- Main App ---
 export default function App() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
+
+  const loadMoreProducts = async () => {
+    if (!hasMore || isLoadingMore) return;
+    setIsLoadingMore(true);
+    try {
+      const nextPage = page + 1;
+      const res = await fetchProducts(nextPage, 50);
+      setProducts(prev => [...prev, ...(res.products || [])]);
+      setPage(res.page);
+      setHasMore(res.page < res.totalPages);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
 
   useEffect(() => {
     async function loadData() {
       try {
         const [allProducts, allSettings] = await Promise.all([
-          fetchProducts().catch(() => []),
+          fetchProducts(1).catch(() => ({ products: [], totalPages: 1, page: 1 })),
           fetchSettings().catch(() => [])
         ]);
-        setProducts(allProducts);
+        setProducts(allProducts.products || allProducts);
+        if (allProducts.totalPages) {
+          setPage(allProducts.page || 1);
+          setHasMore((allProducts.page || 1) < allProducts.totalPages);
+        }
         const settingsMap = allSettings.reduce((acc: any, curr: any) => ({ ...acc, [curr.key]: curr.value }), {});
         setSettings(settingsMap);
       } catch (e) {
@@ -3057,7 +3097,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<VisitorPanel products={products} settings={settings} setProducts={setProducts} />} />
+        <Route path="/" element={<VisitorPanel products={products} settings={settings} setProducts={setProducts} hasMore={hasMore} isLoadingMore={isLoadingMore} loadMoreProducts={loadMoreProducts} />} />
         <Route path="/admin" element={<AdminPanel products={products} setProducts={setProducts} settings={settings} setSettings={setSettings} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

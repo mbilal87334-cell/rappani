@@ -307,8 +307,16 @@ async function startServer() {
 
   app.get("/api/products", async (req, res) => {
     try {
-      const products = await Product.find({}, '-_id -__v');
-      res.json(products);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const skip = (page - 1) * limit;
+
+      // Extract search or category filters if needed, but for now we just return all paginated
+      const total = await Product.countDocuments();
+      const products = await Product.find({}, '-_id -__v').skip(skip).limit(limit);
+      
+      // We wrap the response in a paginated object if page/limit are provided
+      res.json({ products, total, page, totalPages: Math.ceil(total / limit) });
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });
     }
