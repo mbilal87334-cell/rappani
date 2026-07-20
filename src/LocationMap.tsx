@@ -75,7 +75,7 @@ export default function LocationMap({ onConfirm, onCancel }: LocationMapProps) {
     <div className="fixed inset-0 z-[200] flex flex-col bg-gray-100">
       <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shadow-sm pt-safe">
         <h2 className="font-black text-lg text-gray-900">Select Location</h2>
-        <button onClick={onCancel} className="p-2 -mr-2 rounded-full hover:bg-gray-50">
+        <button onClick={onCancel} className="p-2 -mr-2 rounded-full hover:bg-stone-50">
           <CloseIcon className="w-6 h-6 text-gray-900" />
         </button>
       </div>
@@ -96,20 +96,20 @@ export default function LocationMap({ onConfirm, onCancel }: LocationMapProps) {
       </div>
 
       <div className="bg-white p-4 pb-safe border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-10">
-        <div className="bg-gray-50 rounded-xl p-3 mb-4 min-h-[60px] flex items-center justify-center border border-gray-100 text-sm text-gray-700 text-center">
+        <div className="bg-stone-50 rounded-xl p-3 mb-4 min-h-[60px] flex items-center justify-center border border-gray-100 text-sm text-gray-700 text-center">
           {isLoading ? (
             <span className="animate-pulse">Loading address...</span>
           ) : position ? (
             <span className="font-medium line-clamp-2">{address}</span>
           ) : (
-            <span className="text-gray-400">No location selected</span>
+            <span className="text-stone-400">No location selected</span>
           )}
         </div>
         
         <button 
           onClick={() => position && onConfirm(address)}
           disabled={!position || isLoading}
-          className="w-full bg-green-600 text-white rounded-xl py-3.5 font-bold disabled:opacity-50 disabled:bg-gray-400 flex items-center justify-center gap-2 shadow-md shadow-green-500/20"
+          className="w-full bg-black text-white rounded-xl py-3.5 font-bold disabled:opacity-50 disabled:bg-gray-400 flex items-center justify-center gap-2 shadow-md shadow-green-500/20"
         >
           <Check className="w-5 h-5" /> Confirm Location
         </button>
