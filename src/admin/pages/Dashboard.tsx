@@ -24,32 +24,7 @@ import {
   Cell
 } from 'recharts';
 
-const weeklyRevenueData = [
-  { name: 'Mon', revenue: 1200 },
-  { name: 'Tue', revenue: 2100 },
-  { name: 'Wed', revenue: 800 },
-  { name: 'Thu', revenue: 2780 },
-  { name: 'Fri', revenue: 1890 },
-  { name: 'Sat', revenue: 2390 },
-  { name: 'Sun', revenue: 3490 },
-];
 
-const monthlyGrowthData = [
-  { name: 'Jan', sales: 4000 },
-  { name: 'Feb', sales: 3000 },
-  { name: 'Mar', sales: 2000 },
-  { name: 'Apr', sales: 2780 },
-  { name: 'May', sales: 1890 },
-  { name: 'Jun', sales: 2390 },
-  { name: 'Jul', sales: 3490 },
-];
-
-const categoryData = [
-  { name: 'Stationery', value: 16, color: '#ef4444' }, // Red
-  { name: 'Fancy Items', value: 24, color: '#a855f7' }, // Purple
-  { name: 'Toys', value: 12, color: '#f59e0b' }, // Yellow
-  { name: 'Snacks', value: 8, color: '#10b981' }, // Green
-];
 
 const StatRow = ({ title, value, icon: Icon, colorClass }: any) => (
   <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm flex items-center gap-4">
@@ -63,8 +38,131 @@ const StatRow = ({ title, value, icon: Icon, colorClass }: any) => (
   </div>
 );
 
-export default function Dashboard({ orders = [] }: { orders?: any[] }) {
-  const recentOrders = orders.slice(0, 5);
+export default function Dashboard({ orders = [], products = [] }: { orders?: any[], products?: any[] }) {
+  const safeOrders = Array.isArray(orders) ? orders : [];
+  const safeProducts = Array.isArray(products) ? products : [];
+
+  const {
+    todayRevenue,
+    todayOrdersCount,
+    pendingOrdersCount,
+    completedOrdersCount,
+    cancelledOrdersCount,
+    totalCustomers,
+    monthlyRevenue,
+    weeklyRevenue,
+    overallRevenue,
+    weeklyRevenueData,
+    recentOrders
+    const monthlyGrowthData,
+    categoryData,
+    latestCustomers
+  } = React.useMemo(() => {
+    let tRev = 0, tOrd = 0, pOrd = 0, cOrd = 0, cxOrd = 0, mRev = 0, wRev = 0, oRev = 0;
+    const customers = new Set();
+    const customerList: any[] = [];
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const startOfWeek = today - (now.getDay() * 24 * 60 * 60 * 1000);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+
+    // Last 7 days including today
+    const weekMap = new Map();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today - (i * 24 * 60 * 60 * 1000));
+      const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
+      weekMap.set(dayName, 0);
+    }
+    
+    // Last 6 months
+    const monthMap = new Map();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthName = d.toLocaleDateString('en-US', { month: 'short' });
+      monthMap.set(monthName, 0);
+    }
+
+    const sortedOrders = [...safeOrders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    sortedOrders.forEach(order => {
+      const status = (order.status || '').toLowerCase();
+      const amount = order.totalAmount || 0;
+      const orderTime = new Date(order.createdAt).getTime();
+
+      if (order.customerDetails?.phone) {
+        if (!customers.has(order.customerDetails.phone)) {
+           customers.add(order.customerDetails.phone);
+           customerList.push(order.customerDetails);
+        }
+      }
+
+      if (status === 'pending') pOrd++;
+      else if (status === 'cancelled' || status === 'failed') cxOrd++;
+      else if (status === 'completed' || status === 'delivered' || status === 'shipped' || status === 'success') {
+        cOrd++;
+        oRev += amount;
+
+        if (orderTime >= today) tRev += amount;
+        if (orderTime >= startOfWeek) wRev += amount;
+        if (orderTime >= startOfMonth) mRev += amount;
+
+        // Fill weekly chart
+        if (orderTime >= today - (6 * 24 * 60 * 60 * 1000)) {
+          const dayName = new Date(orderTime).toLocaleDateString('en-US', { weekday: 'short' });
+          if (weekMap.has(dayName)) {
+            weekMap.set(dayName, weekMap.get(dayName) + amount);
+          }
+        }
+        
+        // Fill monthly chart
+        const orderMonth = new Date(orderTime).toLocaleDateString('en-US', { month: 'short' });
+        if (monthMap.has(orderMonth)) {
+           monthMap.set(orderMonth, monthMap.get(orderMonth) + amount);
+        }
+      }
+
+      if (orderTime >= today) {
+        tOrd++;
+      }
+    });
+
+    const weeklyData = Array.from(weekMap.entries()).map(([name, revenue]) => ({ name, revenue }));
+    const monthlyData = Array.from(monthMap.entries()).map(([name, sales]) => ({ name, sales }));
+    
+    // Compute category distribution from products
+    const catCounts: Record<string, number> = {};
+    safeProducts.forEach(p => {
+       const cat = p.category || 'Uncategorized';
+       catCounts[cat] = (catCounts[cat] || 0) + 1;
+    });
+    
+    const colors = ['#ef4444', '#a855f7', '#f59e0b', '#10b981', '#3b82f6'];
+    const catData = Object.keys(catCounts).map((cat, i) => ({
+       name: cat,
+       value: catCounts[cat],
+       color: colors[i % colors.length]
+    }));
+
+    return {
+      todayRevenue: tRev,
+      todayOrdersCount: tOrd,
+      pendingOrdersCount: pOrd,
+      completedOrdersCount: cOrd,
+      cancelledOrdersCount: cxOrd,
+      totalCustomers: customers.size,
+      monthlyRevenue: mRev,
+      weeklyRevenue: wRev,
+      overallRevenue: oRev,
+      weeklyRevenueData: weeklyData,
+      monthlyGrowthData: monthlyData,
+      categoryData: catData.length > 0 ? catData : [{ name: 'No Products', value: 1, color: '#e5e7eb' }],
+      recentOrders: sortedOrders.slice(0, 5),
+      latestCustomers: customerList.slice(0, 5)
+    };
+  }, [safeOrders, safeProducts]);
+
+  const totalProducts = safeProducts.length;
+  const lowStockProducts = safeProducts.filter(p => (p.stock || 0) <= 5);
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-10">
@@ -78,22 +176,22 @@ export default function Dashboard({ orders = [] }: { orders?: any[] }) {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        <StatRow title="Today's Revenue" value="₹0" icon={IndianRupee} colorClass="bg-blue-50 text-blue-500" />
-        <StatRow title="Today's Orders" value="0" icon={ShoppingCart} colorClass="bg-purple-50 text-purple-500" />
-        <StatRow title="Pending Orders" value="0" icon={Clock} colorClass="bg-yellow-50 text-yellow-600" />
-        <StatRow title="Completed Orders" value="0" icon={CheckCircle2} colorClass="bg-green-50 text-green-500" />
-        <StatRow title="Cancelled Orders" value="0" icon={XCircle} colorClass="bg-red-50 text-red-500" />
-        <StatRow title="Total Customers" value="0" icon={Users} colorClass="bg-indigo-50 text-indigo-500" />
-        <StatRow title="Total Products" value="84" icon={Package} colorClass="bg-pink-50 text-pink-500" />
-        <StatRow title="Monthly Revenue" value="₹0" icon={Calendar} colorClass="bg-sky-50 text-sky-500" />
-        <StatRow title="Weekly Revenue" value="₹0" icon={TrendingUp} colorClass="bg-emerald-50 text-emerald-500" />
+        <StatRow title="Today's Revenue" value={`₹${todayRevenue.toLocaleString('en-IN')}`} icon={IndianRupee} colorClass="bg-blue-50 text-blue-500" />
+        <StatRow title="Today's Orders" value={todayOrdersCount} icon={ShoppingCart} colorClass="bg-purple-50 text-purple-500" />
+        <StatRow title="Pending Orders" value={pendingOrdersCount} icon={Clock} colorClass="bg-yellow-50 text-yellow-600" />
+        <StatRow title="Completed Orders" value={completedOrdersCount} icon={CheckCircle2} colorClass="bg-green-50 text-green-500" />
+        <StatRow title="Cancelled Orders" value={cancelledOrdersCount} icon={XCircle} colorClass="bg-red-50 text-red-500" />
+        <StatRow title="Total Customers" value={totalCustomers} icon={Users} colorClass="bg-indigo-50 text-indigo-500" />
+        <StatRow title="Total Products" value={totalProducts} icon={Package} colorClass="bg-pink-50 text-pink-500" />
+        <StatRow title="Monthly Revenue" value={`₹${monthlyRevenue.toLocaleString('en-IN')}`} icon={Calendar} colorClass="bg-sky-50 text-sky-500" />
+        <StatRow title="Weekly Revenue" value={`₹${weeklyRevenue.toLocaleString('en-IN')}`} icon={TrendingUp} colorClass="bg-emerald-50 text-emerald-500" />
         <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm flex items-center gap-4">
           <div className="w-10 h-10 rounded-lg bg-gray-900 text-white flex items-center justify-center">
             <IndianRupee size={20} />
           </div>
           <div>
             <p className="text-gray-500 text-sm font-medium">Overall Revenue</p>
-            <h3 className="text-gray-900 text-lg font-semibold">₹0</h3>
+            <h3 className="text-gray-900 text-lg font-semibold">₹{overallRevenue.toLocaleString('en-IN')}</h3>
           </div>
         </div>
       </div>
@@ -220,8 +318,28 @@ export default function Dashboard({ orders = [] }: { orders?: any[] }) {
             <h2 className="text-base font-semibold text-gray-900">Latest Customers</h2>
             <button className="text-sm font-medium text-gray-500 hover:text-gray-900">View All</button>
           </div>
-          <div className="p-8 text-center text-gray-500 text-sm">
-            No customers found.
+          <div className="p-6">
+            {latestCustomers.length > 0 ? (
+              <div className="space-y-4">
+                 {latestCustomers.map((cust, idx) => (
+                    <div key={idx} className="flex justify-between items-center border-b border-gray-50 pb-3 last:border-0 last:pb-0">
+                      <div className="flex items-center gap-3">
+                         <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500">
+                           <Users size={14} />
+                         </div>
+                         <div>
+                           <p className="text-sm font-semibold text-gray-900">{cust.name || 'Guest'}</p>
+                           <p className="text-xs text-gray-500">{cust.phone}</p>
+                         </div>
+                      </div>
+                    </div>
+                 ))}
+              </div>
+            ) : (
+              <div className="text-center text-gray-500 text-sm">
+                No customers found.
+              </div>
+            )}
           </div>
         </div>
 
@@ -230,10 +348,29 @@ export default function Dashboard({ orders = [] }: { orders?: any[] }) {
             <h2 className="text-base font-semibold text-gray-900">Low Stock Alerts</h2>
           </div>
           <div className="p-6">
-            <div className="flex items-center gap-3 text-green-600">
-              <CheckCircle size={20} />
-              <span className="text-sm font-medium">All products have good stock.</span>
-            </div>
+            {lowStockProducts.length > 0 ? (
+              <div className="space-y-4">
+                {lowStockProducts.slice(0, 5).map(product => (
+                  <div key={product.id} className="flex justify-between items-center border-b border-gray-50 pb-3 last:border-0 last:pb-0">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900 truncate max-w-[200px]">{product.name}</p>
+                      <p className="text-xs text-gray-500">ID: {product.id.slice(0, 8)}</p>
+                    </div>
+                    <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-md">
+                      {product.stock} left
+                    </span>
+                  </div>
+                ))}
+                {lowStockProducts.length > 5 && (
+                  <p className="text-xs text-gray-500 text-center pt-2">+{lowStockProducts.length - 5} more products running low</p>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-3 text-green-600">
+                <CheckCircle size={20} />
+                <span className="text-sm font-medium">All products have good stock.</span>
+              </div>
+            )}
           </div>
         </div>
       </div>

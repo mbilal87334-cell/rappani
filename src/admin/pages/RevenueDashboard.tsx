@@ -1,5 +1,5 @@
 import React from 'react';
-import { IndianRupee, TrendingUp, CreditCard, Wallet, ArrowUpRight, ArrowDownRight, Calendar, Download } from 'lucide-react';
+import { IndianRupee, TrendingUp, CreditCard, Wallet, ArrowUpRight, ArrowDownRight, Calendar, Download, Activity } from 'lucide-react';
 import { Order } from '../../App';
 
 export default function RevenueDashboard({ orders = [] }: { orders?: Order[] }) {

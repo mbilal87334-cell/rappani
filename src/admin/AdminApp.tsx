@@ -54,7 +54,7 @@ export default function AdminApp({
   return (
     <AdminLayout setIsAuthenticated={setIsAuthenticated}>
       <Routes>
-        <Route path="/" element={<Dashboard orders={orders} />} />
+        <Route path="/" element={<Dashboard orders={orders} products={products} />} />
         <Route path="/products" element={<ProductManager products={products} setProducts={setProducts} />} />
         <Route path="/orders" element={<OrderManager orders={orders} />} />
         
