@@ -951,7 +951,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   };
 
   return (
-    <div className="bg-stone-50 font-sans text-gray-900 pb-20 min-h-screen max-w-md mx-auto shadow-2xl relative overflow-x-hidden border-x border-gray-200">
+    <div className="bg-stone-50 font-sans text-gray-900 pb-20 min-h-screen max-w-md md:max-w-6xl mx-auto shadow-2xl relative overflow-x-hidden border-x border-gray-200">
       <Toaster position="top-center" />
       {/* Top Header */}
       <header className="sticky top-0 z-50 bg-[#7C3AED] text-white shadow-md">
@@ -1065,7 +1065,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                 <h3 className="text-lg font-bold text-gray-900">Popular Now</h3>
                 <button className="text-sm text-gold-600 font-bold" onClick={() => setCurrentTab('products')}>See All</button>
               </div>
-              <div className="grid grid-cols-1 gap-3">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                 {products.map(product => {
                   const cartItem = cart.find(item => item.product.id === product.id);
                   const qty = cartItem ? cartItem.quantity : 0;
@@ -1142,7 +1142,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
             </div>
 
             {/* Product List */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {filteredProducts.length === 0 ? (
                 <div className="col-span-2 text-center py-12 text-stone-400">
                   <Package className="w-12 h-12 mx-auto mb-2 opacity-50" />
@@ -1229,7 +1229,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
         {currentTab === 'favorites' && (
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-gray-900">Your Favorites</h2>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
               {products.filter(p => favorites.includes(p.id)).length === 0 ? (
                 <div className="col-span-2 text-center py-16 bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center justify-center">
                   <div className="w-24 h-24 bg-rose-50 rounded-full flex items-center justify-center mb-4">
@@ -1715,7 +1715,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                 </div>
              
              {/* Action Bar */}
-            <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-gray-200 p-3 pb-safe flex gap-3 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50">
+            <div className="fixed bottom-0 left-0 right-0 max-w-md md:max-w-6xl mx-auto bg-white border-t border-gray-200 p-3 pb-safe flex gap-3 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50">
                <button 
                  onClick={() => {
                    addToCart(selectedProduct);
@@ -1747,7 +1747,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
       </a>
 
       {/* Bottom Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 mx-auto w-full max-w-md bg-white border-t border-gray-200 pb-safe pt-2 px-6 flex justify-between items-center z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] h-16">
+      <nav className="fixed bottom-0 left-0 right-0 mx-auto w-full max-w-md md:max-w-6xl bg-white border-t border-gray-200 pb-safe pt-2 px-6 flex justify-between items-center z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] h-16">
          <button onClick={() => setCurrentTab('home')} className={`flex flex-col items-center gap-1 w-16 ${currentTab === 'home' ? 'text-[#7C3AED]' : 'text-stone-400'}`}>
            <Home className={`w-6 h-6 ${currentTab === 'home' ? 'fill-violet-100' : ''}`} />
            <span className="text-[10px] font-bold">Home</span>
