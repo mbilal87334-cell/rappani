@@ -53,8 +53,8 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
     weeklyRevenue,
     overallRevenue,
     weeklyRevenueData,
-    recentOrders
-    const monthlyGrowthData,
+    recentOrders,
+    monthlyGrowthData,
     categoryData,
     latestCustomers
   } = React.useMemo(() => {
