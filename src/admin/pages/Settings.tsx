@@ -1,18 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User, KeyRound, Mail, Save } from 'lucide-react';
+import { updateSetting } from '../../App';
 
 export default function Settings({ settings, setSettings }: { settings: any, setSettings: any }) {
-  const [adminEmail, setAdminEmail] = useState(() => localStorage.getItem('rappani_admin_email') || 'admin@rappani.in');
+  const [adminEmail, setAdminEmail] = useState(settings.admin_email || 'admin@rappani.in');
+
+  useEffect(() => {
+    if (settings.admin_email) {
+      setAdminEmail(settings.admin_email);
+    }
+  }, [settings.admin_email]);
 
   const handleSendReset = (e: React.MouseEvent) => {
     e.preventDefault();
     alert(`Password reset link sent to ${adminEmail}`);
   };
 
-  const handleSaveEmail = (e: React.MouseEvent) => {
+  const handleSaveEmail = async (e: React.MouseEvent) => {
     e.preventDefault();
-    localStorage.setItem('rappani_admin_email', adminEmail);
-    alert('Email updated successfully!');
+    try {
+      await updateSetting('admin_email', adminEmail);
+      setSettings({ ...settings, admin_email: adminEmail });
+      alert('Email updated permanently in the database!');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to update email. Please try again.');
+    }
   };
 
   return (
