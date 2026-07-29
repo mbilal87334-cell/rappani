@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import ProductManager from './pages/ProductManager';
 import OrderManager from './pages/OrderManager';
 import PlaceholderPage from './pages/PlaceholderPage';
+import SettingsPage from './pages/Settings';
 import { Product, Order } from '../App';
 import { motion } from 'motion/react';
 import { Lock } from 'lucide-react';
@@ -39,7 +40,8 @@ export default function AdminApp({
   }, [isAuthenticated]);
 
   if (!isAuthenticated) {
-    return <AdminLogin onLogin={() => setIsAuthenticated(true)} />;
+    const actualPassword = settings.admin_password || 'rappani123';
+    return <AdminLogin onLogin={() => setIsAuthenticated(true)} actualPassword={actualPassword} />;
   }
 
   return (
@@ -56,7 +58,7 @@ export default function AdminApp({
         <Route path="/coupons" element={<PlaceholderPage title="Coupons & Discounts" description="Create and track promotional codes and discount rules." />} />
         <Route path="/inventory" element={<PlaceholderPage title="Inventory Management" description="Track stock levels, set low-stock alerts, and manage suppliers." />} />
         <Route path="/sales" element={<PlaceholderPage title="Sales Analytics" description="Deep dive into sales reports, revenue tracking, and conversion rates." />} />
-        <Route path="/settings" element={<PlaceholderPage title="Store Settings" description="Configure global store preferences, shipping rates, and tax rules." />} />
+        <Route path="/settings" element={<SettingsPage settings={settings} setSettings={setSettings} />} />
         <Route path="/roles" element={<PlaceholderPage title="Roles & Permissions" description="Manage staff accounts and their access levels." />} />
         <Route path="/activity" element={<PlaceholderPage title="Activity Logs" description="Track all actions performed by staff in the admin panel." />} />
         
@@ -67,13 +69,13 @@ export default function AdminApp({
   );
 }
 
-function AdminLogin({ onLogin }: { onLogin: () => void }) {
+function AdminLogin({ onLogin, actualPassword }: { onLogin: () => void, actualPassword: string }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === 'rappani123') { // Basic mock authentication
+    if (password === actualPassword) { 
       onLogin();
     } else {
       setError('Invalid password. Please try again.');

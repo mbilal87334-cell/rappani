@@ -71,7 +71,7 @@ async function fetchSettings() {
   return res.json();
 }
 
-async function updateSetting(key: string, value: string) {
+export async function updateSetting(key: string, value: string) {
   const res = await fetch(`${API_BASE}/settings`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
