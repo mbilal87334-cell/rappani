@@ -10,6 +10,13 @@ import { Product, Order } from '../App';
 import { motion } from 'motion/react';
 import { Lock } from 'lucide-react';
 
+import CategoriesManager from './pages/CategoriesManager';
+import CustomersList from './pages/CustomersList';
+import RevenueDashboard from './pages/RevenueDashboard';
+import TransactionsLedger from './pages/TransactionsLedger';
+import WebsiteSettings from './pages/WebsiteSettings';
+import ReportsHub from './pages/ReportsHub';
+
 export default function AdminApp({ 
   products, setProducts, settings, setSettings 
 }: { 
@@ -51,17 +58,20 @@ export default function AdminApp({
         <Route path="/products" element={<ProductManager products={products} setProducts={setProducts} />} />
         <Route path="/orders" element={<OrderManager orders={orders} />} />
         
-        {/* Placeholder Routes */}
-        <Route path="/categories" element={<PlaceholderPage title="Categories" description="Manage your product categories." />} />
-        <Route path="/customers" element={<PlaceholderPage title="Customers" description="Manage your customer details." />} />
-        <Route path="/revenue" element={<PlaceholderPage title="Revenue Overview" description="Track your earnings and business growth." />} />
-        <Route path="/transactions" element={<PlaceholderPage title="Transactions" description="Monitor all incoming payments and refunds." />} />
-        <Route path="/settings" element={<PlaceholderPage title="Website Settings" description="Configure your store details." />} />
+        {/* Fully Implemented Premium UIs */}
+        <Route path="/categories" element={<CategoriesManager />} />
+        <Route path="/customers" element={<CustomersList />} />
+        <Route path="/revenue" element={<RevenueDashboard />} />
+        <Route path="/transactions" element={<TransactionsLedger />} />
+        <Route path="/settings" element={<WebsiteSettings />} />
+        <Route path="/reports" element={<ReportsHub />} />
+        
+        {/* Remaining Placeholders */}
         <Route path="/coupons" element={<PlaceholderPage title="Coupons" description="Manage discount codes and promotional offers." />} />
         <Route path="/reviews" element={<PlaceholderPage title="Product Reviews" description="Manage customer reviews and ratings." />} />
         <Route path="/notifications" element={<PlaceholderPage title="Notifications" description="View alerts, system updates, and new activity." />} />
-        <Route path="/reports" element={<PlaceholderPage title="Reports" description="Export your store data for accounting and analysis." />} />
         <Route path="/analytics" element={<PlaceholderPage title="Analytics" description="Deep dive into your store's performance metrics." />} />
+        
         <Route path="/profile" element={<SettingsPage settings={settings} setSettings={setSettings} />} />
         
         {/* Fallback */}
