@@ -1,10 +1,17 @@
-import React from 'react';
-import { User, KeyRound, Mail } from 'lucide-react';
+import React, { useState } from 'react';
+import { User, KeyRound, Mail, Save } from 'lucide-react';
 
 export default function Settings({ settings, setSettings }: { settings: any, setSettings: any }) {
+  const [adminEmail, setAdminEmail] = useState('admin@rappani.in');
+
   const handleSendReset = (e: React.MouseEvent) => {
     e.preventDefault();
-    alert('Password reset link sent to admin@rappani.in');
+    alert(`Password reset link sent to ${adminEmail}`);
+  };
+
+  const handleSaveEmail = (e: React.MouseEvent) => {
+    e.preventDefault();
+    alert('Email updated successfully!');
   };
 
   return (
@@ -36,9 +43,23 @@ export default function Settings({ settings, setSettings }: { settings: any, set
 
           <div className="mb-6">
             <h3 className="text-sm font-semibold text-gray-700 mb-2">Registered Email Address</h3>
-            <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
-              <Mail size={18} className="text-gray-400" />
-              <span className="text-sm font-medium text-gray-800">admin@rappani.in</span>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="flex-1 flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-lg border border-gray-200 focus-within:ring-2 focus-within:ring-gray-900 focus-within:border-gray-900 transition-all">
+                <Mail size={18} className="text-gray-400" />
+                <input 
+                  type="email" 
+                  value={adminEmail}
+                  onChange={(e) => setAdminEmail(e.target.value)}
+                  className="w-full bg-transparent text-sm font-medium text-gray-800 outline-none"
+                />
+              </div>
+              <button 
+                onClick={handleSaveEmail}
+                className="flex items-center justify-center gap-2 bg-gray-900 text-white text-sm font-medium rounded-lg px-4 py-3 hover:bg-gray-800 transition-colors shadow-sm whitespace-nowrap"
+              >
+                <Save size={16} />
+                Save 
+              </button>
             </div>
             <p className="text-xs text-gray-500 mt-2">
               This email is used for logging into the admin dashboard.
