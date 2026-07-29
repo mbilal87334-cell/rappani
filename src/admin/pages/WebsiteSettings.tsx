@@ -25,7 +25,7 @@ export default function WebsiteSettings() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Store Name</label>
-                <input type="text" defaultValue="Noor Wallarts & Gifts" className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none transition-all text-sm" />
+                <input type="text" defaultValue="Rappani Store" className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none transition-all text-sm" />
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Store Tagline</label>
@@ -49,11 +49,11 @@ export default function WebsiteSettings() {
               </div>
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Email Address</label>
-                <input type="email" defaultValue="contact@noorwallarts.in" className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none transition-all text-sm" />
+                <input type="email" defaultValue="admin@rappani.in" className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none transition-all text-sm" />
               </div>
               <div className="md:col-span-2">
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Physical Address</label>
-                <textarea rows={3} defaultValue="Noor Wallarts, Main Street, TN, India" className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none transition-all text-sm resize-none"></textarea>
+                <textarea rows={3} defaultValue="Rappani Store, Main Street, TN, India" className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none transition-all text-sm resize-none"></textarea>
               </div>
             </div>
           </div>

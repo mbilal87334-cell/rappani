@@ -4,7 +4,7 @@ import { User, KeyRound, Mail } from 'lucide-react';
 export default function Settings({ settings, setSettings }: { settings: any, setSettings: any }) {
   const handleSendReset = (e: React.MouseEvent) => {
     e.preventDefault();
-    alert('Password reset link sent to admin@noorwallarts.in');
+    alert('Password reset link sent to admin@rappani.in');
   };
 
   return (
@@ -38,7 +38,7 @@ export default function Settings({ settings, setSettings }: { settings: any, set
             <h3 className="text-sm font-semibold text-gray-700 mb-2">Registered Email Address</h3>
             <div className="flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-lg border border-gray-200">
               <Mail size={18} className="text-gray-400" />
-              <span className="text-sm font-medium text-gray-800">admin@noorwallarts.in</span>
+              <span className="text-sm font-medium text-gray-800">admin@rappani.in</span>
             </div>
             <p className="text-xs text-gray-500 mt-2">
               This email is used for logging into the admin dashboard.

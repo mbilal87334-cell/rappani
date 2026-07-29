@@ -100,7 +100,7 @@ export default function AdminLayout({ setIsAuthenticated, children }: { setIsAut
                       className="flex items-center"
                     >
                       <span className="font-semibold text-lg tracking-tight text-gray-900 leading-tight">
-                        Noor Wallarts &<br />Gifts
+                        Rappani<br />Store
                       </span>
                     </motion.div>
                   )}
