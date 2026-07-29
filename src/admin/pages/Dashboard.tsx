@@ -66,7 +66,9 @@ const StatCard = ({ title, value, icon: Icon, trend, isPositive, delay }: any) =
   </motion.div>
 );
 
-export default function Dashboard() {
+export default function Dashboard({ orders = [] }: { orders?: any[] }) {
+  const recentOrders = orders.slice(0, 5); // Show top 5 recent orders
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-10">
       {/* Header */}
@@ -199,17 +201,27 @@ export default function Dashboard() {
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
-              {[1,2,3,4].map((i) => (
-                <tr key={i} className="hover:bg-stone-50/50 transition-colors">
-                  <td className="px-6 py-4 font-bold text-stone-900">#ORD-{9023 + i}</td>
-                  <td className="px-6 py-4 font-medium text-stone-700">Customer {i}</td>
-                  <td className="px-6 py-4 text-stone-500">Jul {20 - i}, 2026</td>
-                  <td className="px-6 py-4 font-bold text-stone-900">₹{(i * 1250).toLocaleString()}</td>
+              {recentOrders.length > 0 ? recentOrders.map((order) => (
+                <tr key={order.id} className="hover:bg-stone-50/50 transition-colors">
+                  <td className="px-6 py-4 font-bold text-stone-900">#{order.id.slice(0, 8).toUpperCase()}</td>
+                  <td className="px-6 py-4 font-medium text-stone-700">{order.customerDetails?.name || 'Guest'}</td>
+                  <td className="px-6 py-4 text-stone-500">{new Date(order.createdAt).toLocaleDateString()}</td>
+                  <td className="px-6 py-4 font-bold text-stone-900">₹{order.totalAmount?.toLocaleString() || 0}</td>
                   <td className="px-6 py-4">
-                    <span className="px-3 py-1 bg-gold-100 text-gold-700 font-bold text-xs rounded-full">Processing</span>
+                    <span className={`px-3 py-1 font-bold text-xs rounded-full ${
+                      order.status === 'Completed' ? 'bg-green-100 text-green-700' : 
+                      order.status === 'Cancelled' ? 'bg-red-100 text-red-700' :
+                      'bg-gold-100 text-gold-700'
+                    }`}>
+                      {order.status || 'Processing'}
+                    </span>
                   </td>
                 </tr>
-              ))}
+              )) : (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-stone-500 font-medium">No recent transactions found.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
