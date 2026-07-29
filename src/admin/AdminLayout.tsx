@@ -37,7 +37,7 @@ const MENU_ITEMS = [
   { path: '/admin/activity', icon: Activity, label: 'Activity Logs' },
 ];
 
-export default function AdminLayout({ setIsAuthenticated }: { setIsAuthenticated: (v: boolean) => void }) {
+export default function AdminLayout({ setIsAuthenticated, children }: { setIsAuthenticated: (v: boolean) => void, children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const location = useLocation();
@@ -221,7 +221,7 @@ export default function AdminLayout({ setIsAuthenticated }: { setIsAuthenticated
 
         {/* Page Content */}
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-stone-50 p-6 lg:p-10 relative">
-          <Outlet />
+          {children}
         </main>
       </div>
     </div>
