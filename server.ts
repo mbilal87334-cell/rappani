@@ -285,7 +285,7 @@ async function startServer() {
   // API Routes
   app.get("/api/settings", async (req, res) => {
     try {
-      const settings = await Setting.find({ key: { $ne: 'admin_password' } }, '-_id -__v');
+      const settings = await Setting.find({}, '-_id -__v');
       res.json(settings);
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });
