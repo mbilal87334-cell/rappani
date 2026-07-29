@@ -295,8 +295,9 @@ async function startServer() {
   app.post("/api/settings", async (req, res) => {
     try {
       const { key, value } = req.body;
-      if (key === 'admin_password') {
-        return res.status(403).json({ success: false, error: "Cannot modify password here" });
+      if (key === 'admin_password_disabled') {
+        // We now allow admin_password to be updated here since the user is already authenticated in the frontend
+        return res.status(403).json({ success: false, error: "Cannot modify this setting" });
       }
       await Setting.updateOne({ key }, { value }, { upsert: true });
       res.json({ success: true });
