@@ -52,15 +52,17 @@ export default function AdminApp({
         <Route path="/orders" element={<OrderManager orders={orders} />} />
         
         {/* Placeholder Routes */}
-        <Route path="/customers" element={<PlaceholderPage title="Customer Management" description="Advanced CRM features to track customer lifetime value and engagement." />} />
-        <Route path="/categories" element={<PlaceholderPage title="Category Management" description="Organize your store hierarchy and category banners." />} />
-        <Route path="/banners" element={<PlaceholderPage title="Banner Management" description="Manage homepage sliders and promotional banners." />} />
-        <Route path="/coupons" element={<PlaceholderPage title="Coupons & Discounts" description="Create and track promotional codes and discount rules." />} />
-        <Route path="/inventory" element={<PlaceholderPage title="Inventory Management" description="Track stock levels, set low-stock alerts, and manage suppliers." />} />
-        <Route path="/sales" element={<PlaceholderPage title="Sales Analytics" description="Deep dive into sales reports, revenue tracking, and conversion rates." />} />
-        <Route path="/settings" element={<SettingsPage settings={settings} setSettings={setSettings} />} />
-        <Route path="/roles" element={<PlaceholderPage title="Roles & Permissions" description="Manage staff accounts and their access levels." />} />
-        <Route path="/activity" element={<PlaceholderPage title="Activity Logs" description="Track all actions performed by staff in the admin panel." />} />
+        <Route path="/categories" element={<PlaceholderPage title="Categories" description="Manage your product categories." />} />
+        <Route path="/customers" element={<PlaceholderPage title="Customers" description="Manage your customer details." />} />
+        <Route path="/revenue" element={<PlaceholderPage title="Revenue Overview" description="Track your earnings and business growth." />} />
+        <Route path="/transactions" element={<PlaceholderPage title="Transactions" description="Monitor all incoming payments and refunds." />} />
+        <Route path="/settings" element={<PlaceholderPage title="Website Settings" description="Configure your store details." />} />
+        <Route path="/coupons" element={<PlaceholderPage title="Coupons" description="Manage discount codes and promotional offers." />} />
+        <Route path="/reviews" element={<PlaceholderPage title="Product Reviews" description="Manage customer reviews and ratings." />} />
+        <Route path="/notifications" element={<PlaceholderPage title="Notifications" description="View alerts, system updates, and new activity." />} />
+        <Route path="/reports" element={<PlaceholderPage title="Reports" description="Export your store data for accounting and analysis." />} />
+        <Route path="/analytics" element={<PlaceholderPage title="Analytics" description="Deep dive into your store's performance metrics." />} />
+        <Route path="/profile" element={<SettingsPage settings={settings} setSettings={setSettings} />} />
         
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/admin" replace />} />
