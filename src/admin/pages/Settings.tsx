@@ -11,9 +11,23 @@ export default function Settings({ settings, setSettings }: { settings: any, set
     }
   }, [settings.admin_email]);
 
-  const handleSendReset = (e: React.MouseEvent) => {
+  const [newPassword, setNewPassword] = useState('');
+
+  const handleSavePassword = async (e: React.MouseEvent) => {
     e.preventDefault();
-    alert(`Password reset link sent to ${adminEmail}`);
+    if (!newPassword.trim()) {
+      alert('Please enter a valid password.');
+      return;
+    }
+    try {
+      await updateSetting('admin_password', newPassword);
+      setSettings({ ...settings, admin_password: newPassword });
+      alert('Password updated successfully! Next time you login, use the new password.');
+      setNewPassword('');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to update password. Please try again.');
+    }
   };
 
   const handleSaveEmail = async (e: React.MouseEvent) => {
@@ -83,14 +97,28 @@ export default function Settings({ settings, setSettings }: { settings: any, set
           <div className="pt-6 border-t border-gray-100">
             <h3 className="text-sm font-semibold text-gray-700 mb-2">Change Password</h3>
             <p className="text-sm text-gray-500 mb-4 leading-relaxed">
-              For security reasons, password changes are handled via a secure email link. Click the button below to receive a password reset email.
+              Update your admin dashboard password here. Make sure to choose a strong password.
             </p>
-            <button 
-              onClick={handleSendReset}
-              className="bg-white border border-gray-300 text-gray-700 text-sm font-medium rounded-md px-4 py-2 hover:bg-gray-50 transition-colors shadow-sm"
-            >
-              Send Reset Link
-            </button>
+            
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="flex-1 flex items-center gap-3 px-4 py-3 bg-gray-50 rounded-lg border border-gray-200 focus-within:ring-2 focus-within:ring-gray-900 focus-within:border-gray-900 transition-all">
+                <KeyRound size={18} className="text-gray-400" />
+                <input 
+                  type="password" 
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password"
+                  className="w-full bg-transparent text-sm font-medium text-gray-800 outline-none"
+                />
+              </div>
+              <button 
+                onClick={handleSavePassword}
+                className="flex items-center justify-center gap-2 bg-gray-900 text-white text-sm font-medium rounded-lg px-4 py-3 hover:bg-gray-800 transition-colors shadow-sm whitespace-nowrap"
+              >
+                <Save size={16} />
+                Update Password
+              </button>
+            </div>
           </div>
         </div>
       </div>
