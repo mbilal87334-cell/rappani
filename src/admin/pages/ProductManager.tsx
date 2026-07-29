@@ -6,7 +6,31 @@ export default function ProductManager({ products, setProducts }: { products: Pr
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('All');
   
-  const tabs = ['All', 'Acrylic & Glass works', 'Wall stickers & Decals', 'Customize Frames'];
+  const tabs = [
+    'All',
+    'Stationery',
+    'Fancy Items',
+    'Toys',
+    'Sports Items',
+    'Ice Cream',
+    'Snacks & Chocolates',
+    'Cool Drinks & Beverages',
+    'Biscuits',
+    'Candies & Toffees',
+    'Art & Craft',
+    'School Essentials',
+    'Gifts & Return Gifts',
+    'Water Bottles & Lunch Boxes',
+    'Bags & Pouches',
+    'Office Supplies',
+    'Educational Toys',
+    'Indoor & Outdoor Games',
+    'Juices',
+    'Daily Essentials',
+    'New Arrivals',
+    'Best Sellers',
+    'Offers & Discounts'
+  ];
 
   const filteredProducts = products.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());

@@ -45,10 +45,10 @@ const monthlyGrowthData = [
 ];
 
 const categoryData = [
-  { name: 'Acrylic & Glass works', value: 16, color: '#ef4444' }, // Red
-  { name: 'Wall stickers', value: 24, color: '#a855f7' }, // Purple
-  { name: 'Frames', value: 12, color: '#f59e0b' }, // Yellow
-  { name: 'Resin', value: 8, color: '#10b981' }, // Green
+  { name: 'Stationery', value: 16, color: '#ef4444' }, // Red
+  { name: 'Fancy Items', value: 24, color: '#a855f7' }, // Purple
+  { name: 'Toys', value: 12, color: '#f59e0b' }, // Yellow
+  { name: 'Snacks', value: 8, color: '#10b981' }, // Green
 ];
 
 const StatRow = ({ title, value, icon: Icon, colorClass }: any) => (
