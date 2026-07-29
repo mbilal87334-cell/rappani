@@ -2,10 +2,19 @@ import React from 'react';
 import { IndianRupee, TrendingUp, CreditCard, Wallet, ArrowUpRight, ArrowDownRight, Calendar, Download } from 'lucide-react';
 import { Order } from '../../App';
 
-export default function RevenueDashboard({ orders }: { orders: Order[] }) {
-  // Calculate real metrics from orders array
-  const completedOrders = orders.filter(o => o.status === 'completed' || o.status === 'delivered' || o.status === 'shipped');
-  const pendingOrders = orders.filter(o => o.status === 'pending');
+export default function RevenueDashboard({ orders = [] }: { orders?: Order[] }) {
+  // Ensure orders is an array
+  const safeOrders = Array.isArray(orders) ? orders : [];
+
+  // Calculate real metrics from orders array safely
+  const completedOrders = safeOrders.filter(o => {
+    const s = (o.status || '').toLowerCase();
+    return s === 'completed' || s === 'delivered' || s === 'shipped' || s === 'success';
+  });
+  const pendingOrders = safeOrders.filter(o => {
+    const s = (o.status || '').toLowerCase();
+    return s === 'pending';
+  });
   
   const totalRevenue = completedOrders.reduce((acc, o) => acc + (o.totalAmount || 0), 0);
   const pendingRevenue = pendingOrders.reduce((acc, o) => acc + (o.totalAmount || 0), 0);

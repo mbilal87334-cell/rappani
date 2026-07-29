@@ -27,12 +27,14 @@ const BASE_CATEGORIES = [
   { id: '22', name: 'Offers & Discounts', icon: '💥' }
 ];
 
-export default function CategoriesManager({ products }: { products: Product[] }) {
+export default function CategoriesManager({ products = [] }: { products?: Product[] }) {
   const [searchTerm, setSearchTerm] = useState('');
 
+  const safeProducts = Array.isArray(products) ? products : [];
+  
   const categoriesWithCounts = BASE_CATEGORIES.map(cat => ({
     ...cat,
-    count: products.filter(p => p.category === cat.name).length
+    count: safeProducts.filter(p => p.category === cat.name).length
   }));
 
   const filteredCategories = categoriesWithCounts.filter(cat => 

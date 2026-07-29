@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { Search, Filter, ArrowUpRight, ArrowDownRight, CreditCard, Wallet, Smartphone } from 'lucide-react';
 import { Order } from '../../App';
 
-export default function TransactionsLedger({ orders }: { orders: Order[] }) {
+export default function TransactionsLedger({ orders = [] }: { orders?: Order[] }) {
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredTransactions = orders.filter((order) =>
-    order.id.toLowerCase().includes(searchTerm.toLowerCase())
+  const safeOrders = Array.isArray(orders) ? orders : [];
+  
+  const filteredTransactions = safeOrders.filter((order) =>
+    (order.id || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (

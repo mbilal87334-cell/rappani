@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import { Search, Filter, MoreHorizontal, User, Mail, Phone, ShoppingBag } from 'lucide-react';
 import { Order } from '../../App';
 
-export default function CustomersList({ orders }: { orders: Order[] }) {
+export default function CustomersList({ orders = [] }: { orders?: Order[] }) {
   const [searchTerm, setSearchTerm] = useState('');
 
   // Group orders by customer phone to find unique customers
   const customerMap = new Map<string, { id: string, name: string, phone: string, email: string, orders: number, spent: number, status: string }>();
   
-  orders.forEach(order => {
+  const safeOrders = Array.isArray(orders) ? orders : [];
+  safeOrders.forEach(order => {
     const phone = order.customerPhone || 'Unknown';
     if (!customerMap.has(phone)) {
       customerMap.set(phone, {
