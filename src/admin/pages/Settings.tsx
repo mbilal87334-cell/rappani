@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { User, KeyRound, Mail, Save } from 'lucide-react';
 
 export default function Settings({ settings, setSettings }: { settings: any, setSettings: any }) {
-  const [adminEmail, setAdminEmail] = useState('admin@rappani.in');
+  const [adminEmail, setAdminEmail] = useState(() => localStorage.getItem('rappani_admin_email') || 'admin@rappani.in');
 
   const handleSendReset = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -11,6 +11,7 @@ export default function Settings({ settings, setSettings }: { settings: any, set
 
   const handleSaveEmail = (e: React.MouseEvent) => {
     e.preventDefault();
+    localStorage.setItem('rappani_admin_email', adminEmail);
     alert('Email updated successfully!');
   };
 
