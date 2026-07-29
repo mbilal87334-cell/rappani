@@ -1,36 +1,20 @@
 import React, { useState } from 'react';
-import { Search, Plus, Eye, Edit2, Trash2, Copy, Image as ImageIcon } from 'lucide-react';
-import { Product } from '../../App';
+import { Search, Plus, Eye, EyeOff, Edit2, Trash2, Copy, Image as ImageIcon, X } from 'lucide-react';
+import { Product, saveProduct, deleteProduct } from '../../App';
+import toast from 'react-hot-toast';
 
-export default function ProductManager({ products, setProducts }: { products: Product[], setProducts: any }) {
+export default function ProductManager({ products, setProducts, apiCategories = [] }: { products: Product[], setProducts: any, apiCategories?: any[] }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('All');
   
-  const tabs = [
-    'All',
-    'Stationery',
-    'Fancy Items',
-    'Toys',
-    'Sports Items',
-    'Ice Cream',
-    'Snacks & Chocolates',
-    'Cool Drinks & Beverages',
-    'Biscuits',
-    'Candies & Toffees',
-    'Art & Craft',
-    'School Essentials',
-    'Gifts & Return Gifts',
-    'Water Bottles & Lunch Boxes',
-    'Bags & Pouches',
-    'Office Supplies',
-    'Educational Toys',
-    'Indoor & Outdoor Games',
-    'Juices',
-    'Daily Essentials',
-    'New Arrivals',
-    'Best Sellers',
-    'Offers & Discounts'
-  ];
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [formData, setFormData] = useState<Partial<Product>>({
+    id: '', name: '', category: '', price: 0, originalPrice: 0, stock: 50, image: '', isVisible: true, isFeatured: false
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  
+  const tabs = ['All', ...apiCategories.map(c => c.name)];
 
   const filteredProducts = products.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -38,11 +22,113 @@ export default function ProductManager({ products, setProducts }: { products: Pr
     return matchesSearch && matchesTab;
   });
 
+  const openModal = (product?: Product, isCopy = false) => {
+    if (product) {
+      if (isCopy) {
+        setEditingProduct(null);
+        setFormData({ ...product, id: `prod_${Date.now()}`, name: `${product.name} (Copy)` });
+      } else {
+        setEditingProduct(product);
+        setFormData({ ...product });
+      }
+    } else {
+      setEditingProduct(null);
+      setFormData({ 
+        id: `prod_${Date.now()}`, name: '', category: apiCategories[0]?.name || 'Stationery', 
+        price: 0, stock: 50, image: '', isVisible: true, isFeatured: false 
+      });
+    }
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingProduct(null);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name?.trim()) return toast.error("Product name is required");
+    
+    setIsSaving(true);
+    try {
+      const productToSave = formData as Product;
+      if (productToSave.isVisible === undefined) productToSave.isVisible = true;
+      
+      await saveProduct(productToSave, !!editingProduct);
+      setProducts((prev: Product[]) => {
+        if (editingProduct) {
+          return prev.map(p => p.id === productToSave.id ? productToSave : p);
+        }
+        return [productToSave, ...prev];
+      });
+      toast.success(`Product ${editingProduct ? 'updated' : 'added'} successfully`);
+      closeModal();
+    } catch (err) {
+      toast.error("Failed to save product");
+      console.error(err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async (product: Product) => {
+    if (!window.confirm(`Are you sure you want to delete ${product.name}?`)) return;
+    try {
+      await deleteProduct(product.id);
+      setProducts((prev: Product[]) => prev.filter(p => p.id !== product.id));
+      toast.success("Product deleted");
+    } catch (err) {
+      toast.error("Failed to delete product");
+    }
+  };
+
+  const handleToggleVisibility = async (product: Product) => {
+    const updated = { ...product, isVisible: product.isVisible === false ? true : false };
+    try {
+      await saveProduct(updated, true);
+      setProducts((prev: Product[]) => prev.map(p => p.id === product.id ? updated : p));
+      toast.success(updated.isVisible ? "Product is now visible" : "Product hidden from store");
+    } catch (err) {
+      toast.error("Failed to update visibility");
+    }
+  };
+
+  const handleToggleFeatured = async (product: Product, isFeatured: boolean) => {
+    const updated = { ...product, isFeatured };
+    try {
+      await saveProduct(updated, true);
+      setProducts((prev: Product[]) => prev.map(p => p.id === product.id ? updated : p));
+      toast.success(updated.isFeatured ? "Added to Hero Slider" : "Removed from Hero Slider");
+    } catch (err) {
+      toast.error("Failed to update featured status");
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto pb-10">
       {/* Header Actions */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Products</h1>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <input 
+              type="text" 
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-md text-sm font-medium w-64 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none shadow-sm transition-all"
+            />
+          </div>
+          <button 
+            onClick={() => openModal()}
+            className="flex items-center gap-2 bg-gray-900 text-white text-sm font-medium rounded-md px-4 py-2 hover:bg-gray-800 transition-colors shadow-sm"
+          >
+            <Plus size={16} />
+            Add Product
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -78,10 +164,15 @@ export default function ProductManager({ products, setProducts }: { products: Pr
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredProducts.map((product, idx) => (
-                <tr key={product.id} className="hover:bg-gray-50/50">
+              {filteredProducts.map((product) => (
+                <tr key={product.id} className={`hover:bg-gray-50/50 ${product.isVisible === false ? 'opacity-60' : ''}`}>
                   <td className="px-5 py-4 text-center">
-                    <input type="checkbox" defaultChecked={idx % 4 === 0} className="w-5 h-5 rounded border-gray-300 text-gray-900 focus:ring-gray-900" />
+                    <input 
+                      type="checkbox" 
+                      checked={product.isFeatured || false}
+                      onChange={(e) => handleToggleFeatured(product, e.target.checked)}
+                      className="w-5 h-5 rounded border-gray-300 text-gray-900 focus:ring-gray-900 cursor-pointer" 
+                    />
                   </td>
                   <td className="px-5 py-4 min-w-[250px]">
                     <div className="flex items-start gap-3">
@@ -94,7 +185,7 @@ export default function ProductManager({ products, setProducts }: { products: Pr
                       </div>
                       <div>
                         <p className="font-semibold text-gray-900 line-clamp-2 leading-tight">{product.name}</p>
-                        <p className="text-xs text-gray-500 mt-1">SKU: N/A</p>
+                        <p className="text-xs text-gray-500 mt-1">ID: {product.id.slice(0,8)}</p>
                       </div>
                     </div>
                   </td>
@@ -108,26 +199,36 @@ export default function ProductManager({ products, setProducts }: { products: Pr
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex justify-center">
-                      <div className="bg-green-50 text-green-600 rounded-md px-2 py-1 text-xs font-semibold text-center min-w-[60px]">
-                        {product.stock || 50} in<br/>stock
+                      <div className={`${(product.stock || 0) > 0 ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'} rounded-md px-2 py-1 text-xs font-semibold text-center min-w-[60px]`}>
+                        {product.stock || 0} in<br/>stock
                       </div>
                     </div>
                   </td>
                   <td className="px-5 py-4">
-                    <div className="flex items-center gap-1.5 text-gray-700 font-medium text-sm">
-                      <Eye size={16} className="text-gray-400" />
-                      Visible
-                    </div>
+                    <button 
+                      onClick={() => handleToggleVisibility(product)}
+                      className={`flex items-center gap-1.5 font-medium text-sm px-3 py-1.5 rounded-full transition-colors ${
+                        product.isVisible !== false 
+                        ? 'bg-blue-50 text-blue-700 hover:bg-blue-100' 
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {product.isVisible !== false ? (
+                        <><Eye size={16} /> Visible</>
+                      ) : (
+                        <><EyeOff size={16} /> Hidden</>
+                      )}
+                    </button>
                   </td>
                   <td className="px-5 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <button className="p-1.5 text-gray-400 hover:text-gray-900 transition-colors">
+                      <button onClick={() => openModal(product, true)} title="Duplicate" className="p-1.5 text-gray-400 hover:text-gray-900 transition-colors">
                         <Copy size={16} />
                       </button>
-                      <button className="p-1.5 text-blue-500 hover:text-blue-600 transition-colors">
+                      <button onClick={() => openModal(product)} title="Edit" className="p-1.5 text-blue-500 hover:text-blue-600 transition-colors">
                         <Edit2 size={16} />
                       </button>
-                      <button className="p-1.5 text-red-500 hover:text-red-600 transition-colors bg-red-50 rounded-md">
+                      <button onClick={() => handleDelete(product)} title="Delete" className="p-1.5 text-red-500 hover:text-red-600 transition-colors bg-red-50 rounded-md">
                         <Trash2 size={16} />
                       </button>
                     </div>
@@ -145,6 +246,112 @@ export default function ProductManager({ products, setProducts }: { products: Pr
           </table>
         </div>
       </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden my-8">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-gray-900">{editingCategory ? 'Edit Product' : 'Add Product'}</h2>
+              <button onClick={closeModal} className="text-gray-400 hover:text-gray-600">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleSave} className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+                    <input 
+                      type="text" required value={formData.name || ''}
+                      onChange={e => setFormData({...formData, name: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-gray-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <select
+                      required value={formData.category || ''}
+                      onChange={e => setFormData({...formData, category: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-gray-900"
+                    >
+                      {apiCategories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
+                      <input 
+                        type="number" required min="0" value={formData.price || ''}
+                        onChange={e => setFormData({...formData, price: Number(e.target.value)})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-gray-900"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Original Price</label>
+                      <input 
+                        type="number" min="0" value={formData.originalPrice || ''}
+                        onChange={e => setFormData({...formData, originalPrice: Number(e.target.value)})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-gray-900"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Stock Quantity</label>
+                    <input 
+                      type="number" min="0" value={formData.stock || 0}
+                      onChange={e => setFormData({...formData, stock: Number(e.target.value)})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-gray-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
+                    <input 
+                      type="text" required value={formData.image || ''}
+                      onChange={e => setFormData({...formData, image: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-gray-900"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-3 pt-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input 
+                        type="checkbox" checked={formData.isVisible !== false}
+                        onChange={e => setFormData({...formData, isVisible: e.target.checked})}
+                        className="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+                      />
+                      <span className="text-sm font-medium text-gray-700">Visible on Storefront</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input 
+                        type="checkbox" checked={formData.isFeatured || false}
+                        onChange={e => setFormData({...formData, isFeatured: e.target.checked})}
+                        className="w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+                      />
+                      <span className="text-sm font-medium text-gray-700">Show in Hero Slider</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex justify-end gap-3 pt-8 border-t border-gray-100 mt-6">
+                <button 
+                  type="button" onClick={closeModal}
+                  className="px-6 py-2 bg-gray-100 text-gray-700 font-medium rounded-md hover:bg-gray-200"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" disabled={isSaving}
+                  className="px-6 py-2 bg-gray-900 text-white font-medium rounded-md hover:bg-gray-800 disabled:opacity-50"
+                >
+                  {isSaving ? 'Saving...' : 'Save Product'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -2,6 +2,10 @@ import React, {  useState, useEffect, useRef  } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
 import { Phone, Mail, Instagram, MessageCircle, MapPin, Map, Lock, LogOut, Plus, Edit, Trash2, Store, ShoppingBag, Menu, X, Camera, Aperture, Globe, Database, Search, ArrowUp, Package, LayoutGrid, ShoppingCart, Minus, Image, ShieldCheck, Gift, Sparkles, Sticker, Rocket, Coffee, Eye, Star, TrendingUp, CheckCircle2, Info , Home, Heart, User, ChevronRight, CreditCard, Briefcase } from 'lucide-react';
+import React, {  useState, useEffect, useRef  } from 'react';
+import toast, { Toaster } from 'react-hot-toast';
+import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
+import { Phone, Mail, Instagram, MessageCircle, MapPin, Map, Lock, LogOut, Plus, Edit, Trash2, Store, ShoppingBag, Menu, X, Camera, Aperture, Globe, Database, Search, ArrowUp, Package, LayoutGrid, ShoppingCart, Minus, Image, ShieldCheck, Gift, Sparkles, Sticker, Rocket, Coffee, Eye, Star, TrendingUp, CheckCircle2, Info , Home, Heart, User, ChevronRight, CreditCard, Briefcase } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import AdminApp from './admin/AdminApp';
 import LocationMap from './LocationMap';
@@ -17,6 +21,7 @@ export interface Product {
   stock?: number;
   image: string;
   isFeatured?: boolean;
+  isVisible?: boolean;
   reviews?: Review[];
 }
 
@@ -87,7 +92,7 @@ async function fetchProducts(page = 1, limit = 50) {
   return res.json();
 }
 
-async function saveProduct(product: Product, isEditing: boolean) {
+export async function saveProduct(product: Product, isEditing: boolean) {
   const method = isEditing ? 'PUT' : 'POST';
   const url = isEditing ? `${API_BASE}/products/${product.id}` : `${API_BASE}/products`;
   const res = await fetch(url, {
@@ -96,6 +101,30 @@ async function saveProduct(product: Product, isEditing: boolean) {
     body: JSON.stringify(product),
   });
   if (!res.ok) throw new Error("Failed to save product");
+  return res.json();
+}
+
+export async function fetchCategoriesApi() {
+  const res = await fetch(`${API_BASE}/categories`);
+  if (!res.ok) throw new Error("Failed to fetch categories");
+  return res.json();
+}
+
+export async function saveCategoryApi(category: any, isEditing: boolean) {
+  const method = isEditing ? 'PUT' : 'POST';
+  const url = isEditing ? `${API_BASE}/categories/${category.id}` : `${API_BASE}/categories`;
+  const res = await fetch(url, {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(category),
+  });
+  if (!res.ok) throw new Error("Failed to save category");
+  return res.json();
+}
+
+export async function deleteCategoryApi(id: string) {
+  const res = await fetch(`${API_BASE}/categories/${id}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error("Failed to delete category");
   return res.json();
 }
 
@@ -125,7 +154,7 @@ async function updateOrderStatus(id: string, status: string) {
   return res.json();
 }
 
-async function deleteProduct(id: string) {
+export async function deleteProduct(id: string) {
   console.log(`API Service: Calling DELETE /api/products/${id}`);
   const res = await fetch(`${API_BASE}/products/${id}`, { method: 'DELETE' });
   if (!res.ok) {
@@ -336,7 +365,7 @@ function getDistanceInKm(lat1: number, lon1: number, lat2: number, lon2: number)
 }
 
 // --- Visitor Panel ---
-function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore, loadMoreProducts }: { products: Product[], settings: Record<string, string>, setProducts: React.Dispatch<React.SetStateAction<Product[]>>, hasMore?: boolean, isLoadingMore?: boolean, loadMoreProducts?: () => void }) {
+function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore, loadMoreProducts, apiCategories }: { products: Product[], settings: Record<string, string>, setProducts: React.Dispatch<React.SetStateAction<Product[]>>, hasMore?: boolean, isLoadingMore?: boolean, loadMoreProducts?: () => void, apiCategories: any[] }) {
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem('rappani_cart');
@@ -650,17 +679,10 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
     }
   };
 
-  const getCategoryName = (cat: string) => {
-    switch (cat) {
-      case 'All': return t.all;
-      case 'Offers': return t.offers;
-      case 'Stationary': return t.stationary;
-      case 'Fancy': return t.fancy;
-      case 'Toys': return t.toys;
-      case 'Sports Items': return t.sports;
-      case 'Snacks': return t.snacks;
-      default: return cat;
-    }
+  const getCategoryName = (catId: string) => {
+    const cat = categories.find(c => c.id === catId);
+    if (!cat) return catId;
+    return lang === 'ta' ? cat.ta : cat.en;
   };
 
   useEffect(() => {
@@ -676,19 +698,15 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   };
 
 
-  const categories = [
-    { id: 'All', icon: <LayoutGrid className="w-5 h-5" /> },
-    { id: 'Offers', icon: <Sparkles className="w-5 h-5" /> },
-    { id: 'Stationary', icon: <Edit className="w-5 h-5" /> },
-    { id: 'Fancy', icon: <Gift className="w-5 h-5" /> },
-    { id: 'Bags', icon: <Briefcase className="w-5 h-5" /> },
-    { id: 'Toys', icon: <Rocket className="w-5 h-5" /> },
-    { id: 'Sports Items', icon: <TrendingUp className="w-5 h-5" /> },
-    { id: 'Snacks', icon: <Coffee className="w-5 h-5" /> }
+  const categories = apiCategories.length > 0 ? apiCategories : [
+    { id: 'All', name: 'All', icon: '🛒', en: 'All', ta: 'அனைத்தும்' },
+    { id: 'Stationary', name: 'Stationary', icon: '📝', en: 'Stationery', ta: 'ஸ்டேஷனரி' },
+    { id: 'Fancy', name: 'Fancy Items', icon: '🎀', en: 'Fancy Items', ta: 'ஃபேன்ஸி பொருட்கள்' }
   ];
 
+  const publicProducts = products.filter(p => p.isVisible !== false);
 
-  const filteredProducts = products.filter(product => {
+  const filteredProducts = publicProducts.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
     let matchesCategory = false;
 
@@ -1057,7 +1075,6 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                   <div key={idx} onClick={() => { setSelectedCategory(cat.id); setCurrentTab('products'); }} className="flex flex-col items-center gap-1 cursor-pointer min-w-[70px]">
                     <div className="w-14 h-14 bg-violet-50 rounded-full flex items-center justify-center text-violet-600 border border-violet-100 transition-colors relative">
                        {cat.icon}
-                       {idx === 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full">New</span>}
                     </div>
                     <span className="text-[10px] font-medium text-center text-gray-700 leading-tight">{getCategoryName(cat.id)}</span>
                   </div>
@@ -1072,7 +1089,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                 <button className="text-sm text-gold-600 font-bold" onClick={() => setCurrentTab('products')}>See All</button>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {products.map(product => {
+                {publicProducts.slice(0, 4).map(product => {
                   const cartItem = cart.find(item => item.product.id === product.id);
                   const qty = cartItem ? cartItem.quantity : 0;
                   return (
@@ -1949,6 +1966,8 @@ const getCategoryColor = (category: string) => {
 
 export default function App() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [apiCategories, setApiCategories] = useState<any[]>([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -1985,6 +2004,9 @@ export default function App() {
         }
         const settingsMap = allSettings.reduce((acc: any, curr: any) => ({ ...acc, [curr.key]: curr.value }), {});
         setSettings(settingsMap);
+        
+        fetch(`${API_BASE}/orders`).then(res => res.json()).then(data => setOrders(Array.isArray(data) ? data : [])).catch(console.error);
+        fetchCategoriesApi().then(data => setApiCategories(data)).catch(console.error);
       } catch (e) {
         console.error("Failed to load backend data", e);
       } finally {
@@ -2008,8 +2030,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<VisitorPanel products={products} settings={settings} setProducts={setProducts} hasMore={hasMore} isLoadingMore={isLoadingMore} loadMoreProducts={loadMoreProducts} />} />
-        <Route path="/admin/*" element={<AdminApp products={products} setProducts={setProducts} settings={settings} setSettings={setSettings} />} />
+        <Route path="/" element={<VisitorPanel products={products} settings={settings} setProducts={setProducts} hasMore={hasMore} isLoadingMore={isLoadingMore} loadMoreProducts={loadMoreProducts} apiCategories={apiCategories} />} />
+        <Route path="/admin/*" element={<AdminApp orders={orders} products={products} setProducts={setProducts} apiCategories={apiCategories} setApiCategories={setApiCategories} settings={settings} setSettings={setSettings} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

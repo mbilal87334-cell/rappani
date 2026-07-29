@@ -54,6 +54,7 @@ const productSchema = new mongoose.Schema({
   stock: { type: Number, required: false },
   image: { type: String, required: true },
   isFeatured: { type: Boolean, default: false },
+  isVisible: { type: Boolean, default: true },
   reviews: [{
     rating: { type: Number, required: true },
     review: { type: String, required: true },
@@ -62,6 +63,14 @@ const productSchema = new mongoose.Schema({
   }]
 });
 const Product = mongoose.model("Product", productSchema);
+
+const categorySchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  icon: { type: String, required: true },
+  createdAt: { type: Date, default: Date.now }
+});
+const Category = mongoose.model("Category", categorySchema);
 
 const settingSchema = new mongoose.Schema({
   key: { type: String, required: true, unique: true },
@@ -325,8 +334,9 @@ async function startServer() {
 
   app.post("/api/products", async (req, res) => {
     try {
-      const { id, name, category, price, originalPrice, stock, image, isFeatured } = req.body;
-      await Product.create({ id, name, category, price, originalPrice, stock, image, isFeatured });
+      const { id, name, category, price, originalPrice, stock, image, isFeatured, isVisible } = req.body;
+      const visibleFlag = isVisible !== undefined ? isVisible : true;
+      await Product.create({ id, name, category, price, originalPrice, stock, image, isFeatured, isVisible: visibleFlag });
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });
@@ -336,13 +346,58 @@ async function startServer() {
   app.put("/api/products/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, category, price, originalPrice, stock, image, isFeatured } = req.body;
-      await Product.updateOne({ id }, { name, category, price, originalPrice, stock, image, isFeatured });
+      const { name, category, price, originalPrice, stock, image, isFeatured, isVisible } = req.body;
+      const updateData: any = { name, category, price, originalPrice, stock, image, isFeatured };
+      if (isVisible !== undefined) updateData.isVisible = isVisible;
+      
+      await Product.updateOne({ id }, updateData);
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });
     }
   });
+
+  // --- Category Routes ---
+  app.get("/api/categories", async (req, res) => {
+    try {
+      const categories = await Category.find({});
+      res.json(categories);
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  app.post("/api/categories", async (req, res) => {
+    try {
+      const { id, name, icon } = req.body;
+      await Category.create({ id, name, icon });
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  app.put("/api/categories/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { name, icon } = req.body;
+      await Category.updateOne({ id }, { name, icon });
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  app.delete("/api/categories/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await Category.deleteOne({ id });
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+  // -----------------------
 
   app.post("/api/products/:id/reviews", async (req, res) => {
     try {

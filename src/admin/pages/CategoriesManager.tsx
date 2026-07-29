@@ -1,38 +1,18 @@
 import React, { useState } from 'react';
-import { Search, Plus, Edit2, Trash2 } from 'lucide-react';
-import { Product } from '../../App';
+import { Search, Plus, Edit2, Trash2, X } from 'lucide-react';
+import { Product, saveCategoryApi, deleteCategoryApi } from '../../App';
+import toast from 'react-hot-toast';
 
-const BASE_CATEGORIES = [
-  { id: '1', name: 'Stationery', icon: '📝' },
-  { id: '2', name: 'Fancy Items', icon: '🎀' },
-  { id: '3', name: 'Toys', icon: '🧸' },
-  { id: '4', name: 'Sports Items', icon: '⚽' },
-  { id: '5', name: 'Ice Cream', icon: '🍦' },
-  { id: '6', name: 'Snacks & Chocolates', icon: '🍫' },
-  { id: '7', name: 'Cool Drinks & Beverages', icon: '🥤' },
-  { id: '8', name: 'Biscuits', icon: '🍪' },
-  { id: '9', name: 'Candies & Toffees', icon: '🍬' },
-  { id: '10', name: 'Art & Craft', icon: '🎨' },
-  { id: '11', name: 'School Essentials', icon: '🎒' },
-  { id: '12', name: 'Gifts & Return Gifts', icon: '🎁' },
-  { id: '13', name: 'Water Bottles & Lunch Boxes', icon: '💧' },
-  { id: '14', name: 'Bags & Pouches', icon: '👜' },
-  { id: '15', name: 'Office Supplies', icon: '🗂️' },
-  { id: '16', name: 'Educational Toys', icon: '🧩' },
-  { id: '17', name: 'Indoor & Outdoor Games', icon: '🪀' },
-  { id: '18', name: 'Juices', icon: '🧃' },
-  { id: '19', name: 'Daily Essentials', icon: '🧼' },
-  { id: '20', name: 'New Arrivals', icon: '⭐' },
-  { id: '21', name: 'Best Sellers', icon: '🔥' },
-  { id: '22', name: 'Offers & Discounts', icon: '💥' }
-];
-
-export default function CategoriesManager({ products = [] }: { products?: Product[] }) {
+export default function CategoriesManager({ apiCategories = [], setApiCategories, products = [] }: { apiCategories?: any[], setApiCategories?: any, products?: Product[] }) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<any>(null);
+  const [formData, setFormData] = useState({ id: '', name: '', icon: '' });
+  const [isSaving, setIsSaving] = useState(false);
 
   const safeProducts = Array.isArray(products) ? products : [];
   
-  const categoriesWithCounts = BASE_CATEGORIES.map(cat => ({
+  const categoriesWithCounts = apiCategories.map(cat => ({
     ...cat,
     count: safeProducts.filter(p => p.category === cat.name).length
   }));
@@ -40,6 +20,64 @@ export default function CategoriesManager({ products = [] }: { products?: Produc
   const filteredCategories = categoriesWithCounts.filter(cat => 
     cat.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const openModal = (category?: any) => {
+    if (category) {
+      setEditingCategory(category);
+      setFormData({ id: category.id, name: category.name, icon: category.icon });
+    } else {
+      setEditingCategory(null);
+      setFormData({ id: `cat_${Date.now()}`, name: '', icon: '📁' });
+    }
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingCategory(null);
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name.trim()) return toast.error("Category name is required");
+    
+    setIsSaving(true);
+    try {
+      await saveCategoryApi(formData, !!editingCategory);
+      if (setApiCategories) {
+        setApiCategories((prev: any[]) => {
+          if (editingCategory) {
+            return prev.map(c => c.id === formData.id ? formData : c);
+          }
+          return [...prev, formData];
+        });
+      }
+      toast.success(`Category ${editingCategory ? 'updated' : 'added'} successfully`);
+      closeModal();
+    } catch (err) {
+      toast.error("Failed to save category");
+      console.error(err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async (category: any) => {
+    if (category.count > 0) {
+      return toast.error(`Cannot delete category with ${category.count} products. Move or delete them first.`);
+    }
+    if (!window.confirm(`Are you sure you want to delete ${category.name}?`)) return;
+
+    try {
+      await deleteCategoryApi(category.id);
+      if (setApiCategories) {
+        setApiCategories((prev: any[]) => prev.filter(c => c.id !== category.id));
+      }
+      toast.success("Category deleted");
+    } catch (err) {
+      toast.error("Failed to delete category");
+    }
+  };
 
   return (
     <div className="max-w-5xl mx-auto pb-10">
@@ -59,7 +97,10 @@ export default function CategoriesManager({ products = [] }: { products?: Produc
               className="pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-md text-sm font-medium w-64 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none shadow-sm transition-all"
             />
           </div>
-          <button className="flex items-center gap-2 bg-gray-900 text-white text-sm font-medium rounded-md px-4 py-2 hover:bg-gray-800 transition-colors shadow-sm">
+          <button 
+            onClick={() => openModal()}
+            className="flex items-center gap-2 bg-gray-900 text-white text-sm font-medium rounded-md px-4 py-2 hover:bg-gray-800 transition-colors shadow-sm"
+          >
             <Plus size={16} />
             Add Category
           </button>
@@ -95,10 +136,10 @@ export default function CategoriesManager({ products = [] }: { products?: Produc
                   </td>
                   <td className="px-5 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <button className="p-1.5 text-blue-500 hover:text-blue-600 transition-colors">
+                      <button onClick={() => openModal(cat)} className="p-1.5 text-blue-500 hover:text-blue-600 transition-colors">
                         <Edit2 size={16} />
                       </button>
-                      <button className="p-1.5 text-red-500 hover:text-red-600 transition-colors bg-red-50 rounded-md">
+                      <button onClick={() => handleDelete(cat)} className="p-1.5 text-red-500 hover:text-red-600 transition-colors bg-red-50 rounded-md">
                         <Trash2 size={16} />
                       </button>
                     </div>
@@ -116,6 +157,60 @@ export default function CategoriesManager({ products = [] }: { products?: Produc
           </table>
         </div>
       </div>
+
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-gray-900">{editingCategory ? 'Edit Category' : 'Add Category'}</h2>
+              <button onClick={closeModal} className="text-gray-400 hover:text-gray-600">
+                <X size={20} />
+              </button>
+            </div>
+            <form onSubmit={handleSave} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category Name</label>
+                <input 
+                  type="text" 
+                  required
+                  value={formData.name}
+                  onChange={e => setFormData({...formData, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-gray-900"
+                  placeholder="e.g., Fancy Items"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Emoji Icon</label>
+                <input 
+                  type="text" 
+                  required
+                  value={formData.icon}
+                  onChange={e => setFormData({...formData, icon: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-gray-900"
+                  placeholder="e.g., 🎀"
+                />
+              </div>
+              
+              <div className="flex gap-3 pt-4">
+                <button 
+                  type="button" 
+                  onClick={closeModal}
+                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 font-medium rounded-md hover:bg-gray-200"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  disabled={isSaving}
+                  className="flex-1 px-4 py-2 bg-gray-900 text-white font-medium rounded-md hover:bg-gray-800 disabled:opacity-50"
+                >
+                  {isSaving ? 'Saving...' : 'Save Category'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

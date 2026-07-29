@@ -18,32 +18,22 @@ import WebsiteSettings from './pages/WebsiteSettings';
 import ReportsHub from './pages/ReportsHub';
 
 export default function AdminApp({ 
-  products, setProducts, settings, setSettings 
+  orders, products, setProducts, settings, setSettings, apiCategories, setApiCategories 
 }: { 
+  orders: any[],
   products: Product[], 
   setProducts: any, 
   settings: any, 
-  setSettings: any 
+  setSettings: any,
+  apiCategories: any[],
+  setApiCategories: any
 }) {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return localStorage.getItem('rappani_admin_auth') === 'true';
   });
 
-  const [orders, setOrders] = useState<Order[]>([]);
-
   useEffect(() => {
     localStorage.setItem('rappani_admin_auth', isAuthenticated.toString());
-  }, [isAuthenticated]);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      // Mock fetch orders for now, or you can import fetchOrders from App.tsx if exported
-      // In a real app, we'd fetch this from the API
-      fetch('/api/orders')
-        .then(res => res.json())
-        .then(data => setOrders(data))
-        .catch(err => console.error(err));
-    }
   }, [isAuthenticated]);
 
   if (!isAuthenticated) {
@@ -55,11 +45,11 @@ export default function AdminApp({
     <AdminLayout setIsAuthenticated={setIsAuthenticated}>
       <Routes>
         <Route path="/" element={<Dashboard orders={orders} products={products} />} />
-        <Route path="/products" element={<ProductManager products={products} setProducts={setProducts} />} />
+        <Route path="/products" element={<ProductManager products={products} setProducts={setProducts} apiCategories={apiCategories} />} />
         <Route path="/orders" element={<OrderManager orders={orders} />} />
         
         {/* Fully Implemented Premium UIs */}
-        <Route path="/categories" element={<CategoriesManager products={products} />} />
+        <Route path="/categories" element={<CategoriesManager apiCategories={apiCategories} setApiCategories={setApiCategories} />} />
         <Route path="/customers" element={<CustomersList orders={orders} />} />
         <Route path="/revenue" element={<RevenueDashboard orders={orders} />} />
         <Route path="/transactions" element={<TransactionsLedger orders={orders} />} />
