@@ -1,16 +1,32 @@
 import React, { useState } from 'react';
 import { Search, Filter, MoreHorizontal, User, Mail, Phone, ShoppingBag } from 'lucide-react';
+import { Order } from '../../App';
 
-const CUSTOMERS_DATA = [
-  { id: 'CUS-001', name: 'Aarav Patel', email: 'aarav.p@example.com', phone: '+91 98765 43210', orders: 12, spent: 4500, status: 'Active', lastActive: '2 hours ago' },
-  { id: 'CUS-002', name: 'Diya Sharma', email: 'diya.sharma@example.com', phone: '+91 87654 32109', orders: 5, spent: 1250, status: 'Active', lastActive: '1 day ago' },
-  { id: 'CUS-003', name: 'Rohan Kumar', email: 'rohan.k@example.com', phone: '+91 76543 21098', orders: 1, spent: 450, status: 'Inactive', lastActive: '2 months ago' },
-  { id: 'CUS-004', name: 'Ananya Singh', email: 'ananya.s@example.com', phone: '+91 65432 10987', orders: 24, spent: 12400, status: 'Active', lastActive: '5 mins ago' },
-  { id: 'CUS-005', name: 'Karthik Raja', email: 'karthik.r@example.com', phone: '+91 54321 09876', orders: 3, spent: 890, status: 'Active', lastActive: '3 days ago' },
-];
-
-export default function CustomersList() {
+export default function CustomersList({ orders }: { orders: Order[] }) {
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Group orders by customer phone to find unique customers
+  const customerMap = new Map<string, { id: string, name: string, phone: string, email: string, orders: number, spent: number, status: string }>();
+  
+  orders.forEach(order => {
+    const phone = order.customerPhone || 'Unknown';
+    if (!customerMap.has(phone)) {
+      customerMap.set(phone, {
+        id: `CUS-${Math.floor(Math.random() * 10000)}`,
+        name: order.customerName || 'Guest',
+        phone: phone,
+        email: 'N/A', // Assuming email is not in Order type yet
+        orders: 0,
+        spent: 0,
+        status: 'Active'
+      });
+    }
+    const customer = customerMap.get(phone)!;
+    customer.orders += 1;
+    customer.spent += order.totalAmount || 0;
+  });
+
+  const CUSTOMERS_DATA = Array.from(customerMap.values());
 
   const filteredCustomers = CUSTOMERS_DATA.filter(cus => 
     cus.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

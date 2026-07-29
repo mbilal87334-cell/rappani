@@ -1,35 +1,41 @@
 import React, { useState } from 'react';
 import { Search, Plus, Edit2, Trash2 } from 'lucide-react';
+import { Product } from '../../App';
 
-const CATEGORIES_DATA = [
-  { id: '1', name: 'Stationery', icon: '📝', count: 124 },
-  { id: '2', name: 'Fancy Items', icon: '🎀', count: 85 },
-  { id: '3', name: 'Toys', icon: '🧸', count: 42 },
-  { id: '4', name: 'Sports Items', icon: '⚽', count: 18 },
-  { id: '5', name: 'Ice Cream', icon: '🍦', count: 12 },
-  { id: '6', name: 'Snacks & Chocolates', icon: '🍫', count: 67 },
-  { id: '7', name: 'Cool Drinks & Beverages', icon: '🥤', count: 24 },
-  { id: '8', name: 'Biscuits', icon: '🍪', count: 35 },
-  { id: '9', name: 'Candies & Toffees', icon: '🍬', count: 89 },
-  { id: '10', name: 'Art & Craft', icon: '🎨', count: 56 },
-  { id: '11', name: 'School Essentials', icon: '🎒', count: 112 },
-  { id: '12', name: 'Gifts & Return Gifts', icon: '🎁', count: 45 },
-  { id: '13', name: 'Water Bottles & Lunch Boxes', icon: '💧', count: 38 },
-  { id: '14', name: 'Bags & Pouches', icon: '👜', count: 54 },
-  { id: '15', name: 'Office Supplies', icon: '🗂️', count: 92 },
-  { id: '16', name: 'Educational Toys', icon: '🧩', count: 21 },
-  { id: '17', name: 'Indoor & Outdoor Games', icon: '🪀', count: 29 },
-  { id: '18', name: 'Juices', icon: '🧃', count: 16 },
-  { id: '19', name: 'Daily Essentials', icon: '🧼', count: 145 },
-  { id: '20', name: 'New Arrivals', icon: '⭐', count: 15 },
-  { id: '21', name: 'Best Sellers', icon: '🔥', count: 20 },
-  { id: '22', name: 'Offers & Discounts', icon: '💥', count: 8 }
+const BASE_CATEGORIES = [
+  { id: '1', name: 'Stationery', icon: '📝' },
+  { id: '2', name: 'Fancy Items', icon: '🎀' },
+  { id: '3', name: 'Toys', icon: '🧸' },
+  { id: '4', name: 'Sports Items', icon: '⚽' },
+  { id: '5', name: 'Ice Cream', icon: '🍦' },
+  { id: '6', name: 'Snacks & Chocolates', icon: '🍫' },
+  { id: '7', name: 'Cool Drinks & Beverages', icon: '🥤' },
+  { id: '8', name: 'Biscuits', icon: '🍪' },
+  { id: '9', name: 'Candies & Toffees', icon: '🍬' },
+  { id: '10', name: 'Art & Craft', icon: '🎨' },
+  { id: '11', name: 'School Essentials', icon: '🎒' },
+  { id: '12', name: 'Gifts & Return Gifts', icon: '🎁' },
+  { id: '13', name: 'Water Bottles & Lunch Boxes', icon: '💧' },
+  { id: '14', name: 'Bags & Pouches', icon: '👜' },
+  { id: '15', name: 'Office Supplies', icon: '🗂️' },
+  { id: '16', name: 'Educational Toys', icon: '🧩' },
+  { id: '17', name: 'Indoor & Outdoor Games', icon: '🪀' },
+  { id: '18', name: 'Juices', icon: '🧃' },
+  { id: '19', name: 'Daily Essentials', icon: '🧼' },
+  { id: '20', name: 'New Arrivals', icon: '⭐' },
+  { id: '21', name: 'Best Sellers', icon: '🔥' },
+  { id: '22', name: 'Offers & Discounts', icon: '💥' }
 ];
 
-export default function CategoriesManager() {
+export default function CategoriesManager({ products }: { products: Product[] }) {
   const [searchTerm, setSearchTerm] = useState('');
 
-  const filteredCategories = CATEGORIES_DATA.filter(cat => 
+  const categoriesWithCounts = BASE_CATEGORIES.map(cat => ({
+    ...cat,
+    count: products.filter(p => p.category === cat.name).length
+  }));
+
+  const filteredCategories = categoriesWithCounts.filter(cat => 
     cat.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 

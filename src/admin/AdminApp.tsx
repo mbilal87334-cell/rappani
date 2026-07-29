@@ -59,12 +59,12 @@ export default function AdminApp({
         <Route path="/orders" element={<OrderManager orders={orders} />} />
         
         {/* Fully Implemented Premium UIs */}
-        <Route path="/categories" element={<CategoriesManager />} />
-        <Route path="/customers" element={<CustomersList />} />
-        <Route path="/revenue" element={<RevenueDashboard />} />
-        <Route path="/transactions" element={<TransactionsLedger />} />
-        <Route path="/settings" element={<WebsiteSettings />} />
-        <Route path="/reports" element={<ReportsHub />} />
+        <Route path="/categories" element={<CategoriesManager products={products} />} />
+        <Route path="/customers" element={<CustomersList orders={orders} />} />
+        <Route path="/revenue" element={<RevenueDashboard orders={orders} />} />
+        <Route path="/transactions" element={<TransactionsLedger orders={orders} />} />
+        <Route path="/settings" element={<WebsiteSettings settings={settings} setSettings={setSettings} />} />
+        <Route path="/reports" element={<ReportsHub orders={orders} products={products} />} />
         
         {/* Remaining Placeholders */}
         <Route path="/coupons" element={<PlaceholderPage title="Coupons" description="Manage discount codes and promotional offers." />} />

@@ -1,16 +1,13 @@
 import React, { useState } from 'react';
 import { Search, Filter, ArrowUpRight, ArrowDownRight, CreditCard, Wallet, Smartphone } from 'lucide-react';
+import { Order } from '../../App';
 
-const TRANSACTIONS = [
-  { id: 'TXN-001', date: '2026-07-29T10:30:00Z', amount: 1250, method: 'GPay', type: 'Credit', status: 'Completed', customer: 'Aarav Patel' },
-  { id: 'TXN-002', date: '2026-07-29T11:15:00Z', amount: 450, method: 'Cash', type: 'Credit', status: 'Completed', customer: 'Guest' },
-  { id: 'TXN-003', date: '2026-07-28T14:20:00Z', amount: 890, method: 'Card', type: 'Credit', status: 'Pending', customer: 'Diya Sharma' },
-  { id: 'TXN-004', date: '2026-07-28T16:45:00Z', amount: 150, method: 'GPay', type: 'Debit', status: 'Refunded', customer: 'Rohan Kumar' },
-  { id: 'TXN-005', date: '2026-07-27T09:10:00Z', amount: 3200, method: 'UPI', type: 'Credit', status: 'Completed', customer: 'Ananya Singh' },
-];
-
-export default function TransactionsLedger() {
+export default function TransactionsLedger({ orders }: { orders: Order[] }) {
   const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredTransactions = orders.filter((order) =>
+    order.id.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="max-w-6xl mx-auto pb-10">
@@ -50,49 +47,50 @@ export default function TransactionsLedger() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {TRANSACTIONS.map((txn) => (
-                <tr key={txn.id} className="hover:bg-gray-50/50">
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                        txn.type === 'Credit' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+              {filteredTransactions.map((order) => {
+                const method = order.paymentMethod === 'cod' ? 'Cash' : 'UPI';
+                const status = order.status === 'completed' || order.status === 'delivered' ? 'Completed' : order.status === 'pending' ? 'Pending' : 'Refunded';
+                return (
+                  <tr key={order.id} className="hover:bg-gray-50/50">
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-green-50 text-green-600">
+                          <ArrowDownRight size={18} />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900">{order.id.slice(0, 8)}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{order.customerName || 'Guest'}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-gray-600">
+                      <div>{new Date(order.createdAt).toLocaleDateString()}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{new Date(order.createdAt).toLocaleTimeString()}</div>
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-1.5 text-gray-700 font-medium">
+                        {method === 'Cash' && <Wallet size={16} className="text-gray-400" />}
+                        {(method === 'UPI' || method === 'GPay') && <Smartphone size={16} className="text-gray-400" />}
+                        {method}
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 text-right font-bold text-gray-900">
+                      <span className="text-green-600">
+                        +₹{(order.totalAmount || 0).toLocaleString()}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 text-center">
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-md inline-block ${
+                        status === 'Completed' ? 'bg-green-50 text-green-600' :
+                        status === 'Pending' ? 'bg-yellow-50 text-yellow-600' :
+                        'bg-gray-100 text-gray-600'
                       }`}>
-                        {txn.type === 'Credit' ? <ArrowDownRight size={18} /> : <ArrowUpRight size={18} />}
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-900">{txn.id}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">{txn.customer}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-5 py-4 text-gray-600">
-                    <div>{new Date(txn.date).toLocaleDateString()}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{new Date(txn.date).toLocaleTimeString()}</div>
-                  </td>
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-1.5 text-gray-700 font-medium">
-                      {txn.method === 'Cash' && <Wallet size={16} className="text-gray-400" />}
-                      {txn.method === 'Card' && <CreditCard size={16} className="text-gray-400" />}
-                      {(txn.method === 'GPay' || txn.method === 'UPI') && <Smartphone size={16} className="text-gray-400" />}
-                      {txn.method}
-                    </div>
-                  </td>
-                  <td className="px-5 py-4 text-right font-bold text-gray-900">
-                    <span className={txn.type === 'Credit' ? 'text-green-600' : 'text-red-600'}>
-                      {txn.type === 'Credit' ? '+' : '-'}₹{txn.amount.toLocaleString()}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 text-center">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-md inline-block ${
-                      txn.status === 'Completed' ? 'bg-green-50 text-green-600' :
-                      txn.status === 'Pending' ? 'bg-yellow-50 text-yellow-600' :
-                      'bg-gray-100 text-gray-600'
-                    }`}>
-                      {txn.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+                        {status}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
