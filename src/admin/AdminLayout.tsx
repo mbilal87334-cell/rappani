@@ -66,7 +66,7 @@ export default function AdminLayout({ setIsAuthenticated, children }: { setIsAut
   };
 
   return (
-    <div className="flex h-screen bg-neutral-100 overflow-hidden font-sans">
+    <div className="flex h-screen bg-[#F9FAFB] overflow-hidden font-sans">
       {/* Sidebar */}
       <AnimatePresence>
         {(isSidebarOpen || !isMobile) && (
@@ -77,7 +77,7 @@ export default function AdminLayout({ setIsAuthenticated, children }: { setIsAut
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-primary/40 backdrop-blur-sm z-40 lg:hidden"
+                className="fixed inset-0 bg-black/30 z-40 lg:hidden"
                 onClick={() => setIsSidebarOpen(false)}
               />
             )}
@@ -86,11 +86,11 @@ export default function AdminLayout({ setIsAuthenticated, children }: { setIsAut
               initial={isMobile ? { x: -300 } : { width: 80 }}
               animate={isMobile ? { x: 0 } : { width: isSidebarOpen ? 260 : 80 }}
               exit={isMobile ? { x: -300 } : { width: 80 }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
-              className="fixed lg:relative z-50 h-full bg-primary text-neutral-300 flex flex-col border-r border-primary-light shadow-2xl"
+              transition={{ duration: 0.3, ease: 'easeInOut' }}
+              className="fixed lg:relative z-50 h-full bg-white text-gray-800 flex flex-col border-r border-gray-200 shadow-sm"
             >
               {/* Logo Area */}
-              <div className="h-20 flex items-center justify-between px-6 border-b border-primary-light/50">
+              <div className="h-16 flex items-center justify-between px-6 border-b border-gray-100">
                 <AnimatePresence mode="wait">
                   {isSidebarOpen && (
                     <motion.div 
@@ -99,28 +99,28 @@ export default function AdminLayout({ setIsAuthenticated, children }: { setIsAut
                       exit={{ opacity: 0, x: -20 }}
                       className="flex items-center"
                     >
-                      <span className="font-black text-xl tracking-tight text-white leading-tight">
-                        Rappani<br />Admin
+                      <span className="font-semibold text-lg tracking-tight text-gray-900 leading-tight">
+                        Rappani<br />Store
                       </span>
                     </motion.div>
                   )}
                 </AnimatePresence>
                 
                 {(!isSidebarOpen && !isMobile) && (
-                   <div className="w-10 h-10 mx-auto bg-primary-light rounded-xl flex items-center justify-center font-bold text-gold-500 shadow-inner">
-                     R
+                   <div className="w-8 h-8 mx-auto bg-gray-100 rounded flex items-center justify-center font-bold text-gray-800">
+                     N
                    </div>
                 )}
                 
                 {isMobile && (
-                  <button onClick={() => setIsSidebarOpen(false)} className="p-2 hover:bg-primary-light rounded-xl text-neutral-400 hover:text-white transition-colors">
+                  <button onClick={() => setIsSidebarOpen(false)} className="p-1.5 hover:bg-gray-100 rounded-md text-gray-500 transition-colors">
                     <X size={20} />
                   </button>
                 )}
               </div>
 
               {/* Navigation Menu */}
-              <div className="flex-1 overflow-y-auto scrollbar-hide py-6 flex flex-col gap-1.5 px-3">
+              <div className="flex-1 overflow-y-auto scrollbar-hide py-4 flex flex-col gap-1">
                 {MENU_ITEMS.map((item) => {
                   const isActive = location.pathname === item.path;
                   return (
@@ -128,20 +128,20 @@ export default function AdminLayout({ setIsAuthenticated, children }: { setIsAut
                       key={item.path}
                       to={item.path}
                       title={!isSidebarOpen ? item.label : undefined}
-                      className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-300 ${
+                      className={`flex items-center gap-4 px-6 py-2.5 mx-2 rounded-md transition-colors ${
                         isActive 
-                          ? 'bg-gold-500/10 text-gold-500 font-bold shadow-sm' 
-                          : 'text-neutral-400 hover:text-white hover:bg-primary-light'
-                      } ${!isSidebarOpen && !isMobile ? 'justify-center px-0' : ''}`}
+                          ? 'bg-gray-100 text-gray-900 font-medium' 
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                      } ${!isSidebarOpen && !isMobile ? 'justify-center px-0 mx-4' : ''}`}
                     >
-                      <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'text-gold-500' : 'text-neutral-400'} />
+                      <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'text-gray-900' : 'text-gray-500'} />
                       <AnimatePresence>
                         {isSidebarOpen && (
                           <motion.span 
                             initial={{ opacity: 0, width: 0 }}
                             animate={{ opacity: 1, width: 'auto' }}
                             exit={{ opacity: 0, width: 0 }}
-                            className="whitespace-nowrap overflow-hidden text-[14px] tracking-wide"
+                            className="whitespace-nowrap overflow-hidden text-[15px]"
                           >
                             {item.label}
                           </motion.span>
@@ -151,15 +151,14 @@ export default function AdminLayout({ setIsAuthenticated, children }: { setIsAut
                   );
                 })}
                 
-                <div className="mt-auto pt-6 pb-2">
-                  <button 
-                    onClick={handleLogout}
-                    className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all text-crimson-500 hover:bg-crimson-500/10 ${!isSidebarOpen && !isMobile ? 'justify-center px-0' : ''}`}
-                  >
-                    <LogOut size={20} strokeWidth={2} />
-                    {isSidebarOpen && <span className="whitespace-nowrap font-bold text-[14px] tracking-wide">Logout</span>}
-                  </button>
-                </div>
+                {/* Logout Button in Sidebar */}
+                <button 
+                  onClick={handleLogout}
+                  className={`flex items-center gap-4 px-6 py-2.5 mx-2 mt-2 rounded-md transition-colors text-red-600 hover:bg-red-50 ${!isSidebarOpen && !isMobile ? 'justify-center px-0 mx-4' : ''}`}
+                >
+                  <LogOut size={20} strokeWidth={2} />
+                  {isSidebarOpen && <span className="whitespace-nowrap font-medium text-[15px]">Logout</span>}
+                </button>
               </div>
             </motion.aside>
           </>
@@ -167,27 +166,32 @@ export default function AdminLayout({ setIsAuthenticated, children }: { setIsAut
       </AnimatePresence>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 bg-neutral-100">
+      <div className="flex-1 flex flex-col min-w-0">
         {/* Top Navigation */}
-        <header className="h-20 bg-white border-b border-neutral-200 flex items-center justify-between px-6 z-30 relative shadow-sm">
+        <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 z-30 relative">
           <div className="flex items-center">
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2 text-primary hover:bg-neutral-100 rounded-xl transition-colors"
+              className="p-2 text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
             >
               <Menu size={24} />
             </button>
           </div>
 
-          <div className="flex items-center gap-4">
-            <button className="p-2.5 text-neutral-500 hover:bg-neutral-100 rounded-full transition-colors relative">
+          <div className="flex items-center gap-2">
+            <div className="hidden md:flex items-center">
+              {/* Optional top bar search or actions */}
+            </div>
+            
+            <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors relative">
+               {/* Used for global actions if any, but profile is standard here */}
                <User size={22} />
             </button>
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-x-hidden overflow-y-auto p-6 lg:p-8 relative">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-[#F9FAFB] p-4 lg:p-6 relative">
           {children}
         </main>
       </div>

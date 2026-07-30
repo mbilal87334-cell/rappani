@@ -24,14 +24,16 @@ import {
   Cell
 } from 'recharts';
 
+
+
 const StatRow = ({ title, value, icon: Icon, colorClass }: any) => (
-  <div className="premium-card p-5 flex items-center gap-5">
-    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${colorClass}`}>
-      <Icon size={24} />
+  <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm flex items-center gap-4">
+    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${colorClass}`}>
+      <Icon size={20} />
     </div>
     <div>
-      <p className="text-neutral-500 text-sm font-bold uppercase tracking-wide mb-1">{title}</p>
-      <h3 className="text-primary text-2xl font-black tracking-tight">{value}</h3>
+      <p className="text-gray-500 text-sm font-medium">{title}</p>
+      <h3 className="text-gray-900 text-lg font-semibold">{value}</h3>
     </div>
   </div>
 );
@@ -134,7 +136,7 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
        catCounts[cat] = (catCounts[cat] || 0) + 1;
     });
     
-    const colors = ['#1A1A1A', '#D4AF37', '#6B7280', '#9CA3AF', '#374151'];
+    const colors = ['#ef4444', '#a855f7', '#f59e0b', '#10b981', '#3b82f6'];
     const catData = Object.keys(catCounts).map((cat, i) => ({
        name: cat,
        value: catCounts[cat],
@@ -163,33 +165,33 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
   const lowStockProducts = safeProducts.filter(p => (p.stock || 0) <= 5);
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-10">
+    <div className="space-y-6 max-w-5xl mx-auto pb-10">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-black text-primary tracking-tight">Dashboard Overview</h1>
-        <button className="premium-button">
+        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Dashboard</h1>
+        <button className="bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-gray-800 transition-colors">
           Generate Report
         </button>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        <StatRow title="Today's Revenue" value={`₹${todayRevenue.toLocaleString('en-IN')}`} icon={IndianRupee} colorClass="bg-primary/5 text-primary" />
-        <StatRow title="Today's Orders" value={todayOrdersCount} icon={ShoppingCart} colorClass="bg-gold-500/10 text-gold-600" />
-        <StatRow title="Pending Orders" value={pendingOrdersCount} icon={Clock} colorClass="bg-amber-500/10 text-amber-600" />
-        <StatRow title="Completed Orders" value={completedOrdersCount} icon={CheckCircle2} colorClass="bg-emerald-500/10 text-emerald-600" />
-        <StatRow title="Cancelled Orders" value={cancelledOrdersCount} icon={XCircle} colorClass="bg-crimson-500/10 text-crimson-600" />
-        <StatRow title="Total Customers" value={totalCustomers} icon={Users} colorClass="bg-primary/5 text-primary" />
-        <StatRow title="Total Products" value={totalProducts} icon={Package} colorClass="bg-gold-500/10 text-gold-600" />
-        <StatRow title="Monthly Revenue" value={`₹${monthlyRevenue.toLocaleString('en-IN')}`} icon={Calendar} colorClass="bg-primary/5 text-primary" />
-        <StatRow title="Weekly Revenue" value={`₹${weeklyRevenue.toLocaleString('en-IN')}`} icon={TrendingUp} colorClass="bg-emerald-500/10 text-emerald-600" />
-        <div className="premium-card p-5 flex items-center gap-5">
-          <div className="w-12 h-12 rounded-2xl bg-primary text-gold-500 flex items-center justify-center shadow-lg">
-            <IndianRupee size={24} />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <StatRow title="Today's Revenue" value={`₹${todayRevenue.toLocaleString('en-IN')}`} icon={IndianRupee} colorClass="bg-blue-50 text-blue-500" />
+        <StatRow title="Today's Orders" value={todayOrdersCount} icon={ShoppingCart} colorClass="bg-purple-50 text-purple-500" />
+        <StatRow title="Pending Orders" value={pendingOrdersCount} icon={Clock} colorClass="bg-yellow-50 text-yellow-600" />
+        <StatRow title="Completed Orders" value={completedOrdersCount} icon={CheckCircle2} colorClass="bg-green-50 text-green-500" />
+        <StatRow title="Cancelled Orders" value={cancelledOrdersCount} icon={XCircle} colorClass="bg-red-50 text-red-500" />
+        <StatRow title="Total Customers" value={totalCustomers} icon={Users} colorClass="bg-indigo-50 text-indigo-500" />
+        <StatRow title="Total Products" value={totalProducts} icon={Package} colorClass="bg-pink-50 text-pink-500" />
+        <StatRow title="Monthly Revenue" value={`₹${monthlyRevenue.toLocaleString('en-IN')}`} icon={Calendar} colorClass="bg-sky-50 text-sky-500" />
+        <StatRow title="Weekly Revenue" value={`₹${weeklyRevenue.toLocaleString('en-IN')}`} icon={TrendingUp} colorClass="bg-emerald-50 text-emerald-500" />
+        <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm flex items-center gap-4">
+          <div className="w-10 h-10 rounded-lg bg-gray-900 text-white flex items-center justify-center">
+            <IndianRupee size={20} />
           </div>
           <div>
-            <p className="text-neutral-500 text-sm font-bold uppercase tracking-wide mb-1">Overall Revenue</p>
-            <h3 className="text-primary text-2xl font-black tracking-tight">₹{overallRevenue.toLocaleString('en-IN')}</h3>
+            <p className="text-gray-500 text-sm font-medium">Overall Revenue</p>
+            <h3 className="text-gray-900 text-lg font-semibold">₹{overallRevenue.toLocaleString('en-IN')}</h3>
           </div>
         </div>
       </div>
@@ -197,74 +199,68 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         {/* Weekly Revenue */}
-        <div className="premium-card p-6">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 bg-primary/5 rounded-xl flex items-center justify-center text-primary">
-              <TrendingUp size={20} />
-            </div>
-            <h2 className="text-lg font-black text-primary tracking-tight">Weekly Revenue</h2>
+        <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-2 mb-6">
+            <TrendingUp className="text-gray-800" size={18} />
+            <h2 className="text-base font-semibold text-gray-900">Weekly Revenue</h2>
           </div>
-          <div className="h-72 w-full">
+          <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={weeklyRevenueData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="colorPrimary" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#1A1A1A" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#1A1A1A" stopOpacity={0}/>
+                  <linearGradient id="colorBlue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12, fontWeight: 600 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12, fontWeight: 600 }} />
-                <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)' }} />
-                <Area type="monotone" dataKey="revenue" stroke="#1A1A1A" strokeWidth={3} fillOpacity={1} fill="url(#colorPrimary)" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} />
+                <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
+                <Area type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2} fillOpacity={1} fill="url(#colorBlue)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
 
         {/* Monthly Sales Growth */}
-        <div className="premium-card p-6">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-10 h-10 bg-gold-500/10 rounded-xl flex items-center justify-center text-gold-600">
-              <Calendar size={20} />
-            </div>
-            <h2 className="text-lg font-black text-primary tracking-tight">Monthly Sales Growth</h2>
+        <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-2 mb-6">
+            <Calendar className="text-gray-800" size={18} />
+            <h2 className="text-base font-semibold text-gray-900">Monthly Sales Growth</h2>
           </div>
-          <div className="h-72 w-full">
+          <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={monthlyGrowthData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                 <defs>
-                  <linearGradient id="colorGold" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#D4AF37" stopOpacity={0}/>
+                  <linearGradient id="colorPurple" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#a855f7" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#a855f7" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12, fontWeight: 600 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#6B7280', fontSize: 12, fontWeight: 600 }} />
-                <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 20px 40px rgba(0, 0, 0, 0.1)' }} />
-                <Area type="monotone" dataKey="sales" stroke="#D4AF37" strokeWidth={3} fillOpacity={1} fill="url(#colorGold)" />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} dy={10} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} />
+                <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }} />
+                <Area type="monotone" dataKey="sales" stroke="#a855f7" strokeWidth={2} fillOpacity={1} fill="url(#colorPurple)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
         
         {/* Category Distribution */}
-        <div className="premium-card p-6 lg:col-span-2">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 bg-primary/5 rounded-xl flex items-center justify-center text-primary">
-              <Package size={20} />
-            </div>
-            <h2 className="text-lg font-black text-primary tracking-tight">Category Distribution</h2>
+        <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm lg:col-span-2">
+          <div className="flex items-center gap-2 mb-4">
+            <Package className="text-gray-800" size={18} />
+            <h2 className="text-base font-semibold text-gray-900">Category Distribution</h2>
           </div>
-          <div className="h-80 w-full flex justify-center">
+          <div className="h-64 w-full flex justify-center">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
                   data={categoryData}
-                  innerRadius={80}
-                  outerRadius={120}
+                  innerRadius={60}
+                  outerRadius={100}
                   paddingAngle={5}
                   dataKey="value"
                 >
@@ -272,7 +268,7 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)' }} />
+                <Tooltip />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -280,34 +276,34 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
       </div>
 
       {/* Recent Orders */}
-      <div className="premium-card overflow-hidden mt-6">
-        <div className="p-6 border-b border-neutral-100 flex justify-between items-center bg-neutral-50/50">
-          <h2 className="text-lg font-black text-primary tracking-tight">Recent Orders</h2>
-          <button className="text-sm font-bold text-neutral-500 hover:text-primary transition-colors">View All</button>
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden mt-6">
+        <div className="p-5 border-b border-gray-100 flex justify-between items-center">
+          <h2 className="text-base font-semibold text-gray-900">Recent Orders</h2>
+          <button className="text-sm font-medium text-gray-500 hover:text-gray-900">View All</button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-neutral-100/80 text-neutral-500 font-bold tracking-wide uppercase text-xs">
+            <thead className="bg-gray-50 text-gray-500 font-medium">
               <tr>
-                <th className="px-6 py-4">ORDER ID</th>
-                <th className="px-6 py-4">CUSTOMER</th>
-                <th className="px-6 py-4">STATUS</th>
-                <th className="px-6 py-4">TOTAL</th>
+                <th className="px-5 py-3">ORDER ID</th>
+                <th className="px-5 py-3">CUSTOMER</th>
+                <th className="px-5 py-3">STATUS</th>
+                <th className="px-5 py-3">TOTAL</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100">
+            <tbody className="divide-y divide-gray-100">
               {recentOrders.length > 0 ? recentOrders.map((order) => (
-                <tr key={order.id} className="hover:bg-neutral-50/50 transition-colors">
-                  <td className="px-6 py-5 font-bold text-primary">#{order.id.slice(0, 8).toUpperCase()}</td>
-                  <td className="px-6 py-5 text-neutral-600 font-medium">{order.customerDetails?.name || 'Guest'}</td>
-                  <td className="px-6 py-5">
-                    <span className="text-neutral-600 font-bold bg-neutral-100 px-3 py-1 rounded-full text-xs uppercase tracking-wider">{order.status || 'Processing'}</span>
+                <tr key={order.id} className="hover:bg-gray-50/50">
+                  <td className="px-5 py-4 font-medium text-gray-900">#{order.id.slice(0, 8).toUpperCase()}</td>
+                  <td className="px-5 py-4 text-gray-600">{order.customerDetails?.name || 'Guest'}</td>
+                  <td className="px-5 py-4">
+                    <span className="text-gray-600 font-medium">{order.status || 'Processing'}</span>
                   </td>
-                  <td className="px-6 py-5 font-black text-primary text-base">₹{order.totalAmount?.toLocaleString() || 0}</td>
+                  <td className="px-5 py-4 font-medium text-gray-900">₹{order.totalAmount?.toLocaleString() || 0}</td>
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan={4} className="px-6 py-10 text-center text-neutral-500 font-medium">No recent orders found.</td>
+                  <td colSpan={4} className="px-5 py-8 text-center text-gray-500">No recent orders found.</td>
                 </tr>
               )}
             </tbody>
@@ -317,62 +313,62 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
 
       {/* Latest Customers & Low Stock Alerts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-        <div className="premium-card overflow-hidden">
-          <div className="p-6 border-b border-neutral-100 flex justify-between items-center bg-neutral-50/50">
-            <h2 className="text-lg font-black text-primary tracking-tight">Latest Customers</h2>
-            <button className="text-sm font-bold text-neutral-500 hover:text-primary transition-colors">View All</button>
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-gray-100 flex justify-between items-center">
+            <h2 className="text-base font-semibold text-gray-900">Latest Customers</h2>
+            <button className="text-sm font-medium text-gray-500 hover:text-gray-900">View All</button>
           </div>
-          <div className="p-2">
+          <div className="p-6">
             {latestCustomers.length > 0 ? (
-              <div className="space-y-1">
+              <div className="space-y-4">
                  {latestCustomers.map((cust, idx) => (
-                    <div key={idx} className="flex justify-between items-center p-4 hover:bg-neutral-50 rounded-2xl transition-colors">
-                      <div className="flex items-center gap-4">
-                         <div className="w-10 h-10 bg-primary/5 rounded-xl flex items-center justify-center text-primary font-bold">
-                           {cust.name ? cust.name.charAt(0) : <Users size={16} />}
+                    <div key={idx} className="flex justify-between items-center border-b border-gray-50 pb-3 last:border-0 last:pb-0">
+                      <div className="flex items-center gap-3">
+                         <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500">
+                           <Users size={14} />
                          </div>
                          <div>
-                           <p className="text-sm font-bold text-primary">{cust.name || 'Guest'}</p>
-                           <p className="text-xs text-neutral-500 font-medium">{cust.phone}</p>
+                           <p className="text-sm font-semibold text-gray-900">{cust.name || 'Guest'}</p>
+                           <p className="text-xs text-gray-500">{cust.phone}</p>
                          </div>
                       </div>
                     </div>
                  ))}
               </div>
             ) : (
-              <div className="text-center text-neutral-500 text-sm p-6 font-medium">
+              <div className="text-center text-gray-500 text-sm">
                 No customers found.
               </div>
             )}
           </div>
         </div>
 
-        <div className="premium-card overflow-hidden">
-          <div className="p-6 border-b border-neutral-100 bg-neutral-50/50">
-            <h2 className="text-lg font-black text-primary tracking-tight">Low Stock Alerts</h2>
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-gray-100">
+            <h2 className="text-base font-semibold text-gray-900">Low Stock Alerts</h2>
           </div>
-          <div className="p-2">
+          <div className="p-6">
             {lowStockProducts.length > 0 ? (
-              <div className="space-y-1">
+              <div className="space-y-4">
                 {lowStockProducts.slice(0, 5).map(product => (
-                  <div key={product.id} className="flex justify-between items-center p-4 hover:bg-neutral-50 rounded-2xl transition-colors">
+                  <div key={product.id} className="flex justify-between items-center border-b border-gray-50 pb-3 last:border-0 last:pb-0">
                     <div>
-                      <p className="text-sm font-bold text-primary truncate max-w-[200px]">{product.name}</p>
-                      <p className="text-xs text-neutral-500 font-medium">ID: {product.id.slice(0, 8)}</p>
+                      <p className="text-sm font-semibold text-gray-900 truncate max-w-[200px]">{product.name}</p>
+                      <p className="text-xs text-gray-500">ID: {product.id.slice(0, 8)}</p>
                     </div>
-                    <span className="text-xs font-bold text-crimson-600 bg-crimson-50 px-3 py-1.5 rounded-lg shadow-sm">
+                    <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-md">
                       {product.stock} left
                     </span>
                   </div>
                 ))}
                 {lowStockProducts.length > 5 && (
-                  <p className="text-xs font-bold text-neutral-500 text-center py-4 bg-neutral-50/50 rounded-xl mt-2 mx-2">+{lowStockProducts.length - 5} more products running low</p>
+                  <p className="text-xs text-gray-500 text-center pt-2">+{lowStockProducts.length - 5} more products running low</p>
                 )}
               </div>
             ) : (
-              <div className="flex items-center justify-center gap-3 text-emerald-600 p-8">
-                <CheckCircle size={24} />
-                <span className="text-sm font-bold tracking-wide">All products have good stock.</span>
+              <div className="flex items-center gap-3 text-green-600">
+                <CheckCircle size={20} />
+                <span className="text-sm font-medium">All products have good stock.</span>
               </div>
             )}
           </div>
