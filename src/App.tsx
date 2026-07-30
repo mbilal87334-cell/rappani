@@ -679,10 +679,12 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
     }
   };
 
-  const getCategoryName = (catId: string) => {
-    const cat = categories.find(c => c.id === catId);
-    if (!cat) return catId;
-    return lang === 'ta' ? cat.ta : cat.en;
+  const getCategoryName = (catName: string) => {
+    const cat = categories.find(c => c.name === catName);
+    if (!cat) return catName;
+    if (lang === 'ta' && cat.ta) return cat.ta;
+    if (lang === 'en' && cat.en) return cat.en;
+    return cat.name;
   };
 
   useEffect(() => {
@@ -698,10 +700,12 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   };
 
 
-  const categories = apiCategories.length > 0 ? apiCategories : [
+  const categories = [
     { id: 'All', name: 'All', icon: '🛒', en: 'All', ta: 'அனைத்தும்' },
-    { id: 'Stationary', name: 'Stationary', icon: '📝', en: 'Stationery', ta: 'ஸ்டேஷனரி' },
-    { id: 'Fancy', name: 'Fancy Items', icon: '🎀', en: 'Fancy Items', ta: 'ஃபேன்ஸி பொருட்கள்' }
+    ...(apiCategories.length > 0 ? apiCategories : [
+      { id: 'Stationary', name: 'Stationary', icon: '📝', en: 'Stationery', ta: 'ஸ்டேஷனரி' },
+      { id: 'Fancy', name: 'Fancy Items', icon: '🎀', en: 'Fancy Items', ta: 'ஃபேன்ஸி பொருட்கள்' }
+    ])
   ];
 
   const publicProducts = products.filter(p => p.isVisible !== false);
@@ -1072,11 +1076,11 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
               </div>
               <div className="flex overflow-x-auto no-scrollbar gap-4 px-2 pb-2">
                 {categories.map((cat, idx) => (
-                  <div key={idx} onClick={() => { setSelectedCategory(cat.id); setCurrentTab('products'); }} className="flex flex-col items-center gap-1 cursor-pointer min-w-[70px]">
+                  <div key={idx} onClick={() => { setSelectedCategory(cat.name); setCurrentTab('products'); }} className="flex flex-col items-center gap-1 cursor-pointer min-w-[70px]">
                     <div className="w-14 h-14 bg-violet-50 rounded-full flex items-center justify-center text-violet-600 border border-violet-100 transition-colors relative">
                        {cat.icon}
                     </div>
-                    <span className="text-[10px] font-medium text-center text-gray-700 leading-tight">{getCategoryName(cat.id)}</span>
+                    <span className="text-[10px] font-medium text-center text-gray-700 leading-tight">{getCategoryName(cat.name)}</span>
                   </div>
                 ))}
               </div>
@@ -1156,10 +1160,10 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
               {categories.map(cat => (
                  <button 
                    key={cat.id}
-                   onClick={() => setSelectedCategory(cat.id)}
-                   className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm border ${selectedCategory === cat.id ? 'bg-[#7C3AED] text-white border-[#7C3AED]' : 'bg-white text-gray-700 border-gray-200 hover:bg-stone-50'}`}
+                   onClick={() => setSelectedCategory(cat.name)}
+                   className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm border ${selectedCategory === cat.name ? 'bg-[#7C3AED] text-white border-[#7C3AED]' : 'bg-white text-gray-700 border-gray-200 hover:bg-stone-50'}`}
                  >
-                   {getCategoryName(cat.id)}
+                   {getCategoryName(cat.name)}
                  </button>
               ))}
             </div>
