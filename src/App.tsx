@@ -128,7 +128,7 @@ export async function deleteCategoryApi(id: string) {
   return res.json();
 }
 
-async function checkoutCart(payload: { customerName: string; customerPhone: string; paymentMethod: string; totalAmount: number; items: CartItem[]; utrNumber?: string }) {
+async function checkoutCart(payload: { customerName: string; customerPhone: string; paymentMethod: string; totalAmount: number; items: CartItem[]; utrNumber?: string; couponCode?: string; discountAmount?: number; }) {
   const res = await fetch(`${API_BASE}/checkout`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -452,6 +452,9 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
 
   const [newSavedAddress, setNewSavedAddress] = useState('');
   const [isFetchingLocation, setIsFetchingLocation] = useState(false);
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountPercent: number } | null>(null);
+  const [couponError, setCouponError] = useState('');
 
   
   const [isFetchingLocationCheckout, setIsFetchingLocationCheckout] = useState(false);
@@ -767,6 +770,28 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
 
   const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
+  const handleValidateCoupon = async () => {
+    if (!couponInput.trim()) return;
+    setCouponError('');
+    try {
+      const res = await fetch(`${API_BASE}/coupons/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: couponInput })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAppliedCoupon({ code: couponInput.toUpperCase(), discountPercent: data.discountPercent });
+        setCouponInput('');
+      } else {
+        setCouponError(data.error || 'Invalid coupon');
+        setAppliedCoupon(null);
+      }
+    } catch (err) {
+      setCouponError('Failed to validate coupon');
+    }
+  };
+
   const processCheckoutAndClearCart = async (paymentMethod: string) => {
     if (!customerName || !customerPhone) {
       setCheckoutError(t.enterDetails);
@@ -808,14 +833,19 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
     }
 
     try {
+      const discountAmount = appliedCoupon ? Math.round(cartTotalAmount * (appliedCoupon.discountPercent / 100)) : 0;
+      const finalAmount = cartTotalAmount - discountAmount;
+
       const payload = {
         customerName,
         customerPhone,
         paymentMethod,
-        totalAmount: finalTotal,
+        totalAmount: finalAmount,
+        couponCode: appliedCoupon?.code,
+        discountAmount,
+        shippingAddress: deliveryMethod === 'home' ? (deliveryAddress || (savedAddresses.length > 0 ? savedAddresses[0] : '')) : null,
         items: cart,
         deliveryMethod,
-        deliveryAddress: deliveryMethod === 'home' ? deliveryAddress : 'Shop Pickup',
         utrNumber: utrNumber ? utrNumber.trim() : undefined
       };
       await checkoutCart(payload);
@@ -830,6 +860,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
       setCart([]);
       setCustomerName('');
       setCustomerPhone('');
+      setAppliedCoupon(null);
       setTimeout(() => setIsCartOpen(false), 500);
       return true;
     } catch (err) {
@@ -873,8 +904,11 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
       message += `- ${item.product.name} (x${item.quantity}) = ₹${Math.round(item.product.price * item.quantity)}\n`;
     });
     message += `\n*Cart Total: ₹${cartTotalAmount}*`;
+    if (appliedCoupon) {
+       message += `\n*Discount: -₹${Math.round(cartTotalAmount * (appliedCoupon.discountPercent / 100))} (${appliedCoupon.discountPercent}%)*`;
+    }
     message += `\n*Delivery Fee: ₹${deliveryFee}* ${deliveryFee === 0 ? '(FREE)' : ''}`;
-    message += `\n*Final Total: ₹${finalTotal}*`;
+    message += `\n*Final Total: ₹${appliedCoupon ? Math.round(cartTotalAmount * (1 - appliedCoupon.discountPercent / 100)) : finalTotal}*`;
     message += `\n\nMethod: ${deliveryMethod === 'home' ? 'Home Delivery' : 'Shop Pickup'}`;
     if (deliveryMethod === 'home') {
       message += `\nAddress: ${deliveryAddress}`;
@@ -890,6 +924,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
     // Optional: Clear cart locally so user knows it's sent, but don't save to DB
     // If you want to keep the items in cart for WhatsApp, comment out the next 2 lines
     setCart([]);
+    setAppliedCoupon(null);
     setTimeout(() => setIsCartOpen(false), 500);
   };
 
@@ -1370,12 +1405,50 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                          <span>Delivery Fee</span>
                          <span className="font-bold text-gold-600">Free</span>
                        </div>
-                       <div className="flex justify-between text-lg font-black text-primary pt-3 border-t border-neutral-300">
-                         <span>To Pay</span>
-                         <span>₹{finalTotal}</span>
+                        {appliedCoupon && (
+                          <div className="flex justify-between text-green-600 font-medium pb-2">
+                            <span>Discount ({appliedCoupon.discountPercent}%)</span>
+                            <span>-₹{Math.round(cartTotalAmount * (appliedCoupon.discountPercent / 100))}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-lg font-black text-primary pt-3 border-t border-neutral-300">
+                          <span>To Pay</span>
+                          <span>₹{appliedCoupon ? Math.round(cartTotalAmount * (1 - appliedCoupon.discountPercent / 100)) : finalTotal}</span>
+                        </div>
+                     </div>
+                   </div>
+
+                   {/* Coupon Section */}
+                   <div className="bg-white p-4 rounded-2xl shadow-sm border border-neutral-300/50 space-y-3">
+                     <h3 className="font-bold text-primary">Apply Coupon</h3>
+                     {appliedCoupon ? (
+                       <div className="flex items-center justify-between bg-green-50 text-green-700 p-3 rounded-xl border border-green-200">
+                         <div className="flex items-center gap-2 font-bold">
+                           <Ticket className="w-5 h-5" />
+                           {appliedCoupon.code} ({appliedCoupon.discountPercent}% OFF)
+                         </div>
+                         <button onClick={() => setAppliedCoupon(null)} className="text-green-700 hover:text-green-900 font-bold p-1">
+                           <X className="w-5 h-5" />
+                         </button>
                        </div>
-                    </div>
-                  </div>
+                     ) : (
+                       <div>
+                         <div className="flex gap-2">
+                           <input 
+                             type="text" 
+                             placeholder="Enter Code" 
+                             value={couponInput}
+                             onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                             className="w-full bg-gold-50 border border-neutral-300 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-gold-500/20 focus:border-gold-500 font-bold uppercase transition-all shadow-sm text-primary"
+                           />
+                           <button onClick={handleValidateCoupon} className="premium-button px-5 rounded-xl font-bold whitespace-nowrap shadow-sm">
+                             Apply
+                           </button>
+                         </div>
+                         {couponError && <p className="text-red-500 text-sm font-medium mt-2">{couponError}</p>}
+                       </div>
+                     )}
+                   </div>
 
                   {/* Checkout Details */}
                   <div className="bg-white p-4 rounded-2xl shadow-sm border border-neutral-300/50 space-y-4">

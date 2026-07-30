@@ -126,6 +126,26 @@ const userSchema = new mongoose.Schema({
 });
 const User = mongoose.model("User", userSchema);
 
+const couponSchema = new mongoose.Schema({
+  code: { type: String, required: true, unique: true },
+  discountPercent: { type: Number, required: true },
+  maxUses: { type: Number, default: 100 },
+  usedCount: { type: Number, default: 0 },
+  isActive: { type: Boolean, default: true },
+  createdAt: { type: Date, default: Date.now }
+});
+const Coupon = mongoose.model("Coupon", couponSchema);
+
+const notificationSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  message: { type: String, required: true },
+  type: { type: String, default: 'info' }, // 'info', 'success', 'warning', 'error'
+  read: { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now }
+});
+const Notification = mongoose.model("Notification", notificationSchema);
+
+
 async function startServer() {
   const app = express();
   app.get("/api/logs", (req, res) => {
@@ -607,6 +627,151 @@ async function startServer() {
       const { id } = req.params;
       await Order.deleteOne({ id });
       res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  // --- Admin Review Routes ---
+  app.get("/api/admin/reviews", async (req, res) => {
+    try {
+      const products = await Product.find({ 'reviews.0': { $exists: true } }, 'id name image reviews');
+      let allReviews: any[] = [];
+      products.forEach(p => {
+        p.reviews.forEach(r => {
+          allReviews.push({
+            productId: p.id,
+            productName: p.name,
+            productImage: p.image,
+            // @ts-ignore
+            reviewId: r._id,
+            rating: r.rating,
+            review: r.review,
+            customerName: r.customerName,
+            createdAt: r.createdAt
+          });
+        });
+      });
+      // Sort by newest
+      allReviews.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      res.json(allReviews);
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  app.delete("/api/admin/reviews/:productId/:reviewId", async (req, res) => {
+    try {
+      const { productId, reviewId } = req.params;
+      await Product.updateOne(
+        { id: productId },
+        { $pull: { reviews: { _id: reviewId } } as any }
+      );
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  // --- Coupon Routes ---
+  app.get("/api/coupons", async (req, res) => {
+    try {
+      const coupons = await Coupon.find({}).sort({ createdAt: -1 });
+      res.json(coupons);
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  app.post("/api/coupons", async (req, res) => {
+    try {
+      const { code, discountPercent, maxUses } = req.body;
+      await Coupon.create({ code: code.toUpperCase(), discountPercent, maxUses });
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  app.put("/api/coupons/:id", async (req, res) => {
+    try {
+      const { isActive } = req.body;
+      await Coupon.findByIdAndUpdate(req.params.id, { isActive });
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  app.delete("/api/coupons/:id", async (req, res) => {
+    try {
+      await Coupon.findByIdAndDelete(req.params.id);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+  
+  app.post("/api/coupons/validate", async (req, res) => {
+    try {
+      const { code } = req.body;
+      const coupon = await Coupon.findOne({ code: code.toUpperCase() });
+      if (!coupon) return res.status(404).json({ success: false, error: "Invalid coupon code" });
+      if (!coupon.isActive) return res.status(400).json({ success: false, error: "Coupon is not active" });
+      if (coupon.usedCount >= coupon.maxUses) return res.status(400).json({ success: false, error: "Coupon limit reached" });
+      
+      res.json({ success: true, discountPercent: coupon.discountPercent });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  // --- Notification Routes ---
+  app.get("/api/notifications", async (req, res) => {
+    try {
+      const notifs = await Notification.find({}).sort({ createdAt: -1 }).limit(50);
+      res.json(notifs);
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  app.post("/api/notifications", async (req, res) => {
+    try {
+      await Notification.create(req.body);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  app.put("/api/notifications/mark-read", async (req, res) => {
+    try {
+      await Notification.updateMany({ read: false }, { read: true });
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  // --- Analytics Route ---
+  app.get("/api/analytics/summary", async (req, res) => {
+    try {
+      const totalOrders = await Order.countDocuments();
+      const orders = await Order.find({}, 'totalAmount createdAt items');
+      const totalRevenue = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+      
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      const todayOrders = orders.filter(o => new Date(o.createdAt) >= today);
+      const todayRevenue = todayOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+      
+      res.json({
+        totalOrders,
+        totalRevenue,
+        todayOrders: todayOrders.length,
+        todayRevenue
+      });
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });
     }

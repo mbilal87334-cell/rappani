@@ -16,6 +16,10 @@ import RevenueDashboard from './pages/RevenueDashboard';
 import TransactionsLedger from './pages/TransactionsLedger';
 import WebsiteSettings from './pages/WebsiteSettings';
 import ReportsHub from './pages/ReportsHub';
+import ReviewManager from './pages/ReviewManager';
+import CouponManager from './pages/CouponManager';
+import NotificationHub from './pages/NotificationHub';
+import AnalyticsDashboard from './pages/AnalyticsDashboard';
 
 export default function AdminApp({ 
   orders, products, setProducts, settings, setSettings, apiCategories, setApiCategories 
@@ -56,11 +60,11 @@ export default function AdminApp({
         <Route path="/settings" element={<WebsiteSettings settings={settings} setSettings={setSettings} />} />
         <Route path="/reports" element={<ReportsHub orders={orders} products={products} />} />
         
-        {/* Remaining Placeholders */}
-        <Route path="/coupons" element={<PlaceholderPage title="Coupons" description="Manage discount codes and promotional offers." />} />
-        <Route path="/reviews" element={<PlaceholderPage title="Product Reviews" description="Manage customer reviews and ratings." />} />
-        <Route path="/notifications" element={<PlaceholderPage title="Notifications" description="View alerts, system updates, and new activity." />} />
-        <Route path="/analytics" element={<PlaceholderPage title="Analytics" description="Deep dive into your store's performance metrics." />} />
+        {/* Remaining Modules */}
+        <Route path="/coupons" element={<CouponManager />} />
+        <Route path="/reviews" element={<ReviewManager />} />
+        <Route path="/notifications" element={<NotificationHub />} />
+        <Route path="/analytics" element={<AnalyticsDashboard />} />
         
         <Route path="/profile" element={<SettingsPage settings={settings} setSettings={setSettings} />} />
         
