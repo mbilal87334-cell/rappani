@@ -543,6 +543,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   }, [isPhoneVerified]);
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
   const [reviewName, setReviewName] = useState('');
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
@@ -1653,7 +1654,12 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                       {Math.round(((selectedProduct.originalPrice - selectedProduct.price) / selectedProduct.originalPrice) * 100)}% OFF
                     </div>
                  )}
-                 <img src={selectedProduct.image} alt={selectedProduct.name} className="object-contain w-full h-full mix-blend-multiply" />
+                 <img 
+                    src={selectedProduct.image} 
+                    alt={selectedProduct.name} 
+                    className="object-contain w-full h-full mix-blend-multiply cursor-pointer hover:scale-105 transition-transform" 
+                    onClick={() => setFullScreenImage(selectedProduct.image)} 
+                 />
                </div>
                
                {/* Details */}
@@ -1764,6 +1770,36 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                  <Gift className="w-5 h-5" /> Buy Now
                </button>
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Full Screen Image Viewer Modal */}
+      <AnimatePresence>
+        {fullScreenImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[300] bg-black/95 flex flex-col items-center justify-center p-4 backdrop-blur-sm"
+            onClick={() => setFullScreenImage(null)}
+          >
+            <button 
+              onClick={(e) => { e.stopPropagation(); setFullScreenImage(null); }} 
+              className="absolute top-4 right-4 p-2 bg-white/10 rounded-full text-white hover:bg-white/20 transition-colors z-10"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            <motion.img 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", damping: 20 }}
+              src={fullScreenImage} 
+              alt="Fullscreen Product" 
+              className="w-full max-h-[85vh] object-contain cursor-zoom-out"
+              onClick={(e) => e.stopPropagation()}
+            />
           </motion.div>
         )}
       </AnimatePresence>
