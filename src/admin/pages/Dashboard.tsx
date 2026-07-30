@@ -27,13 +27,13 @@ import {
 
 
 const StatRow = ({ title, value, icon: Icon, colorClass }: any) => (
-  <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm flex items-center gap-4">
+  <div className="bg-white rounded-lg p-4 border border-neutral-300/50 shadow-sm flex items-center gap-4">
     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${colorClass}`}>
       <Icon size={20} />
     </div>
     <div>
-      <p className="text-gray-500 text-sm font-medium">{title}</p>
-      <h3 className="text-gray-900 text-lg font-semibold">{value}</h3>
+      <p className="text-neutral-500 text-sm font-medium">{title}</p>
+      <h3 className="text-primary text-lg font-semibold">{value}</h3>
     </div>
   </div>
 );
@@ -168,8 +168,8 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
     <div className="space-y-6 max-w-5xl mx-auto pb-10">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Dashboard</h1>
-        <button className="bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-gray-800 transition-colors">
+        <h1 className="text-2xl font-bold text-primary tracking-tight">Dashboard</h1>
+        <button className="premium-button text-sm font-medium px-4 py-2 rounded-md hover:bg-gray-800 transition-colors">
           Generate Report
         </button>
       </div>
@@ -185,13 +185,13 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
         <StatRow title="Total Products" value={totalProducts} icon={Package} colorClass="bg-pink-50 text-pink-500" />
         <StatRow title="Monthly Revenue" value={`₹${monthlyRevenue.toLocaleString('en-IN')}`} icon={Calendar} colorClass="bg-sky-50 text-sky-500" />
         <StatRow title="Weekly Revenue" value={`₹${weeklyRevenue.toLocaleString('en-IN')}`} icon={TrendingUp} colorClass="bg-emerald-50 text-emerald-500" />
-        <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm flex items-center gap-4">
-          <div className="w-10 h-10 rounded-lg bg-gray-900 text-white flex items-center justify-center">
+        <div className="bg-white rounded-lg p-4 border border-neutral-300/50 shadow-sm flex items-center gap-4">
+          <div className="w-10 h-10 rounded-lg premium-button flex items-center justify-center">
             <IndianRupee size={20} />
           </div>
           <div>
-            <p className="text-gray-500 text-sm font-medium">Overall Revenue</p>
-            <h3 className="text-gray-900 text-lg font-semibold">₹{overallRevenue.toLocaleString('en-IN')}</h3>
+            <p className="text-neutral-500 text-sm font-medium">Overall Revenue</p>
+            <h3 className="text-primary text-lg font-semibold">₹{overallRevenue.toLocaleString('en-IN')}</h3>
           </div>
         </div>
       </div>
@@ -199,10 +199,10 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         {/* Weekly Revenue */}
-        <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+        <div className="bg-white rounded-xl p-5 border border-neutral-300/50 shadow-sm">
           <div className="flex items-center gap-2 mb-6">
-            <TrendingUp className="text-gray-800" size={18} />
-            <h2 className="text-base font-semibold text-gray-900">Weekly Revenue</h2>
+            <TrendingUp className="text-primary" size={18} />
+            <h2 className="text-base font-semibold text-primary">Weekly Revenue</h2>
           </div>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -224,10 +224,10 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
         </div>
 
         {/* Monthly Sales Growth */}
-        <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm">
+        <div className="bg-white rounded-xl p-5 border border-neutral-300/50 shadow-sm">
           <div className="flex items-center gap-2 mb-6">
-            <Calendar className="text-gray-800" size={18} />
-            <h2 className="text-base font-semibold text-gray-900">Monthly Sales Growth</h2>
+            <Calendar className="text-primary" size={18} />
+            <h2 className="text-base font-semibold text-primary">Monthly Sales Growth</h2>
           </div>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -249,10 +249,10 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
         </div>
         
         {/* Category Distribution */}
-        <div className="bg-white rounded-xl p-5 border border-gray-100 shadow-sm lg:col-span-2">
+        <div className="bg-white rounded-xl p-5 border border-neutral-300/50 shadow-sm lg:col-span-2">
           <div className="flex items-center gap-2 mb-4">
-            <Package className="text-gray-800" size={18} />
-            <h2 className="text-base font-semibold text-gray-900">Category Distribution</h2>
+            <Package className="text-primary" size={18} />
+            <h2 className="text-base font-semibold text-primary">Category Distribution</h2>
           </div>
           <div className="h-64 w-full flex justify-center">
             <ResponsiveContainer width="100%" height="100%">
@@ -276,14 +276,14 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
       </div>
 
       {/* Recent Orders */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden mt-6">
-        <div className="p-5 border-b border-gray-100 flex justify-between items-center">
-          <h2 className="text-base font-semibold text-gray-900">Recent Orders</h2>
-          <button className="text-sm font-medium text-gray-500 hover:text-gray-900">View All</button>
+      <div className="bg-white rounded-xl border border-neutral-300/50 shadow-sm overflow-hidden mt-6">
+        <div className="p-5 border-b border-neutral-300/50 flex justify-between items-center">
+          <h2 className="text-base font-semibold text-primary">Recent Orders</h2>
+          <button className="text-sm font-medium text-neutral-500 hover:text-primary">View All</button>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm whitespace-nowrap">
-            <thead className="bg-gray-50 text-gray-500 font-medium">
+            <thead className="bg-neutral-100 text-neutral-500 font-medium">
               <tr>
                 <th className="px-5 py-3">ORDER ID</th>
                 <th className="px-5 py-3">CUSTOMER</th>
@@ -293,17 +293,17 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
             </thead>
             <tbody className="divide-y divide-gray-100">
               {recentOrders.length > 0 ? recentOrders.map((order) => (
-                <tr key={order.id} className="hover:bg-gray-50/50">
-                  <td className="px-5 py-4 font-medium text-gray-900">#{order.id.slice(0, 8).toUpperCase()}</td>
-                  <td className="px-5 py-4 text-gray-600">{order.customerDetails?.name || 'Guest'}</td>
+                <tr key={order.id} className="hover:bg-neutral-100/50">
+                  <td className="px-5 py-4 font-medium text-primary">#{order.id.slice(0, 8).toUpperCase()}</td>
+                  <td className="px-5 py-4 text-neutral-500">{order.customerDetails?.name || 'Guest'}</td>
                   <td className="px-5 py-4">
-                    <span className="text-gray-600 font-medium">{order.status || 'Processing'}</span>
+                    <span className="text-neutral-500 font-medium">{order.status || 'Processing'}</span>
                   </td>
-                  <td className="px-5 py-4 font-medium text-gray-900">₹{order.totalAmount?.toLocaleString() || 0}</td>
+                  <td className="px-5 py-4 font-medium text-primary">₹{order.totalAmount?.toLocaleString() || 0}</td>
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan={4} className="px-5 py-8 text-center text-gray-500">No recent orders found.</td>
+                  <td colSpan={4} className="px-5 py-8 text-center text-neutral-500">No recent orders found.</td>
                 </tr>
               )}
             </tbody>
@@ -313,10 +313,10 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
 
       {/* Latest Customers & Low Stock Alerts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="p-5 border-b border-gray-100 flex justify-between items-center">
-            <h2 className="text-base font-semibold text-gray-900">Latest Customers</h2>
-            <button className="text-sm font-medium text-gray-500 hover:text-gray-900">View All</button>
+        <div className="bg-white rounded-xl border border-neutral-300/50 shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-neutral-300/50 flex justify-between items-center">
+            <h2 className="text-base font-semibold text-primary">Latest Customers</h2>
+            <button className="text-sm font-medium text-neutral-500 hover:text-primary">View All</button>
           </div>
           <div className="p-6">
             {latestCustomers.length > 0 ? (
@@ -324,28 +324,28 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
                  {latestCustomers.map((cust, idx) => (
                     <div key={idx} className="flex justify-between items-center border-b border-gray-50 pb-3 last:border-0 last:pb-0">
                       <div className="flex items-center gap-3">
-                         <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500">
+                         <div className="w-8 h-8 bg-neutral-100 rounded-full flex items-center justify-center text-neutral-500">
                            <Users size={14} />
                          </div>
                          <div>
-                           <p className="text-sm font-semibold text-gray-900">{cust.name || 'Guest'}</p>
-                           <p className="text-xs text-gray-500">{cust.phone}</p>
+                           <p className="text-sm font-semibold text-primary">{cust.name || 'Guest'}</p>
+                           <p className="text-xs text-neutral-500">{cust.phone}</p>
                          </div>
                       </div>
                     </div>
                  ))}
               </div>
             ) : (
-              <div className="text-center text-gray-500 text-sm">
+              <div className="text-center text-neutral-500 text-sm">
                 No customers found.
               </div>
             )}
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="p-5 border-b border-gray-100">
-            <h2 className="text-base font-semibold text-gray-900">Low Stock Alerts</h2>
+        <div className="bg-white rounded-xl border border-neutral-300/50 shadow-sm overflow-hidden">
+          <div className="p-5 border-b border-neutral-300/50">
+            <h2 className="text-base font-semibold text-primary">Low Stock Alerts</h2>
           </div>
           <div className="p-6">
             {lowStockProducts.length > 0 ? (
@@ -353,8 +353,8 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
                 {lowStockProducts.slice(0, 5).map(product => (
                   <div key={product.id} className="flex justify-between items-center border-b border-gray-50 pb-3 last:border-0 last:pb-0">
                     <div>
-                      <p className="text-sm font-semibold text-gray-900 truncate max-w-[200px]">{product.name}</p>
-                      <p className="text-xs text-gray-500">ID: {product.id.slice(0, 8)}</p>
+                      <p className="text-sm font-semibold text-primary truncate max-w-[200px]">{product.name}</p>
+                      <p className="text-xs text-neutral-500">ID: {product.id.slice(0, 8)}</p>
                     </div>
                     <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-md">
                       {product.stock} left
@@ -362,7 +362,7 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
                   </div>
                 ))}
                 {lowStockProducts.length > 5 && (
-                  <p className="text-xs text-gray-500 text-center pt-2">+{lowStockProducts.length - 5} more products running low</p>
+                  <p className="text-xs text-neutral-500 text-center pt-2">+{lowStockProducts.length - 5} more products running low</p>
                 )}
               </div>
             ) : (

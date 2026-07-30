@@ -77,7 +77,7 @@ export default function AdminLayout({ setIsAuthenticated, children }: { setIsAut
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/30 z-40 lg:hidden"
+                className="fixed inset-0 bg-primary/30 z-40 lg:hidden"
                 onClick={() => setIsSidebarOpen(false)}
               />
             )}
@@ -87,10 +87,10 @@ export default function AdminLayout({ setIsAuthenticated, children }: { setIsAut
               animate={isMobile ? { x: 0 } : { width: isSidebarOpen ? 260 : 80 }}
               exit={isMobile ? { x: -300 } : { width: 80 }}
               transition={{ duration: 0.3, ease: 'easeInOut' }}
-              className="fixed lg:relative z-50 h-full bg-white text-gray-800 flex flex-col border-r border-gray-200 shadow-sm"
+              className="fixed lg:relative z-50 h-full bg-white text-primary flex flex-col border-r border-neutral-300 shadow-sm"
             >
               {/* Logo Area */}
-              <div className="h-16 flex items-center justify-between px-6 border-b border-gray-100">
+              <div className="h-16 flex items-center justify-between px-6 border-b border-neutral-300/50">
                 <AnimatePresence mode="wait">
                   {isSidebarOpen && (
                     <motion.div 
@@ -99,7 +99,7 @@ export default function AdminLayout({ setIsAuthenticated, children }: { setIsAut
                       exit={{ opacity: 0, x: -20 }}
                       className="flex items-center"
                     >
-                      <span className="font-semibold text-lg tracking-tight text-gray-900 leading-tight">
+                      <span className="font-semibold text-lg tracking-tight text-primary leading-tight">
                         Rappani<br />Store
                       </span>
                     </motion.div>
@@ -107,13 +107,13 @@ export default function AdminLayout({ setIsAuthenticated, children }: { setIsAut
                 </AnimatePresence>
                 
                 {(!isSidebarOpen && !isMobile) && (
-                   <div className="w-8 h-8 mx-auto bg-gray-100 rounded flex items-center justify-center font-bold text-gray-800">
+                   <div className="w-8 h-8 mx-auto bg-neutral-100 rounded flex items-center justify-center font-bold text-primary">
                      N
                    </div>
                 )}
                 
                 {isMobile && (
-                  <button onClick={() => setIsSidebarOpen(false)} className="p-1.5 hover:bg-gray-100 rounded-md text-gray-500 transition-colors">
+                  <button onClick={() => setIsSidebarOpen(false)} className="p-1.5 hover:bg-neutral-100 rounded-md text-neutral-500 transition-colors">
                     <X size={20} />
                   </button>
                 )}
@@ -130,11 +130,11 @@ export default function AdminLayout({ setIsAuthenticated, children }: { setIsAut
                       title={!isSidebarOpen ? item.label : undefined}
                       className={`flex items-center gap-4 px-6 py-2.5 mx-2 rounded-md transition-colors ${
                         isActive 
-                          ? 'bg-gray-100 text-gray-900 font-medium' 
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                          ? 'bg-neutral-100 text-primary font-medium' 
+                          : 'text-neutral-500 hover:text-primary hover:bg-neutral-100'
                       } ${!isSidebarOpen && !isMobile ? 'justify-center px-0 mx-4' : ''}`}
                     >
-                      <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'text-gray-900' : 'text-gray-500'} />
+                      <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} className={isActive ? 'text-primary' : 'text-neutral-500'} />
                       <AnimatePresence>
                         {isSidebarOpen && (
                           <motion.span 
@@ -168,11 +168,11 @@ export default function AdminLayout({ setIsAuthenticated, children }: { setIsAut
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Navigation */}
-        <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 z-30 relative">
+        <header className="h-14 bg-white border-b border-neutral-300 flex items-center justify-between px-4 z-30 relative">
           <div className="flex items-center">
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2 text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+              className="p-2 text-neutral-500 hover:bg-neutral-100 rounded-md transition-colors"
             >
               <Menu size={24} />
             </button>
@@ -183,7 +183,7 @@ export default function AdminLayout({ setIsAuthenticated, children }: { setIsAut
               {/* Optional top bar search or actions */}
             </div>
             
-            <button className="p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors relative">
+            <button className="p-2 text-neutral-500 hover:bg-neutral-100 rounded-full transition-colors relative">
                {/* Used for global actions if any, but profile is standard here */}
                <User size={22} />
             </button>
