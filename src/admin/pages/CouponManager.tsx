@@ -167,12 +167,12 @@ export default function CouponManager() {
       {/* Create Modal */}
       <AnimatePresence>
         {showModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto pt-safe sm:pt-4">
             <motion.div 
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden"
+              className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden mt-8 mb-20 sm:my-8 shrink-0"
             >
               <div className="flex items-center justify-between p-4 border-b border-neutral-100 bg-neutral-50">
                 <h3 className="font-bold text-lg text-primary">Create New Coupon</h3>

@@ -318,8 +318,8 @@ export default function ProductManager({ products, setProducts, apiCategories = 
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden my-8">
+        <div className="fixed inset-0 z-[100] flex items-start sm:items-center justify-center bg-black/50 p-4 overflow-y-auto pt-safe sm:pt-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden mt-8 mb-20 sm:my-8 shrink-0">
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
               <h2 className="text-lg font-bold text-gray-900">{editingProduct ? 'Edit Product' : 'Add Product'}</h2>
               <button onClick={closeModal} className="text-gray-400 hover:text-gray-600">
