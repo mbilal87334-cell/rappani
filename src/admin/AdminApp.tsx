@@ -53,7 +53,7 @@ export default function AdminApp({
         <Route path="/orders" element={<OrderManager orders={orders} />} />
         
         {/* Fully Implemented Premium UIs */}
-        <Route path="/categories" element={<CategoriesManager apiCategories={apiCategories} setApiCategories={setApiCategories} />} />
+        <Route path="/categories" element={<CategoriesManager apiCategories={apiCategories} setApiCategories={setApiCategories} products={products} />} />
         <Route path="/customers" element={<CustomersList orders={orders} />} />
         <Route path="/revenue" element={<RevenueDashboard orders={orders} />} />
         <Route path="/transactions" element={<TransactionsLedger orders={orders} />} />
