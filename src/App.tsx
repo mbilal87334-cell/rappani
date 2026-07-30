@@ -991,7 +991,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
             <div>
               <h1 className="font-black text-2xl leading-tight tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-gold-100 to-gold-500 uppercase drop-shadow-sm">{t.storeName}</h1>
               <p className="text-[11px] text-neutral-300 flex items-center gap-1 opacity-90 tracking-widest font-medium uppercase mt-0.5">
-                Premium Store <Sparkles className="w-3 h-3 text-gold-500" />
+                Premium Quality <Sparkles className="w-3 h-3 text-gold-500" />
               </p>
             </div>
           </div>
