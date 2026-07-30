@@ -67,6 +67,7 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                   <th className="px-5 py-3">DATE</th>
                   <th className="px-5 py-3">TOTAL</th>
                   <th className="px-5 py-3">STATUS</th>
+                  <th className="px-5 py-3">TRACKING</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -78,6 +79,24 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                     <td className="px-5 py-4 font-medium text-gray-900">₹{order.totalAmount?.toLocaleString() || 0}</td>
                     <td className="px-5 py-4">
                       {getStatusBadge(order.status)}
+                    </td>
+                    <td className="px-5 py-4">
+                      <select 
+                        value={order.trackingStatus || 'Processing'}
+                        onChange={(e) => {
+                          fetch(`/api/orders/${order.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ trackingStatus: e.target.value })
+                          }).then(() => window.location.reload());
+                        }}
+                        className="bg-stone-50 border border-gray-200 text-xs rounded-md px-2 py-1 outline-none focus:ring-1 focus:ring-violet-500"
+                      >
+                        <option value="Processing">Processing</option>
+                        <option value="Packed">Packed</option>
+                        <option value="Shipped">Shipped</option>
+                        <option value="Delivered">Delivered</option>
+                      </select>
                     </td>
                   </tr>
                 ))}

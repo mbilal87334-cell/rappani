@@ -3,33 +3,61 @@
 @theme {
   --font-sans: 'Inter', sans-serif;
   --font-heading: 'Outfit', sans-serif;
+
+  /* Custom Luxury Colors */
+  --color-primary: #0A0F1F; /* Deep Midnight Blue */
+  --color-primary-light: #152243;
+  --color-secondary: #1E3A8A; /* Royal Blue */
+  
+  --color-gold-50: #FCF9F2;
+  --color-gold-100: #F6EFD5;
+  --color-gold-500: #D4AF37; /* Luxury Gold */
+  --color-gold-600: #AA8C2C;
+  --color-gold-900: #4A3D13;
+
+  --color-neutral-50: #FFFFFF; /* Pure White */
+  --color-neutral-100: #F8F9FA; /* Soft Gray */
+  --color-neutral-300: #E5E7EB;
+  --color-neutral-500: #64748B; /* Slate */
+  --color-neutral-900: #1E293B; /* Graphite */
+
+  --color-emerald-500: #10B981; /* Premium Emerald */
+  --color-amber-500: #F59E0B; /* Amber */
+  --color-crimson-500: #DC2626; /* Elegant Crimson */
+
   --animate-marquee: marquee 30s linear infinite;
   --animate-in: animate-in;
   --animate-out: animate-out;
-
-  --color-gold-50: #FBF9F1;
-  --color-gold-100: #F4ECCE;
-  --color-gold-500: #D4AF37;
-  --color-gold-600: #AA8C2C;
-  --color-gold-900: #4A3D13;
+  --animate-float: float 6s ease-in-out infinite;
 
   @keyframes marquee {
     0% { transform: translateX(0); }
     100% { transform: translateX(-50%); }
   }
+
+  @keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+  }
 }
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
   html {
     scroll-behavior: smooth;
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   
   body {
-    @apply antialiased bg-stone-50 text-stone-900 font-sans selection:bg-gold-500/30 selection:text-gold-900;
+    @apply bg-neutral-100 text-neutral-900 font-sans selection:bg-gold-500/20 selection:text-gold-900;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-heading tracking-tight text-black;
+    @apply font-heading tracking-tight text-primary;
   }
 }
 
@@ -42,19 +70,40 @@
     scrollbar-width: none;
   }
   
-  .glass {
-    @apply bg-black/80 backdrop-blur-xl border border-white/10 shadow-lg text-white;
+  /* Ultra Premium Glassmorphism */
+  .glass-premium {
+    @apply bg-white/70 backdrop-blur-2xl border border-white/40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-primary;
+  }
+
+  .glass-dark {
+    @apply bg-primary/80 backdrop-blur-2xl border border-white/10 shadow-[0_8px_30px_rgb(0,0,0,0.12)] text-white;
   }
   
-  .text-gradient {
+  .text-gradient-gold {
     @apply bg-gradient-to-r from-gold-600 to-yellow-400 bg-clip-text text-transparent font-bold;
   }
 
+  .text-gradient-primary {
+    @apply bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent font-black;
+  }
+
   .premium-card {
-    @apply bg-white border border-stone-200 shadow-[0_4px_20px_rgba(0,0,0,0.03)] rounded-2xl transition-all duration-300 hover:shadow-[0_8px_30px_rgba(212,175,55,0.15)] hover:border-gold-500/30;
+    @apply bg-white border border-neutral-300/50 shadow-[0_4px_20px_rgba(0,0,0,0.02)] rounded-3xl transition-all duration-500 ease-out hover:shadow-[0_20px_40px_rgba(0,0,0,0.06)] hover:-translate-y-1 hover:border-gold-500/20;
   }
 
   .premium-button {
-    @apply bg-black text-gold-500 font-medium rounded-full border border-gold-500/30 transition-all duration-300 hover:bg-gold-500 hover:text-black active:scale-95 flex items-center justify-center;
+    @apply bg-primary text-white font-medium rounded-full transition-all duration-300 ease-out hover:bg-primary-light hover:shadow-lg active:scale-[0.98] flex items-center justify-center;
+  }
+
+  .premium-button-gold {
+    @apply bg-gradient-to-r from-gold-500 to-gold-600 text-white font-bold rounded-full transition-all duration-300 ease-out hover:shadow-[0_8px_20px_rgba(212,175,55,0.3)] hover:-translate-y-0.5 active:scale-[0.98] flex items-center justify-center;
+  }
+
+  .premium-button-outline {
+    @apply bg-transparent text-primary font-medium rounded-full border border-neutral-300 transition-all duration-300 hover:border-primary hover:bg-neutral-50 active:scale-[0.98] flex items-center justify-center;
+  }
+
+  .premium-input {
+    @apply w-full bg-white border border-neutral-300 rounded-2xl py-3 px-4 outline-none transition-all duration-300 focus:ring-4 focus:ring-primary/10 focus:border-primary text-primary placeholder-neutral-500 shadow-sm hover:border-neutral-500/50;
   }
 }

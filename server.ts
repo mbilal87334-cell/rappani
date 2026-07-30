@@ -5,6 +5,8 @@ import path from "path";
 import fs from "fs-extra";
 import cors from "cors";
 import mongoose from "mongoose";
+import jwt from 'jsonwebtoken';
+import { GoogleGenerativeAI } from '@google/genai';
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import { v2 as cloudinary } from "cloudinary";
@@ -51,14 +53,21 @@ const productSchema = new mongoose.Schema({
   category: { type: String, required: true },
   price: { type: Number, required: true },
   originalPrice: { type: Number, required: false },
-  stock: { type: Number, required: false },
+  stock: { type: Number, required: false, default: 100 },
+  lowStockThreshold: { type: Number, default: 10 },
+  barcode: { type: String, required: false },
   image: { type: String, required: true },
+  images: { type: [String], default: [] },
+  videoUrl: { type: String, required: false },
+  features: { type: [String], default: [] },
+  tags: { type: [String], default: [] },
   isFeatured: { type: Boolean, default: false },
   isVisible: { type: Boolean, default: true },
   reviews: [{
     rating: { type: Number, required: true },
     review: { type: String, required: true },
     customerName: { type: String, required: true },
+    imageUrl: { type: String, required: false },
     createdAt: { type: Date, default: Date.now }
   }]
 });
@@ -80,16 +89,42 @@ const Setting = mongoose.model("Setting", settingSchema);
 
 const orderSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
+  userId: { type: String, required: false },
   customerName: { type: String, required: true },
   customerPhone: { type: String, required: true },
+  shippingAddress: { type: Object, required: false },
   items: { type: Array, required: true },
   totalAmount: { type: Number, required: true },
   paymentMethod: { type: String, required: true },
   utrNumber: { type: String, default: null },
+  couponCode: { type: String, required: false },
+  discountAmount: { type: Number, default: 0 },
   status: { type: String, required: true, default: 'Pending' },
+  trackingStatus: { type: String, default: 'Processing' },
+  timeline: [{
+    status: { type: String, required: true },
+    date: { type: Date, default: Date.now }
+  }],
   createdAt: { type: Date, required: true, default: Date.now }
 });
 const Order = mongoose.model("Order", orderSchema);
+
+const userSchema = new mongoose.Schema({
+  phone: { type: String, required: true, unique: true },
+  name: { type: String, required: true },
+  email: { type: String, required: false },
+  role: { type: String, default: 'customer' },
+  addresses: [{
+    label: { type: String, required: true }, // e.g. Home, Office
+    street: { type: String, required: true },
+    city: { type: String, required: true },
+    state: { type: String, required: true },
+    pincode: { type: String, required: true }
+  }],
+  loyaltyPoints: { type: Number, default: 0 },
+  createdAt: { type: Date, default: Date.now }
+});
+const User = mongoose.model("User", userSchema);
 
 async function startServer() {
   const app = express();
@@ -288,7 +323,63 @@ async function startServer() {
     // OTP matches correctly
     console.log(`[OTP] Successfully verified ${phone}`);
     otpStore.delete(phone);
-    res.json({ success: true });
+
+    // Find or Create User
+    User.findOne({ phone }).then(async (user) => {
+      let loggedInUser = user;
+      if (!loggedInUser) {
+        loggedInUser = new User({ 
+          phone, 
+          name: `User_${phone.slice(-4)}` 
+        });
+        await loggedInUser.save();
+      }
+      
+      const jwtSecret = process.env.JWT_SECRET || 'rappani_super_secret_key';
+      const token = jwt.sign(
+        { id: loggedInUser._id, phone: loggedInUser.phone, role: loggedInUser.role }, 
+        jwtSecret, 
+        { expiresIn: '7d' }
+      );
+
+      res.json({ success: true, token, user: loggedInUser });
+    }).catch(err => {
+      console.error(err);
+      res.status(500).json({ error: "Database error during login" });
+    });
+  });
+
+  // Auth Middleware
+  const authenticateToken = (req: any, res: any, next: any) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    if (token == null) return res.sendStatus(401);
+
+    jwt.verify(token, process.env.JWT_SECRET || 'rappani_super_secret_key', (err: any, user: any) => {
+      if (err) return res.sendStatus(403);
+      req.user = user;
+      next();
+    });
+  };
+
+  // User Profile Routes
+  app.get("/api/user/me", authenticateToken, async (req: any, res) => {
+    try {
+      const user = await User.findById(req.user.id);
+      res.json(user);
+    } catch (err) {
+      res.status(500).json({ error: "Server error" });
+    }
+  });
+
+  app.put("/api/user/addresses", authenticateToken, async (req: any, res) => {
+    try {
+      const { addresses } = req.body;
+      const user = await User.findByIdAndUpdate(req.user.id, { addresses }, { new: true });
+      res.json({ success: true, addresses: user?.addresses });
+    } catch (err) {
+      res.status(500).json({ error: "Server error" });
+    }
   });
 
   // API Routes
@@ -334,9 +425,9 @@ async function startServer() {
 
   app.post("/api/products", async (req, res) => {
     try {
-      const { id, name, category, price, originalPrice, stock, image, isFeatured, isVisible } = req.body;
+      const { id, name, category, price, originalPrice, stock, image, images, videoUrl, features, tags, isFeatured, isVisible } = req.body;
       const visibleFlag = isVisible !== undefined ? isVisible : true;
-      await Product.create({ id, name, category, price, originalPrice, stock, image, isFeatured, isVisible: visibleFlag });
+      await Product.create({ id, name, category, price, originalPrice, stock, image, images, videoUrl, features, tags, isFeatured, isVisible: visibleFlag });
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });
@@ -346,8 +437,8 @@ async function startServer() {
   app.put("/api/products/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, category, price, originalPrice, stock, image, isFeatured, isVisible } = req.body;
-      const updateData: any = { name, category, price, originalPrice, stock, image, isFeatured };
+      const { name, category, price, originalPrice, stock, image, images, videoUrl, features, tags, isFeatured, isVisible } = req.body;
+      const updateData: any = { name, category, price, originalPrice, stock, image, images, videoUrl, features, tags, isFeatured };
       if (isVisible !== undefined) updateData.isVisible = isVisible;
       
       await Product.updateOne({ id }, updateData);
@@ -423,7 +514,7 @@ async function startServer() {
   app.post("/api/checkout", async (req, res) => {
     try {
       console.log(`[SERVER] Checkout hit. Body:`, JSON.stringify(req.body));
-      const { customerName, customerPhone, items, totalAmount, paymentMethod, utrNumber } = req.body;
+      const { customerName, customerPhone, items, totalAmount, paymentMethod, utrNumber, couponCode, discountAmount, userId, shippingAddress } = req.body;
 
       if (!customerName || !customerPhone || !items || !totalAmount || !paymentMethod) {
         return res.status(400).json({ success: false, error: "Missing required fields" });
@@ -438,13 +529,19 @@ async function startServer() {
       const orderId = Date.now().toString();
       await Order.create({
         id: orderId,
+        userId: userId || null,
+        shippingAddress: shippingAddress || null,
         customerName,
         customerPhone,
         items,
         totalAmount,
         paymentMethod,
         utrNumber: utrNumber || null,
+        couponCode: couponCode || null,
+        discountAmount: discountAmount || 0,
         status: 'Pending',
+        trackingStatus: 'Processing',
+        timeline: [{ status: 'Order Placed', date: new Date() }],
         createdAt: new Date()
       });
 
@@ -494,8 +591,11 @@ async function startServer() {
   app.put("/api/orders/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const { status } = req.body;
-      await Order.updateOne({ id }, { status });
+      const { status, trackingStatus } = req.body;
+      const updateData: any = {};
+      if (status) updateData.status = status;
+      if (trackingStatus) updateData.trackingStatus = trackingStatus;
+      await Order.updateOne({ id }, updateData);
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });

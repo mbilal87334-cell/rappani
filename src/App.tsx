@@ -10,6 +10,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import AdminApp from './admin/AdminApp';
 import LocationMap from './LocationMap';
 import { removeBackground as imglyRemoveBackground } from '@imgly/background-removal';
+import { StoreProvider } from './context/StoreContext';
+import { Storefront } from './Storefront';
 
 // --- Types ---
 export interface Product {
@@ -2034,7 +2036,11 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<VisitorPanel products={products} settings={settings} setProducts={setProducts} hasMore={hasMore} isLoadingMore={isLoadingMore} loadMoreProducts={loadMoreProducts} apiCategories={apiCategories} />} />
+        <Route path="/" element={
+          <StoreProvider products={products} setProducts={setProducts} apiCategories={apiCategories} settings={settings}>
+            <Storefront />
+          </StoreProvider>
+        } />
         <Route path="/admin/*" element={<AdminApp orders={orders} products={products} setProducts={setProducts} apiCategories={apiCategories} setApiCategories={setApiCategories} settings={settings} setSettings={setSettings} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

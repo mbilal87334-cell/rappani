@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, Plus, Eye, EyeOff, Edit2, Trash2, Copy, Image as ImageIcon, X } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Search, Plus, Eye, EyeOff, Edit2, Trash2, Copy, Image as ImageIcon, X, Upload } from 'lucide-react';
 import { Product, saveProduct, deleteProduct } from '../../App';
 import toast from 'react-hot-toast';
 
@@ -13,6 +13,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
     id: '', name: '', category: '', price: 0, originalPrice: 0, stock: 50, image: '', isVisible: true, isFeatured: false
   });
   const [isSaving, setIsSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const tabs = ['All', ...apiCategories.map(c => c.name)];
 
@@ -105,6 +106,61 @@ export default function ProductManager({ products, setProducts, apiCategories = 
     }
   };
 
+  const handleBulkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const text = event.target?.result as string;
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+        if (lines.length < 2) return toast.error('CSV is empty or missing headers');
+        
+        // Assume CSV: name,category,price,stock,image
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        const newProducts: Product[] = [];
+        
+        for (let i = 1; i < lines.length; i++) {
+          const values = lines[i].split(',').map(v => v.trim());
+          const obj: any = {};
+          headers.forEach((h, idx) => { obj[h] = values[idx] || ''; });
+          
+          if (!obj.name || !obj.price) continue;
+          
+          const newProduct: Product = {
+            id: `prod_${Date.now()}_${i}`,
+            name: obj.name,
+            category: obj.category || 'Uncategorized',
+            price: parseFloat(obj.price) || 0,
+            originalPrice: obj.originalprice ? parseFloat(obj.originalprice) : undefined,
+            stock: parseInt(obj.stock) || 50,
+            image: obj.image || '',
+            isVisible: true,
+            isFeatured: false
+          };
+          newProducts.push(newProduct);
+        }
+
+        if (newProducts.length === 0) return toast.error('No valid products found in CSV');
+        
+        toast.loading(`Importing ${newProducts.length} products...`, { id: 'bulkUpload' });
+        
+        // Process sequentially
+        for (const p of newProducts) {
+          await saveProduct(p, false);
+        }
+        
+        setProducts((prev: Product[]) => [...newProducts, ...prev]);
+        toast.success(`Successfully imported ${newProducts.length} products!`, { id: 'bulkUpload' });
+      } catch (err) {
+        toast.error('Failed to parse CSV', { id: 'bulkUpload' });
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = ''; // Reset
+  };
+
   return (
     <div className="max-w-7xl mx-auto pb-10">
       {/* Header Actions */}
@@ -121,6 +177,20 @@ export default function ProductManager({ products, setProducts, apiCategories = 
               className="pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-md text-sm font-medium w-64 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none shadow-sm transition-all"
             />
           </div>
+          <input 
+            type="file" 
+            accept=".csv" 
+            ref={fileInputRef} 
+            onChange={handleBulkUpload} 
+            className="hidden" 
+          />
+          <button 
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-md px-4 py-2 hover:bg-gray-50 transition-colors shadow-sm"
+          >
+            <Upload size={16} />
+            Bulk CSV
+          </button>
           <button 
             onClick={() => openModal()}
             className="flex items-center gap-2 bg-gray-900 text-white text-sm font-medium rounded-md px-4 py-2 hover:bg-gray-800 transition-colors shadow-sm"
