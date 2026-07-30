@@ -982,21 +982,21 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
     <div className="bg-gold-50 font-sans text-primary pb-20 min-h-screen max-w-md md:max-w-6xl mx-auto shadow-2xl relative overflow-x-hidden border-x border-neutral-300">
       <Toaster position="top-center" />
       {/* Top Header */}
-      <header className="sticky top-0 z-50 premium-button shadow-md">
-        <div className="px-4 py-3 flex items-center justify-between">
+      <header className="sticky top-0 z-50 glass-dark shadow-md border-b border-gold-500/20">
+        <div className="px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-yellow-400 rounded-lg flex items-center justify-center text-gold-500 font-black text-xl italic shadow-sm">
+            <div className="w-10 h-10 bg-gradient-to-br from-gold-500 to-gold-600 rounded-xl flex items-center justify-center text-white font-black text-2xl italic shadow-lg shadow-gold-500/20">
               R
             </div>
             <div>
-              <h1 className="font-bold text-lg leading-tight italic tracking-wide">{t.storeName}</h1>
-              <p className="text-[10px] text-violet-100 flex items-center gap-1 opacity-90 italic">
-                Explore Plus <Sparkles className="w-3 h-3 text-gold-500 fill-yellow-400" />
+              <h1 className="font-black text-2xl leading-tight tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-gold-100 to-gold-500 uppercase drop-shadow-sm">{t.storeName}</h1>
+              <p className="text-[11px] text-neutral-300 flex items-center gap-1 opacity-90 tracking-widest font-medium uppercase mt-0.5">
+                Premium Store <Sparkles className="w-3 h-3 text-gold-500" />
               </p>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={toggleLanguage} className="text-[10px] font-bold text-white bg-primary/50 px-2 py-1 rounded">
+            <button onClick={toggleLanguage} className="text-xs font-bold text-white premium-button-outline border-white/20 px-3 py-1.5 rounded-full hover:bg-white/10">
                {lang === 'en' ? 'தமிழ்' : 'EN'}
             </button>
             <div onClick={() => setCurrentTab('account')} className="flex items-center gap-1 cursor-pointer font-medium text-sm">
