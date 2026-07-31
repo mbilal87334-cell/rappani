@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Search, Plus, Eye, EyeOff, Edit2, Trash2, Copy, Image as ImageIcon, X, Upload } from 'lucide-react';
+import { Search, Plus, Eye, EyeOff, Edit2, Trash2, Copy, Image as ImageIcon, X, Upload, Camera, Loader } from 'lucide-react';
 import { Product, saveProduct, deleteProduct } from '../../App';
 import toast from 'react-hot-toast';
 
@@ -13,7 +13,9 @@ export default function ProductManager({ products, setProducts, apiCategories = 
     id: '', name: '', category: '', price: 0, originalPrice: 0, stock: 50, image: '', isVisible: true, isFeatured: false
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   
   const tabs = ['All', ...apiCategories.map(c => c.name)];
 
@@ -49,27 +51,51 @@ export default function ProductManager({ products, setProducts, apiCategories = 
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name?.trim()) return toast.error("Product name is required");
-    
     setIsSaving(true);
     try {
-      const productToSave = formData as Product;
-      if (productToSave.isVisible === undefined) productToSave.isVisible = true;
-      
-      await saveProduct(productToSave, !!editingProduct);
-      setProducts((prev: Product[]) => {
-        if (editingProduct) {
-          return prev.map(p => p.id === productToSave.id ? productToSave : p);
-        }
-        return [productToSave, ...prev];
-      });
-      toast.success(`Product ${editingProduct ? 'updated' : 'added'} successfully`);
+      const saved = await saveProduct(formData as Product, !!editingProduct);
+      if (editingProduct) {
+        setProducts(products.map(p => p.id === saved.id ? saved : p));
+        toast.success("Product updated successfully");
+      } else {
+        setProducts([saved, ...products]);
+        toast.success("Product created successfully");
+      }
       closeModal();
     } catch (err) {
-      toast.error("Failed to save product");
       console.error(err);
+      toast.error("Failed to save product");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formDataPayload = new FormData();
+    formDataPayload.append('image', file);
+
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formDataPayload
+      });
+      const data = await res.json();
+      if (data.imageUrl) {
+        setFormData({ ...formData, image: data.imageUrl });
+        toast.success("Image uploaded!");
+      } else {
+        toast.error(data.error || "Upload failed");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Error uploading image");
+    } finally {
+      setIsUploading(false);
+      if (e.target) e.target.value = '';
     }
   };
 
@@ -376,12 +402,86 @@ export default function ProductManager({ products, setProducts, apiCategories = 
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
-                    <input 
-                      type="text" required value={formData.image || ''}
-                      onChange={e => setFormData({...formData, image: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-gray-900"
-                    />
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Product Image</label>
+                    <div className="flex flex-col gap-3">
+                      {formData.image && (
+                        <div className="relative w-full h-40 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                          <img src={formData.image} alt="Preview" className="w-full h-full object-contain" />
+                          <button 
+                            type="button"
+                            onClick={() => setFormData({...formData, image: ''})}
+                            className="absolute top-2 right-2 bg-white rounded-full p-1 shadow hover:bg-gray-100 text-red-500"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      )}
+
+                      {!formData.image && (
+                        <div className="w-full h-40 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400">
+                          {isUploading ? (
+                            <Loader className="w-8 h-8 animate-spin text-gray-900" />
+                          ) : (
+                            <>
+                              <ImageIcon size={32} className="mb-2 text-gray-300" />
+                              <span className="text-sm">No image selected</span>
+                            </>
+                          )}
+                        </div>
+                      )}
+
+                      <div className="flex gap-2">
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          className="hidden" 
+                          ref={fileInputRef} 
+                          onChange={handleFileUpload} 
+                        />
+                        <button 
+                          type="button" 
+                          disabled={isUploading}
+                          onClick={() => fileInputRef.current?.click()}
+                          className="flex-1 flex items-center justify-center gap-2 py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors border border-gray-300"
+                        >
+                          <Upload size={16} />
+                          Gallery
+                        </button>
+
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          capture="environment"
+                          className="hidden" 
+                          ref={cameraInputRef} 
+                          onChange={handleFileUpload} 
+                        />
+                        <button 
+                          type="button" 
+                          disabled={isUploading}
+                          onClick={() => cameraInputRef.current?.click()}
+                          className="flex-1 flex items-center justify-center gap-2 py-2 px-4 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-sm font-medium transition-colors"
+                        >
+                          <Camera size={16} />
+                          Camera
+                        </button>
+                      </div>
+
+                      <div className="relative mt-2">
+                        <div className="absolute inset-0 flex items-center">
+                          <div className="w-full border-t border-gray-200"></div>
+                        </div>
+                        <div className="relative flex justify-center text-xs">
+                          <span className="bg-white px-2 text-gray-500">Or Paste URL</span>
+                        </div>
+                      </div>
+
+                      <input 
+                        type="url" placeholder="https://..." value={formData.image || ''}
+                        onChange={e => setFormData({...formData, image: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-gray-900 text-sm"
+                      />
+                    </div>
                   </div>
                   <div className="flex flex-col gap-3 pt-2">
                     <label className="flex items-center gap-2 cursor-pointer">
