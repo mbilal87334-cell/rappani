@@ -957,11 +957,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
 
     try {
       await navigator.clipboard.writeText('mohammedazzam200512@okaxis');
-      toast.success("✅ UPI ID Copied! Please open GPay/PhonePe to pay.");
-      
-      if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-        window.location.href = `upi://pay?pa=mohammedazzam200512@okaxis&pn=Rappani%20Store&am=${finalTotal}&cu=INR`;
-      }
+      toast.success("✅ UPI ID Copied!");
     } catch (err) {
       console.log('Clipboard copy failed');
     }
@@ -1677,7 +1673,30 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                 <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-primary/60 backdrop-blur-sm">
                    <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm space-y-4">
                       <h3 className="font-bold text-lg text-primary">Confirm Payment</h3>
-                      <p className="text-sm text-neutral-500">Please enter the 12-digit UTR or Reference Number from your payment app to confirm your order.</p>
+                      <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 mb-2">
+                        <p className="text-sm text-gray-500 mb-1">UPI ID</p>
+                        <div className="flex items-center justify-between">
+                           <span className="font-bold text-gray-900">mohammedazzam200512@okaxis</span>
+                           <button 
+                             onClick={() => {
+                               navigator.clipboard.writeText('mohammedazzam200512@okaxis');
+                               toast.success("Copied!");
+                             }}
+                             className="text-gold-600 font-bold text-sm bg-gold-50 px-3 py-1 rounded-lg"
+                           >
+                             Copy
+                           </button>
+                        </div>
+                        {/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) && (
+                           <a 
+                             href={`upi://pay?pa=mohammedazzam200512@okaxis&pn=Rappani%20Store&am=${finalTotal}&cu=INR`}
+                             className="block w-full text-center mt-3 bg-[#1A73E8] text-white py-2 rounded-lg font-bold shadow-sm"
+                           >
+                             Open UPI App
+                           </a>
+                        )}
+                      </div>
+                      <p className="text-sm text-neutral-500">After payment, enter the 12-digit UTR or Reference Number below to confirm your order.</p>
                       <input 
                           type="text" 
                           placeholder="Enter UTR Number" 
