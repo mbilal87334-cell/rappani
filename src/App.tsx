@@ -50,6 +50,16 @@ export interface Order {
   trackingStatus?: string;
   status: string;
   createdAt: string;
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  razorpaySignature?: string;
+  paymentStatus?: string;
+}
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
 }
 
 // --- API Service ---
@@ -1549,6 +1559,9 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                           <button onClick={handleGPayCheckout} className="w-full premium-button py-3.5 rounded-xl font-bold shadow-md shadow-gray-900/20 flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors">
                              <CreditCard className="w-5 h-5" /> Pay via GPay / UPI
                           </button>
+                          <button onClick={handleRazorpayCheckout} className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors">
+                             <CreditCard className="w-5 h-5" /> Pay Online (Razorpay)
+                          </button>
                        </div>
                     </div>
                   </div>
@@ -1996,9 +2009,19 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                        <span className="text-xs font-bold text-neutral-500">Order Placed: {new Date(order.createdAt).toLocaleDateString()}</span>
                        <div className="font-black text-lg text-primary mt-0.5">₹{order.totalAmount}</div>
                     </div>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${order.status === 'Completed' ? 'bg-gold-100 text-gold-900' : 'bg-orange-100 text-orange-700'}`}>
-                      {order.status}
-                    </span>
+                    <div className="flex flex-col items-end gap-2">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${order.status === 'Completed' ? 'bg-gold-100 text-gold-900' : 'bg-orange-100 text-orange-700'}`}>
+                        {order.status}
+                      </span>
+                      {order.paymentMethod === 'Razorpay' && order.paymentStatus === 'Pending' && (
+                        <button 
+                          onClick={() => handleRetryPayment(order)}
+                          className="text-[10px] font-bold px-3 py-1 bg-blue-600 text-white rounded-full shadow-sm shadow-blue-500/20 hover:bg-blue-700 transition-colors"
+                        >
+                          Retry Payment
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="text-xs text-neutral-500 mb-5 whitespace-pre-wrap leading-relaxed">{order.itemsSummary}</div>
                   

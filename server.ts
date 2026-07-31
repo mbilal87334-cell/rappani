@@ -11,8 +11,16 @@ import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
+import Razorpay from "razorpay";
+import crypto from "crypto";
 
 dotenv.config();
+
+const razorpay = new Razorpay({
+  key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_placeholder',
+  key_secret: process.env.RAZORPAY_SECRET_KEY || 'secret_placeholder'
+});
+
 
 const serverLogs: string[] = [];
 const originalLog = console.log;
@@ -101,6 +109,11 @@ const orderSchema = new mongoose.Schema({
   discountAmount: { type: Number, default: 0 },
   status: { type: String, required: true, default: 'Pending' },
   trackingStatus: { type: String, default: 'Processing' },
+  razorpayOrderId: { type: String, default: null },
+  razorpayPaymentId: { type: String, default: null },
+  razorpaySignature: { type: String, default: null },
+  paymentStatus: { type: String, default: 'Pending' },
+  paymentTime: { type: Date, default: null },
   timeline: [{
     status: { type: String, required: true },
     date: { type: Date, default: Date.now }
@@ -547,7 +560,8 @@ async function startServer() {
       }
 
       const orderId = Date.now().toString();
-      await Order.create({
+      
+      const newOrder = await Order.create({
         id: orderId,
         userId: userId || null,
         shippingAddress: shippingAddress || null,
@@ -560,12 +574,33 @@ async function startServer() {
         couponCode: couponCode || null,
         discountAmount: discountAmount || 0,
         status: 'Pending',
+        paymentStatus: 'Pending',
         trackingStatus: 'Processing',
         timeline: [{ status: 'Order Placed', date: new Date() }],
         createdAt: new Date()
       });
 
-      // Automatically reduce stock based on items
+      if (paymentMethod === 'Razorpay') {
+        const options = {
+          amount: Math.round(totalAmount * 100), // amount in smallest currency unit (paise)
+          currency: "INR",
+          receipt: orderId
+        };
+        const rzpOrder = await razorpay.orders.create(options);
+        
+        newOrder.razorpayOrderId = rzpOrder.id;
+        await newOrder.save();
+
+        return res.json({ 
+          success: true, 
+          orderId, 
+          razorpayOrderId: rzpOrder.id,
+          amount: options.amount,
+          key: process.env.RAZORPAY_KEY_ID
+        });
+      }
+
+      // Automatically reduce stock based on items for non-Razorpay orders
       for (const item of items) {
         await Product.updateOne(
           { id: item.product.id, stock: { $exists: true, $gte: item.quantity } },
@@ -577,6 +612,59 @@ async function startServer() {
       console.error("[SERVER] Checkout error:", err);
       res.status(500).json({ success: false, error: err?.message || "Server error" });
     }
+  });
+
+  app.post("/api/razorpay/verify", async (req, res) => {
+    try {
+      const { orderId, razorpay_payment_id, razorpay_order_id, razorpay_signature } = req.body;
+
+      if (!orderId || !razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
+        return res.status(400).json({ success: false, error: "Missing required fields" });
+      }
+
+      const order = await Order.findOne({ id: orderId });
+      if (!order) {
+        return res.status(404).json({ success: false, error: "Order not found" });
+      }
+
+      const secret = process.env.RAZORPAY_SECRET_KEY || 'secret_placeholder';
+      const generated_signature = crypto
+        .createHmac('sha256', secret)
+        .update(razorpay_order_id + "|" + razorpay_payment_id)
+        .digest('hex');
+
+      if (generated_signature === razorpay_signature) {
+        // Payment successful
+        order.paymentStatus = 'Paid';
+        order.status = 'Processing';
+        order.razorpayPaymentId = razorpay_payment_id;
+        order.razorpaySignature = razorpay_signature;
+        order.paymentTime = new Date();
+        await order.save();
+
+        // Reduce stock after successful payment
+        for (const item of order.items) {
+          await Product.updateOne(
+            { id: item.product.id, stock: { $exists: true, $gte: item.quantity } },
+            { $inc: { stock: -item.quantity } }
+          );
+        }
+
+        res.json({ success: true, message: "Payment verified successfully" });
+      } else {
+        // Payment failed verification
+        order.paymentStatus = 'Failed';
+        await order.save();
+        res.status(400).json({ success: false, error: "Invalid payment signature" });
+      }
+    } catch (err: any) {
+      console.error("[SERVER] Razorpay verify error:", err);
+      res.status(500).json({ success: false, error: "Verification failed" });
+    }
+  });
+
+  app.get("/api/razorpay/key", (req, res) => {
+    res.json({ key: process.env.RAZORPAY_KEY_ID || 'rzp_test_placeholder' });
   });
 
   app.get("/api/orders/check-first/:phone", async (req, res) => {
