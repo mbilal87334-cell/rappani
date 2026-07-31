@@ -363,7 +363,7 @@ function getDistanceInKm(lat1: number, lon1: number, lat2: number, lon2: number)
 }
 
 // --- Visitor Panel ---
-function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore, loadMoreProducts, apiCategories }: { products: Product[], settings: Record<string, string>, setProducts: React.Dispatch<React.SetStateAction<Product[]>>, hasMore?: boolean, isLoadingMore?: boolean, loadMoreProducts?: () => void, apiCategories: any[] }) {
+function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore, loadMoreProducts, apiCategories, setOrders }: { products: Product[], settings: Record<string, string>, setProducts: React.Dispatch<React.SetStateAction<Product[]>>, hasMore?: boolean, isLoadingMore?: boolean, loadMoreProducts?: () => void, apiCategories: any[], setOrders: React.Dispatch<React.SetStateAction<any[]>> }) {
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem('rappani_cart');
@@ -844,6 +844,9 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
         utrNumber: utrNumber ? utrNumber.trim() : undefined
       };
       await checkoutCart(payload);
+
+      // Refresh global orders so the Admin Panel sees the new order immediately
+      fetchOrders().then(data => setOrders(Array.isArray(data) ? data : [])).catch(console.error);
 
       setProducts(prev => prev.map(p => {
         const cartItem = cart.find(ci => ci.product.id === p.id);
@@ -2176,7 +2179,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<VisitorPanel products={products} settings={settings} setProducts={setProducts} hasMore={hasMore} isLoadingMore={isLoadingMore} loadMoreProducts={loadMoreProducts} apiCategories={apiCategories} />} />
+        <Route path="/" element={<VisitorPanel products={products} settings={settings} setProducts={setProducts} hasMore={hasMore} isLoadingMore={isLoadingMore} loadMoreProducts={loadMoreProducts} apiCategories={apiCategories} setOrders={setOrders} />} />
         <Route path="/admin/*" element={<AdminApp orders={orders} products={products} setProducts={setProducts} apiCategories={apiCategories} setApiCategories={setApiCategories} settings={settings} setSettings={setSettings} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
