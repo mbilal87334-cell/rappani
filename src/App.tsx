@@ -927,26 +927,31 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
     e.preventDefault();
     if (!customerName || !customerPhone) {
       setCheckoutError(t.enterDetails);
+      toast.error(t.enterDetails);
       return;
     }
     const phoneRegex = /^[0-9]{10}$/;
     if (!phoneRegex.test(customerPhone.trim())) {
       setCheckoutError(t.invalidPhone);
+      toast.error(t.invalidPhone);
       return;
     }
 
     if (!isPhoneVerified) {
       setCheckoutError(t.unverifiedPhoneError);
+      toast.error(t.unverifiedPhoneError);
       return;
     }
 
     if (deliveryMethod === 'home') {
       if (!deliveryAddress.trim()) {
         setCheckoutError(t.enterAddress);
+        toast.error(t.enterAddress);
         return;
       }
       if (distance !== null && distance > 5) {
         setCheckoutError(t.tooFarError);
+        toast.error(t.tooFarError);
         return;
       }
     }
@@ -967,6 +972,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
     const utrRegex = /^[0-9]{12}$/;
     if (!utrRegex.test(utrNumber.trim())) {
       setCheckoutError('Please enter a valid 12-digit UTR/Ref No. from your bank app.');
+      toast.error('Please enter a valid 12-digit UTR/Ref No.');
       return;
     }
 
