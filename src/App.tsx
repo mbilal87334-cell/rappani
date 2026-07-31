@@ -937,6 +937,96 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
     setTimeout(() => setIsCartOpen(false), 500);
   };
 
+  const handleRazorpayCheckout = async () => {
+    if (!customerName || customerPhone.length !== 10) {
+      toast.error("Please enter a valid Name and 10-digit Phone Number!");
+      return;
+    }
+    if (deliveryMethod === 'home' && !deliveryAddress && savedAddresses.length === 0) {
+      toast.error("Please enter a delivery address or select a saved one!");
+      return;
+    }
+
+    try {
+      const payload = {
+        customerName,
+        customerPhone,
+        paymentMethod: 'Razorpay',
+        totalAmount: finalTotal,
+        couponCode: appliedCoupon?.code,
+        discountAmount: discountAmount,
+        shippingAddress: deliveryMethod === 'home' ? (deliveryAddress || (savedAddresses.length > 0 ? savedAddresses[0] : '')) : null,
+        items: cart,
+        deliveryMethod,
+        userId: customerPhone
+      };
+
+      const res = await fetch(`${API_BASE}/checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (!data.success) {
+        throw new Error(data.error || "Checkout failed");
+      }
+
+      if (!window.Razorpay) {
+        toast.error("Payment system is still loading. Please wait a second.");
+        return;
+      }
+
+      const options = {
+        key: data.key,
+        amount: data.amount,
+        currency: "INR",
+        name: "Rappani Store",
+        description: "Order Payment",
+        image: "/logo.png",
+        order_id: data.razorpayOrderId,
+        handler: async function (response: any) {
+          const verifyRes = await fetch(`${API_BASE}/razorpay/verify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              orderId: data.orderId,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature
+            })
+          });
+          const verifyData = await verifyRes.json();
+          if (verifyData.success) {
+            toast.success("✅ Payment successful! Order placed.");
+            setCart([]);
+            localStorage.removeItem('rappani_cart');
+            setAppliedCoupon(null);
+            fetchOrders().then(d => setOrders(Array.isArray(d) ? d : [])).catch(console.error);
+            setIsCartOpen(false);
+          } else {
+            toast.error("Payment verification failed! " + verifyData.error);
+          }
+        },
+        prefill: {
+          name: customerName,
+          contact: customerPhone
+        },
+        theme: {
+          color: "#000000"
+        }
+      };
+      
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response: any){
+        toast.error("Payment Failed! Reason: " + response.error.description);
+      });
+      rzp.open();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to initialize payment");
+    }
+  };
+
   const handleGPayCheckout = async (e: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>) => {
     e.preventDefault();
     if (!customerName || !customerPhone) {
