@@ -1643,12 +1643,6 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                        )}
 
                        <div className="pt-4 space-y-3">
-                          <button onClick={handleWhatsAppCheckout} className="w-full bg-[#25D366] text-white py-3.5 rounded-xl font-bold shadow-md shadow-green-500/20 flex items-center justify-center gap-2 hover:bg-[#20bd5a] transition-colors">
-                             <MessageCircle className="w-5 h-5" /> Checkout on WhatsApp
-                          </button>
-                          <button onClick={handleGPayCheckout} className="w-full premium-button py-3.5 rounded-xl font-bold shadow-md shadow-gray-900/20 flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors">
-                             <CreditCard className="w-5 h-5" /> Pay via GPay / UPI
-                          </button>
                           <button onClick={handleRazorpayCheckout} className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors">
                              <CreditCard className="w-5 h-5" /> Pay Online (Razorpay)
                           </button>
