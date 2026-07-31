@@ -610,7 +610,8 @@ async function startServer() {
       res.json({ success: true, orderId });
     } catch (err: any) {
       console.error("[SERVER] Checkout error:", err);
-      res.status(500).json({ success: false, error: err?.message || "Server error" });
+      const errorMessage = err?.error?.description || err?.message || "Server error";
+      res.status(500).json({ success: false, error: errorMessage });
     }
   });
 
