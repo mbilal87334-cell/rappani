@@ -857,6 +857,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
       setCustomerPhone('');
       setAppliedCoupon(null);
       setTimeout(() => setIsCartOpen(false), 500);
+      toast.success("✅ Order placed successfully! Check 'My Orders' in your Account.");
       return true;
     } catch (err) {
       console.error("Failed to checkout cart", err);
@@ -1672,57 +1673,6 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                   </div>
                 </div>
              )}
-
-             {showGPayConfirm && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-primary/60 backdrop-blur-sm">
-                   <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm space-y-4">
-                      <h3 className="font-bold text-lg text-primary">Confirm Payment</h3>
-                      <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 mb-2">
-                        <p className="text-sm text-gray-500 mb-2 font-medium">Scan to Pay via UPI</p>
-                        <div className="flex justify-center mb-4 bg-white p-3 rounded-xl shadow-sm border border-gray-100">
-                           <QRCode 
-                             value={`upi://pay?pa=mohammedazzam200512@okaxis&pn=Rappani Store&am=${finalTotal}&cu=INR`} 
-                             size={150}
-                             level="H"
-                           />
-                        </div>
-                        <p className="text-sm text-gray-500 mb-1 font-medium">Or copy UPI ID</p>
-                        <div className="flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-gray-100">
-                           <span className="font-bold text-gray-900">mohammedazzam200512@okaxis</span>
-                           <button 
-                             onClick={() => {
-                               navigator.clipboard.writeText('mohammedazzam200512@okaxis');
-                               toast.success("Copied!");
-                             }}
-                             className="text-gold-600 font-bold text-sm bg-gold-50 px-3 py-1 rounded-lg"
-                           >
-                             Copy
-                           </button>
-                        </div>
-                        {/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) && (
-                           <a 
-                             href={`upi://pay?pa=mohammedazzam200512@okaxis&pn=Rappani%20Store&am=${finalTotal}&cu=INR`}
-                             className="block w-full text-center mt-3 bg-[#1A73E8] text-white py-2 rounded-lg font-bold shadow-sm"
-                           >
-                             Open UPI App
-                           </a>
-                        )}
-                      </div>
-                      <p className="text-sm text-neutral-500">After payment, enter the 12-digit UTR or Reference Number below to confirm your order.</p>
-                      <input 
-                          type="text" 
-                          placeholder="Enter UTR Number" 
-                          value={utrNumber}
-                          onChange={e => setUtrNumber(e.target.value)}
-                          className="w-full bg-gold-50 border border-neutral-300 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-gold-500"
-                      />
-                      <div className="flex gap-3 pt-2">
-                         <button onClick={() => setShowGPayConfirm(false)} className="flex-1 py-3 font-bold text-neutral-500 bg-neutral-100 rounded-xl">Cancel</button>
-                         <button onClick={handleGPayConfirm} className="flex-1 py-3 font-bold text-white bg-primary rounded-xl shadow-md">Confirm</button>
-                      </div>
-                   </div>
-                </div>
-             )}
            </div>
         )}
           </motion.div>
@@ -2090,6 +2040,57 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
             setShowLocationMap(null);
           }}
         />
+      )}
+
+      {showGPayConfirm && (
+         <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-primary/60 backdrop-blur-sm">
+            <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm space-y-4">
+               <h3 className="font-bold text-lg text-primary">Confirm Payment</h3>
+               <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 mb-2">
+                 <p className="text-sm text-gray-500 mb-2 font-medium">Scan to Pay via UPI</p>
+                 <div className="flex justify-center mb-4 bg-white p-3 rounded-xl shadow-sm border border-gray-100">
+                    <QRCode 
+                      value={`upi://pay?pa=mohammedazzam200512@okaxis&pn=Rappani Store&am=${finalTotal}&cu=INR`} 
+                      size={150}
+                      level="H"
+                    />
+                 </div>
+                 <p className="text-sm text-gray-500 mb-1 font-medium">Or copy UPI ID</p>
+                 <div className="flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-gray-100">
+                    <span className="font-bold text-gray-900">mohammedazzam200512@okaxis</span>
+                    <button 
+                      onClick={() => {
+                        navigator.clipboard.writeText('mohammedazzam200512@okaxis');
+                        toast.success("Copied!");
+                      }}
+                      className="text-gold-600 font-bold text-sm bg-gold-50 px-3 py-1 rounded-lg"
+                    >
+                      Copy
+                    </button>
+                 </div>
+                 {/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) && (
+                    <a 
+                      href={`upi://pay?pa=mohammedazzam200512@okaxis&pn=Rappani%20Store&am=${finalTotal}&cu=INR`}
+                      className="block w-full text-center mt-3 bg-[#1A73E8] text-white py-2 rounded-lg font-bold shadow-sm"
+                    >
+                      Open UPI App
+                    </a>
+                 )}
+               </div>
+               <p className="text-sm text-neutral-500">After payment, enter the 12-digit UTR or Reference Number below to confirm your order.</p>
+               <input 
+                   type="text" 
+                   placeholder="Enter UTR Number" 
+                   value={utrNumber}
+                   onChange={e => setUtrNumber(e.target.value)}
+                   className="w-full bg-gold-50 border border-neutral-300 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-gold-500"
+               />
+               <div className="flex gap-3 pt-2">
+                  <button onClick={() => setShowGPayConfirm(false)} className="flex-1 py-3 font-bold text-neutral-500 bg-neutral-100 rounded-xl">Cancel</button>
+                  <button onClick={handleGPayConfirm} className="flex-1 py-3 font-bold text-white bg-primary rounded-xl shadow-md">Confirm</button>
+               </div>
+            </div>
+         </div>
       )}
 
 </div>
