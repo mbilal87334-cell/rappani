@@ -46,6 +46,7 @@ export interface Order {
   totalAmount: number;
   paymentMethod: string;
   utrNumber?: string;
+  trackingStatus?: string;
   status: string;
   createdAt: string;
 }
@@ -1670,8 +1671,16 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                    <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm space-y-4">
                       <h3 className="font-bold text-lg text-primary">Confirm Payment</h3>
                       <div className="bg-gray-50 p-3 rounded-xl border border-gray-200 mb-2">
-                        <p className="text-sm text-gray-500 mb-1">UPI ID</p>
-                        <div className="flex items-center justify-between">
+                        <p className="text-sm text-gray-500 mb-2 font-medium">Scan to Pay via UPI</p>
+                        <div className="flex justify-center mb-4">
+                           <img 
+                             src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(`upi://pay?pa=mohammedazzam200512@okaxis&pn=Rappani Store&am=${finalTotal}&cu=INR`)}`} 
+                             alt="UPI QR Code" 
+                             className="w-32 h-32 rounded-lg border border-gray-200 shadow-sm"
+                           />
+                        </div>
+                        <p className="text-sm text-gray-500 mb-1 font-medium">Or copy UPI ID</p>
+                        <div className="flex items-center justify-between bg-white px-3 py-2 rounded-lg border border-gray-100">
                            <span className="font-bold text-gray-900">mohammedazzam200512@okaxis</span>
                            <button 
                              onClick={() => {

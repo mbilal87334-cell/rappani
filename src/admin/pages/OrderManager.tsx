@@ -66,6 +66,7 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                   <th className="px-5 py-3">CUSTOMER</th>
                   <th className="px-5 py-3">DATE</th>
                   <th className="px-5 py-3">TOTAL</th>
+                  <th className="px-5 py-3">PAYMENT / UTR</th>
                   <th className="px-5 py-3">STATUS</th>
                   <th className="px-5 py-3">TRACKING</th>
                 </tr>
@@ -74,9 +75,16 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                 {orders.map((order) => (
                   <tr key={order.id} className="hover:bg-gray-50/50">
                     <td className="px-5 py-4 font-medium text-gray-900">#{order.id.slice(0, 8).toUpperCase()}</td>
-                    <td className="px-5 py-4 text-gray-600">{order.customerDetails?.name || 'Guest'}</td>
+                    <td className="px-5 py-4 text-gray-600">
+                      <div>{order.customerName || 'Guest'}</div>
+                      <div className="text-xs text-gray-400">{order.customerPhone}</div>
+                    </td>
                     <td className="px-5 py-4 text-gray-600">{new Date(order.createdAt).toLocaleDateString()}</td>
                     <td className="px-5 py-4 font-medium text-gray-900">₹{order.totalAmount?.toLocaleString() || 0}</td>
+                    <td className="px-5 py-4 text-gray-600">
+                      <div>{order.paymentMethod}</div>
+                      {order.utrNumber && <div className="text-xs text-gray-400 mt-1 font-mono">UTR: {order.utrNumber}</div>}
+                    </td>
                     <td className="px-5 py-4">
                       {getStatusBadge(order.status)}
                     </td>
