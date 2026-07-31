@@ -192,15 +192,15 @@ export default function ProductManager({ products, setProducts, apiCategories = 
       {/* Header Actions */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Products</h1>
-        <div className="flex items-center gap-3">
-          <div className="relative">
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          <div className="relative w-full sm:w-auto flex-1 sm:flex-none">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input 
               type="text" 
               placeholder="Search products..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-md text-sm font-medium w-64 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none shadow-sm transition-all"
+              className="pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-md text-sm font-medium w-full sm:w-64 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none shadow-sm transition-all"
             />
           </div>
           <input 
@@ -212,14 +212,14 @@ export default function ProductManager({ products, setProducts, apiCategories = 
           />
           <button 
             onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-md px-4 py-2 hover:bg-gray-50 transition-colors shadow-sm"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-md px-4 py-2 hover:bg-gray-50 transition-colors shadow-sm"
           >
             <Upload size={16} />
-            Bulk CSV
+            CSV
           </button>
           <button 
             onClick={() => openModal()}
-            className="flex items-center gap-2 bg-gray-900 text-white text-sm font-medium rounded-md px-4 py-2 hover:bg-gray-800 transition-colors shadow-sm"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-gray-900 text-white text-sm font-medium rounded-md px-4 py-2 hover:bg-gray-800 transition-colors shadow-sm whitespace-nowrap"
           >
             <Plus size={16} />
             Add Product
