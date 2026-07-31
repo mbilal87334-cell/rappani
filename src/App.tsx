@@ -764,9 +764,9 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   };
 
   const cartTotalAmount = Math.round(cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0));
-
   const deliveryFee = 0; // Delivery is now completely free as requested
-  const finalTotal = Math.round(cartTotalAmount + deliveryFee);
+  const discountAmount = appliedCoupon ? Math.round(cartTotalAmount * (appliedCoupon.discountPercent / 100)) : 0;
+  const finalTotal = Math.round(cartTotalAmount + deliveryFee - discountAmount);
 
   const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -833,16 +833,13 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
     }
 
     try {
-      const discountAmount = appliedCoupon ? Math.round(cartTotalAmount * (appliedCoupon.discountPercent / 100)) : 0;
-      const finalAmount = cartTotalAmount - discountAmount;
-
       const payload = {
         customerName,
         customerPhone,
         paymentMethod,
-        totalAmount: finalAmount,
+        totalAmount: finalTotal,
         couponCode: appliedCoupon?.code,
-        discountAmount,
+        discountAmount: discountAmount,
         shippingAddress: deliveryMethod === 'home' ? (deliveryAddress || (savedAddresses.length > 0 ? savedAddresses[0] : '')) : null,
         items: cart,
         deliveryMethod,
@@ -908,7 +905,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
        message += `\n*Discount: -₹${Math.round(cartTotalAmount * (appliedCoupon.discountPercent / 100))} (${appliedCoupon.discountPercent}%)*`;
     }
     message += `\n*Delivery Fee: ₹${deliveryFee}* ${deliveryFee === 0 ? '(FREE)' : ''}`;
-    message += `\n*Final Total: ₹${appliedCoupon ? Math.round(cartTotalAmount * (1 - appliedCoupon.discountPercent / 100)) : finalTotal}*`;
+    message += `\n*Final Total: ₹${finalTotal}*`;
     message += `\n\nMethod: ${deliveryMethod === 'home' ? 'Home Delivery' : 'Shop Pickup'}`;
     if (deliveryMethod === 'home') {
       message += `\nAddress: ${deliveryAddress}`;
@@ -960,7 +957,11 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
 
     try {
       await navigator.clipboard.writeText('mohammedazzam200512@okaxis');
-      toast.success("✅ UPI ID Copied!");
+      toast.success("✅ UPI ID Copied! Please open GPay/PhonePe to pay.");
+      
+      if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+        window.location.href = `upi://pay?pa=mohammedazzam200512@okaxis&pn=Rappani%20Store&am=${finalTotal}&cu=INR`;
+      }
     } catch (err) {
       console.log('Clipboard copy failed');
     }
@@ -1413,7 +1414,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                         )}
                         <div className="flex justify-between text-lg font-black text-primary pt-3 border-t border-neutral-300">
                           <span>To Pay</span>
-                          <span>₹{appliedCoupon ? Math.round(cartTotalAmount * (1 - appliedCoupon.discountPercent / 100)) : finalTotal}</span>
+                          <span>₹{finalTotal}</span>
                         </div>
                      </div>
                    </div>
