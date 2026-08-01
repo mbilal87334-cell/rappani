@@ -59,6 +59,11 @@ const productSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   name: { type: String, required: true },
   category: { type: String, required: true },
+  brand: { type: String, required: false },
+  sku: { type: String, required: false },
+  description: { type: String, required: false },
+  specifications: { type: Object, default: {} },
+  variants: { type: Array, default: [] },
   price: { type: Number, required: true },
   originalPrice: { type: Number, required: false },
   stock: { type: Number, required: false, default: 100 },
@@ -458,9 +463,9 @@ async function startServer() {
 
   app.post("/api/products", async (req, res) => {
     try {
-      const { id, name, category, price, originalPrice, stock, image, images, videoUrl, features, tags, isFeatured, isVisible } = req.body;
+      const { id, name, category, price, originalPrice, stock, image, images, videoUrl, features, tags, isFeatured, isVisible, brand, sku, description, specifications, variants } = req.body;
       const visibleFlag = isVisible !== undefined ? isVisible : true;
-      await Product.create({ id, name, category, price, originalPrice, stock, image, images, videoUrl, features, tags, isFeatured, isVisible: visibleFlag });
+      await Product.create({ id, name, category, price, originalPrice, stock, image, images, videoUrl, features, tags, isFeatured, isVisible: visibleFlag, brand, sku, description, specifications, variants });
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });
@@ -470,8 +475,8 @@ async function startServer() {
   app.put("/api/products/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, category, price, originalPrice, stock, image, images, videoUrl, features, tags, isFeatured, isVisible } = req.body;
-      const updateData: any = { name, category, price, originalPrice, stock, image, images, videoUrl, features, tags, isFeatured };
+      const { name, category, price, originalPrice, stock, image, images, videoUrl, features, tags, isFeatured, isVisible, brand, sku, description, specifications, variants } = req.body;
+      const updateData: any = { name, category, price, originalPrice, stock, image, images, videoUrl, features, tags, isFeatured, brand, sku, description, specifications, variants };
       if (isVisible !== undefined) updateData.isVisible = isVisible;
       
       await Product.updateOne({ id }, updateData);

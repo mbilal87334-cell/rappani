@@ -10,7 +10,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState<Partial<Product>>({
-    id: '', name: '', category: '', price: 0, originalPrice: 0, stock: 50, image: '', isVisible: true, isFeatured: false
+    id: '', name: '', category: '', brand: '', sku: '', description: '', price: 0, originalPrice: 0, stock: 50, image: '', images: [], isVisible: true, isFeatured: false
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -37,8 +37,8 @@ export default function ProductManager({ products, setProducts, apiCategories = 
     } else {
       setEditingProduct(null);
       setFormData({ 
-        id: `prod_${Date.now()}`, name: '', category: apiCategories[0]?.name || 'Stationery', 
-        price: 0, stock: 50, image: '', isVisible: true, isFeatured: false 
+        id: `prod_${Date.now()}`, name: '', category: apiCategories[0]?.name || 'Stationery', brand: '', sku: '', description: '',
+        price: 0, stock: 50, image: '', images: [], isVisible: true, isFeatured: false 
       });
     }
     setIsModalOpen(true);
@@ -71,24 +71,48 @@ export default function ProductManager({ products, setProducts, apiCategories = 
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
     setIsUploading(true);
-    const formDataPayload = new FormData();
-    formDataPayload.append('image', file);
-
+    
     try {
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formDataPayload
-      });
-      const data = await res.json();
-      if (data.imageUrl) {
-        setFormData({ ...formData, image: data.imageUrl });
-        toast.success("Image uploaded!");
+      // If multiple files are uploaded (drag&drop or multi-select)
+      if (files.length > 1) {
+        let uploadedUrls: string[] = [];
+        for (let i = 0; i < files.length; i++) {
+          const formDataPayload = new FormData();
+          formDataPayload.append('image', files[i]);
+          const res = await fetch('/api/upload', { method: 'POST', body: formDataPayload });
+          const data = await res.json();
+          if (data.imageUrl) uploadedUrls.push(data.imageUrl);
+        }
+        
+        const existingImages = formData.images || [];
+        if (!formData.image && uploadedUrls.length > 0) {
+          setFormData({ ...formData, image: uploadedUrls[0], images: [...existingImages, ...uploadedUrls] });
+        } else {
+          setFormData({ ...formData, images: [...existingImages, ...uploadedUrls] });
+        }
+        toast.success(`${uploadedUrls.length} images uploaded!`);
       } else {
-        toast.error(data.error || "Upload failed");
+        // Single file upload
+        const formDataPayload = new FormData();
+        formDataPayload.append('image', files[0]);
+        const res = await fetch('/api/upload', { method: 'POST', body: formDataPayload });
+        const data = await res.json();
+        
+        if (data.imageUrl) {
+          const existingImages = formData.images || [];
+          setFormData({ 
+            ...formData, 
+            image: formData.image ? formData.image : data.imageUrl,
+            images: [...existingImages, data.imageUrl]
+          });
+          toast.success("Image uploaded!");
+        } else {
+          toast.error(data.error || "Upload failed");
+        }
       }
     } catch (err) {
       console.error(err);
@@ -97,6 +121,19 @@ export default function ProductManager({ products, setProducts, apiCategories = 
       setIsUploading(false);
       if (e.target) e.target.value = '';
     }
+  };
+
+  const removeImage = (index: number) => {
+    const newImages = [...(formData.images || [])];
+    newImages.splice(index, 1);
+    
+    // If the removed image was the primary image, set a new primary if available
+    let newPrimary = formData.image;
+    if (formData.image === (formData.images || [])[index]) {
+      newPrimary = newImages.length > 0 ? newImages[0] : '';
+    }
+    
+    setFormData({ ...formData, images: newImages, image: newPrimary });
   };
 
   const handleDelete = async (product: Product) => {
@@ -375,6 +412,33 @@ export default function ProductManager({ products, setProducts, apiCategories = 
                   </div>
                   <div className="flex gap-4">
                     <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Brand (Optional)</label>
+                      <input 
+                        type="text" value={formData.brand || ''}
+                        onChange={e => setFormData({...formData, brand: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-gray-900"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">SKU (Optional)</label>
+                      <input 
+                        type="text" value={formData.sku || ''}
+                        onChange={e => setFormData({...formData, sku: e.target.value})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-gray-900"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <textarea 
+                      rows={3}
+                      value={formData.description || ''}
+                      onChange={e => setFormData({...formData, description: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-gray-900 resize-none"
+                    />
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="flex-1">
                       <label className="block text-sm font-medium text-gray-700 mb-1">Price (₹)</label>
                       <input 
                         type="number" required min="0" value={formData.price || ''}
@@ -402,29 +466,42 @@ export default function ProductManager({ products, setProducts, apiCategories = 
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Product Image</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Product Images (Drag & Drop)</label>
                     <div className="flex flex-col gap-3">
-                      {formData.image && (
-                        <div className="relative w-full h-40 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
-                          <img src={formData.image} alt="Preview" className="w-full h-full object-contain" />
-                          <button 
-                            type="button"
-                            onClick={() => setFormData({...formData, image: ''})}
-                            className="absolute top-2 right-2 bg-white rounded-full p-1 shadow hover:bg-gray-100 text-red-500"
-                          >
-                            <X size={16} />
-                          </button>
+                      
+                      {/* Image Gallery Preview */}
+                      {(formData.images && formData.images.length > 0) ? (
+                        <div className="grid grid-cols-3 gap-2">
+                          {formData.images.map((img, idx) => (
+                            <div key={idx} className={`relative h-24 bg-gray-100 rounded-lg overflow-hidden border ${img === formData.image ? 'border-gray-900 ring-2 ring-gray-900' : 'border-gray-200'}`}>
+                              <img src={img} alt="Preview" className="w-full h-full object-cover" />
+                              <button 
+                                type="button"
+                                onClick={() => removeImage(idx)}
+                                className="absolute top-1 right-1 bg-white rounded-full p-1 shadow hover:bg-gray-100 text-red-500"
+                              >
+                                <X size={14} />
+                              </button>
+                              {img !== formData.image && (
+                                <button
+                                  type="button"
+                                  onClick={() => setFormData({...formData, image: img})}
+                                  className="absolute bottom-1 left-1 right-1 bg-white/90 text-xs font-semibold py-0.5 rounded shadow text-center text-gray-700"
+                                >
+                                  Set Main
+                                </button>
+                              )}
+                            </div>
+                          ))}
                         </div>
-                      )}
-
-                      {!formData.image && (
-                        <div className="w-full h-40 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400">
+                      ) : (
+                        <div className="w-full h-32 bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-400">
                           {isUploading ? (
                             <Loader className="w-8 h-8 animate-spin text-gray-900" />
                           ) : (
                             <>
                               <ImageIcon size={32} className="mb-2 text-gray-300" />
-                              <span className="text-sm">No image selected</span>
+                              <span className="text-sm">No images selected</span>
                             </>
                           )}
                         </div>
@@ -434,6 +511,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
                         <input 
                           type="file" 
                           accept="image/*"
+                          multiple
                           className="hidden" 
                           ref={fileInputRef} 
                           onChange={handleFileUpload} 

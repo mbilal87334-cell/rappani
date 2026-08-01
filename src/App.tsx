@@ -13,10 +13,16 @@ export interface Product {
   id: string;
   name: string;
   category: string;
+  brand?: string;
+  sku?: string;
+  description?: string;
+  specifications?: any;
+  variants?: any[];
   price: number;
   originalPrice?: number;
   stock?: number;
   image: string;
+  images?: string[];
   isFeatured?: boolean;
   isVisible?: boolean;
   reviews?: Review[];
