@@ -9,7 +9,10 @@ import {
   Package, 
   Calendar,
   TrendingUp,
-  CheckCircle
+  CheckCircle,
+  Truck,
+  Box,
+  AlertTriangle
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -58,7 +61,7 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
     categoryData,
     latestCustomers
   } = React.useMemo(() => {
-    let tRev = 0, tOrd = 0, pOrd = 0, cOrd = 0, cxOrd = 0, mRev = 0, wRev = 0, oRev = 0;
+    let tRev = 0, tOrd = 0, pOrd = 0, prOrd = 0, pkOrd = 0, shOrd = 0, dlOrd = 0, cOrd = 0, cxOrd = 0, mRev = 0, wRev = 0, oRev = 0;
     const customers = new Set();
     const customerList: any[] = [];
     const now = new Date();
@@ -97,9 +100,14 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
       }
 
       if (status === 'pending') pOrd++;
-      else if (status === 'cancelled' || status === 'failed') cxOrd++;
-      else if (status === 'completed' || status === 'delivered' || status === 'shipped' || status === 'success') {
-        cOrd++;
+      else if (status === 'processing') prOrd++;
+      else if (status === 'packed') pkOrd++;
+      else if (status === 'shipped') shOrd++;
+      else if (status === 'delivered') dlOrd++;
+      else if (status === 'cancelled' || status === 'failed' || status === 'returned' || status === 'refunded') cxOrd++;
+      
+      if (['completed', 'delivered', 'shipped', 'packed', 'processing', 'success'].includes(status) || !['cancelled', 'failed', 'returned', 'refunded', 'pending'].includes(status)) {
+        cOrd++; // legacy counter for generic "completed/active" stats if needed
         oRev += amount;
 
         if (orderTime >= today) tRev += amount;
@@ -147,6 +155,10 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
       todayRevenue: tRev,
       todayOrdersCount: tOrd,
       pendingOrdersCount: pOrd,
+      processingOrdersCount: prOrd,
+      packedOrdersCount: pkOrd,
+      shippedOrdersCount: shOrd,
+      deliveredOrdersCount: dlOrd,
       completedOrdersCount: cOrd,
       cancelledOrdersCount: cxOrd,
       totalCustomers: customers.size,
@@ -178,10 +190,17 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         <StatRow title="Today's Revenue" value={`₹${todayRevenue.toLocaleString('en-IN')}`} icon={IndianRupee} colorClass="bg-blue-50 text-blue-500" />
         <StatRow title="Today's Orders" value={todayOrdersCount} icon={ShoppingCart} colorClass="bg-purple-50 text-purple-500" />
+        
         <StatRow title="Pending Orders" value={pendingOrdersCount} icon={Clock} colorClass="bg-yellow-50 text-yellow-600" />
-        <StatRow title="Completed Orders" value={completedOrdersCount} icon={CheckCircle2} colorClass="bg-green-50 text-green-500" />
+        <StatRow title="Processing Orders" value={processingOrdersCount} icon={Package} colorClass="bg-orange-50 text-orange-500" />
+        <StatRow title="Packed Orders" value={packedOrdersCount} icon={Box} colorClass="bg-indigo-50 text-indigo-500" />
+        <StatRow title="Shipped Orders" value={shippedOrdersCount} icon={Truck} colorClass="bg-sky-50 text-sky-500" />
+        <StatRow title="Delivered Orders" value={deliveredOrdersCount} icon={CheckCircle2} colorClass="bg-green-50 text-green-500" />
         <StatRow title="Cancelled Orders" value={cancelledOrdersCount} icon={XCircle} colorClass="bg-red-50 text-red-500" />
-        <StatRow title="Total Customers" value={totalCustomers} icon={Users} colorClass="bg-indigo-50 text-indigo-500" />
+        
+        <StatRow title="Low Stock Products" value={lowStockProducts.length} icon={AlertTriangle} colorClass="bg-rose-50 text-rose-600" />
+        
+        <StatRow title="Total Customers" value={totalCustomers} icon={Users} colorClass="bg-teal-50 text-teal-500" />
         <StatRow title="Total Products" value={totalProducts} icon={Package} colorClass="bg-pink-50 text-pink-500" />
         <StatRow title="Monthly Revenue" value={`₹${monthlyRevenue.toLocaleString('en-IN')}`} icon={Calendar} colorClass="bg-sky-50 text-sky-500" />
         <StatRow title="Weekly Revenue" value={`₹${weeklyRevenue.toLocaleString('en-IN')}`} icon={TrendingUp} colorClass="bg-emerald-50 text-emerald-500" />
