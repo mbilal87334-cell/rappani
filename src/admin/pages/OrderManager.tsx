@@ -45,20 +45,18 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
     URL.revokeObjectURL(url);
   };
 
-  const handleResetDB = () => {
-    const confirmInput = window.prompt("WARNING: This will permanently delete ALL orders. Type RESET to confirm.");
-    if (confirmInput === 'RESET') {
-      fetchWithAuth('/api/orders', { method: 'DELETE' })
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            window.location.reload();
-          } else {
-            alert("Failed to reset orders.");
-          }
-        })
-        .catch(console.error);
-    } else if (confirmInput !== null) {
+  const handleResetDB = async () => {
+    const confirmation = window.prompt("WARNING: This will permanently delete ALL orders. Type RESET to confirm.");
+    if (confirmation === 'RESET') {
+      try {
+        const res = await fetchWithAuth('/api/orders', { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to reset');
+        setOrders([]);
+        window.location.reload();
+      } catch (err) {
+        alert("Failed to reset orders.");
+      }
+    } else if (confirmation !== null) {
       alert("Action cancelled. You must type RESET exactly.");
     }
   };
@@ -154,12 +152,18 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                     <td className="px-5 py-4">
                       <select 
                         value={order.status || 'Processing'}
-                        onChange={(e) => {
-                          fetchWithAuth(`/api/orders/${order.id}`, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ status: e.target.value })
-                          }).then(() => window.location.reload());
+                        onChange={async (e) => {
+                          try {
+                            const res = await fetchWithAuth(`/api/orders/${order.id}`, {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ status: e.target.value })
+                            });
+                            if (!res.ok) throw new Error('Failed');
+                            window.location.reload();
+                          } catch (err) {
+                            alert('Failed to update status');
+                          }
                         }}
                         className={`text-xs rounded-full px-3 py-1 font-medium outline-none border-none focus:ring-1 cursor-pointer
                           ${order.status === 'Completed' || order.status === 'Delivered' ? 'bg-green-50 text-green-700' : 
@@ -181,12 +185,18 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                     <td className="px-5 py-4">
                       <select 
                         value={order.trackingStatus || 'Processing'}
-                        onChange={(e) => {
-                          fetchWithAuth(`/api/orders/${order.id}`, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ trackingStatus: e.target.value })
-                          }).then(() => window.location.reload());
+                        onChange={async (e) => {
+                          try {
+                            const res = await fetchWithAuth(`/api/orders/${order.id}`, {
+                              method: 'PUT',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ trackingStatus: e.target.value })
+                            });
+                            if (!res.ok) throw new Error('Failed');
+                            window.location.reload();
+                          } catch (err) {
+                            alert('Failed to update tracking status');
+                          }
                         }}
                         className="bg-stone-50 border border-gray-200 text-xs rounded-md px-2 py-1 outline-none focus:ring-1 focus:ring-violet-500"
                       >
