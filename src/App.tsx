@@ -442,6 +442,57 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
 
   const [deliveryMethod, setDeliveryMethod] = useState<'home' | 'pickup'>('pickup');
   const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [useStructuredAddress, setUseStructuredAddress] = useState(true);
+  const [checkoutAddressFields, setCheckoutAddressFields] = useState({
+    doorNo: '',
+    building: '',
+    street: '',
+    area: '',
+    district: '',
+    pincode: '',
+    mapsLink: ''
+  });
+  const [addressErrors, setAddressErrors] = useState<Record<string, boolean>>({});
+
+  const validateAddress = () => {
+    if (deliveryMethod !== 'home') return true;
+    if (!useStructuredAddress) {
+      if (!deliveryAddress.trim()) {
+        toast.error("Please enter a delivery address or select a saved one!");
+        return false;
+      }
+      return true;
+    }
+    
+    const errors: Record<string, boolean> = {};
+    if (!checkoutAddressFields.doorNo.trim()) errors.doorNo = true;
+    if (!checkoutAddressFields.street.trim()) errors.street = true;
+    if (!checkoutAddressFields.area.trim()) errors.area = true;
+    if (!checkoutAddressFields.district.trim()) errors.district = true;
+    if (!checkoutAddressFields.pincode.trim()) errors.pincode = true;
+    
+    setAddressErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      toast.error("Please fill all the required address fields correctly.");
+      return false;
+    }
+    return true;
+  };
+
+  useEffect(() => {
+    if (useStructuredAddress) {
+      const parts = [];
+      if (checkoutAddressFields.doorNo) parts.push(`Door No: ${checkoutAddressFields.doorNo}`);
+      if (checkoutAddressFields.building) parts.push(`Building: ${checkoutAddressFields.building}`);
+      if (checkoutAddressFields.street) parts.push(`Street: ${checkoutAddressFields.street}`);
+      if (checkoutAddressFields.area) parts.push(`Area/Landmark: ${checkoutAddressFields.area}`);
+      if (checkoutAddressFields.district) parts.push(`District/City: ${checkoutAddressFields.district}`);
+      if (checkoutAddressFields.pincode) parts.push(`Pincode: ${checkoutAddressFields.pincode}`);
+      if (checkoutAddressFields.mapsLink) parts.push(`Maps Link: ${checkoutAddressFields.mapsLink}`);
+      
+      setDeliveryAddress(parts.join('\n'));
+    }
+  }, [checkoutAddressFields, useStructuredAddress]);
   const [savedAddresses, setSavedAddresses] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('rappani_saved_addresses');
@@ -835,8 +886,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
     }
 
     if (deliveryMethod === 'home') {
-      if (!deliveryAddress.trim()) {
-        setCheckoutError(t.enterAddress);
+      if (!validateAddress()) {
         return false;
       }
       if (distance !== null && distance > 5) {
@@ -847,14 +897,6 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
 
     setCheckoutError('');
     console.log(`[CHECKOUT] processCheckoutAndClearCart called for: ${paymentMethod}`);
-
-    // Explicitly block WhatsApp from being saved to the database (Robust check)
-    if (paymentMethod.toLowerCase().includes('whatsapp')) {
-      console.warn(`[CHECKOUT] WhatsApp mode detected (${paymentMethod}). NOT saving to server.`);
-      setCart([]);
-      setTimeout(() => setIsCartOpen(false), 500);
-      return true;
-    }
 
     try {
       const payload = {
@@ -914,8 +956,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
     }
 
     if (deliveryMethod === 'home') {
-      if (!deliveryAddress.trim()) {
-        setCheckoutError(t.enterAddress);
+      if (!validateAddress()) {
         return;
       }
       if (distance !== null && distance > 5) {
@@ -924,7 +965,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
       }
     }
 
-    let message = `Hi, I want to place an order:\n\n*Customer*: ${customerName}\n*Phone*: ${customerPhone}\n\n`;
+    let message = `*NEW ORDER ALERT* 🚀\n\n*Customer*: ${customerName}\n*Phone*: ${customerPhone}\n\n`;
     cart.forEach(item => {
       message += `- ${item.product.name} (x${item.quantity}) = ₹${Math.round(item.product.price * item.quantity)}\n`;
     });
@@ -934,21 +975,18 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
     }
     message += `\n*Delivery Fee: ₹${deliveryFee}* ${deliveryFee === 0 ? '(FREE)' : ''}`;
     message += `\n*Final Total: ₹${finalTotal}*`;
-    message += `\n\nMethod: ${deliveryMethod === 'home' ? 'Home Delivery' : 'Shop Pickup'}`;
+    message += `\n\n*Method*: ${deliveryMethod === 'home' ? 'Home Delivery' : 'Shop Pickup'}`;
     if (deliveryMethod === 'home') {
-      message += `\nAddress: ${deliveryAddress}`;
+      message += `\n\n*Delivery Address*:\n${deliveryAddress}`;
     }
-    message += `\n\nPlease confirm!`;
+    message += `\n\nPlease confirm my order!`;
+
+    // Save the order to Database
+    const isSaved = await processCheckoutAndClearCart('WhatsApp Order');
+    if (!isSaved) return;
 
     const encodedMsg = encodeURIComponent(message);
-    console.log(`[CHECKOUT] WhatsApp clicked. ONLY opening WhatsApp. NO DB call.`);
-
-    // Open WhatsApp without booking the order in the system
     window.open(`https://wa.me/${settings.admin_phone?.replace(/\\D/g, '') || '918189940301'}?text=${encodedMsg}`, '_blank');
-
-    // Optional: Clear cart locally so user knows it's sent, but don't save to DB
-    // If you want to keep the items in cart for WhatsApp, comment out the next 2 lines
-    setCart([]);
     setAppliedCoupon(null);
     setTimeout(() => setIsCartOpen(false), 500);
   };
@@ -1696,13 +1734,102 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                                   <Map className="w-3 h-3" /> Pick from Map
                                 </button>
                              </div>
-                             <textarea 
-                                placeholder="Enter Full Delivery Address" 
-                                value={deliveryAddress}
-                                onChange={e => setDeliveryAddress(e.target.value)}
-                                rows={3}
-                                className="w-full bg-gold-50 border border-neutral-300 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-gold-500/20 focus:border-gold-500 transition-all shadow-sm resize-none"
-                             />
+                             {useStructuredAddress ? (
+                               <div className="space-y-3 mt-2 bg-white p-4 rounded-xl border border-neutral-200 shadow-sm">
+                                  <div className="flex gap-3">
+                                    <div className="flex-1">
+                                      <label className="text-[10px] font-bold text-neutral-500 uppercase">Door No / Flat No *</label>
+                                      <input 
+                                        type="text" 
+                                        value={checkoutAddressFields.doorNo}
+                                        onChange={e => { setCheckoutAddressFields(prev => ({...prev, doorNo: e.target.value})); setAddressErrors(prev => ({...prev, doorNo: false})); }}
+                                        className={`w-full bg-stone-50 border ${addressErrors.doorNo ? 'border-red-500' : 'border-neutral-200'} rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-gold-500`}
+                                        placeholder="e.g. 21B"
+                                      />
+                                    </div>
+                                    <div className="flex-1">
+                                      <label className="text-[10px] font-bold text-neutral-500 uppercase">Building (Optional)</label>
+                                      <input 
+                                        type="text" 
+                                        value={checkoutAddressFields.building}
+                                        onChange={e => setCheckoutAddressFields(prev => ({...prev, building: e.target.value}))}
+                                        className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-gold-500"
+                                        placeholder="e.g. Royal Plaza"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <label className="text-[10px] font-bold text-neutral-500 uppercase">Street / Main Street *</label>
+                                    <input 
+                                      type="text" 
+                                      value={checkoutAddressFields.street}
+                                      onChange={e => { setCheckoutAddressFields(prev => ({...prev, street: e.target.value})); setAddressErrors(prev => ({...prev, street: false})); }}
+                                      className={`w-full bg-stone-50 border ${addressErrors.street ? 'border-red-500' : 'border-neutral-200'} rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-gold-500`}
+                                      placeholder="e.g. Kottikulam Road"
+                                    />
+                                  </div>
+                                  <div className="flex gap-3">
+                                    <div className="flex-1">
+                                      <label className="text-[10px] font-bold text-neutral-500 uppercase">Area / Landmark *</label>
+                                      <input 
+                                        type="text" 
+                                        value={checkoutAddressFields.area}
+                                        onChange={e => { setCheckoutAddressFields(prev => ({...prev, area: e.target.value})); setAddressErrors(prev => ({...prev, area: false})); }}
+                                        className={`w-full bg-stone-50 border ${addressErrors.area ? 'border-red-500' : 'border-neutral-200'} rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-gold-500`}
+                                        placeholder="e.g. Melapalayam"
+                                      />
+                                    </div>
+                                    <div className="flex-1">
+                                      <label className="text-[10px] font-bold text-neutral-500 uppercase">City / District *</label>
+                                      <input 
+                                        type="text" 
+                                        value={checkoutAddressFields.district}
+                                        onChange={e => { setCheckoutAddressFields(prev => ({...prev, district: e.target.value})); setAddressErrors(prev => ({...prev, district: false})); }}
+                                        className={`w-full bg-stone-50 border ${addressErrors.district ? 'border-red-500' : 'border-neutral-200'} rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-gold-500`}
+                                        placeholder="e.g. Tirunelveli"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-3">
+                                    <div className="flex-1">
+                                      <label className="text-[10px] font-bold text-neutral-500 uppercase">Pincode *</label>
+                                      <input 
+                                        type="text" 
+                                        value={checkoutAddressFields.pincode}
+                                        onChange={e => { setCheckoutAddressFields(prev => ({...prev, pincode: e.target.value})); setAddressErrors(prev => ({...prev, pincode: false})); }}
+                                        className={`w-full bg-stone-50 border ${addressErrors.pincode ? 'border-red-500' : 'border-neutral-200'} rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-gold-500`}
+                                        placeholder="e.g. 627005"
+                                      />
+                                    </div>
+                                    <div className="flex-1">
+                                      <label className="text-[10px] font-bold text-neutral-500 uppercase">Maps Link (Optional)</label>
+                                      <input 
+                                        type="text" 
+                                        value={checkoutAddressFields.mapsLink}
+                                        onChange={e => setCheckoutAddressFields(prev => ({...prev, mapsLink: e.target.value}))}
+                                        className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-gold-500"
+                                        placeholder="Paste Google Maps Link"
+                                      />
+                                    </div>
+                                  </div>
+                               </div>
+                             ) : (
+                               <div className="mt-2">
+                                 <textarea 
+                                    placeholder="Enter Full Delivery Address" 
+                                    value={deliveryAddress}
+                                    onChange={e => setDeliveryAddress(e.target.value)}
+                                    rows={3}
+                                    className="w-full bg-gold-50 border border-neutral-300 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-gold-500/20 focus:border-gold-500 transition-all shadow-sm resize-none"
+                                 />
+                                 <button 
+                                   onClick={() => setUseStructuredAddress(true)}
+                                   className="text-[10px] font-bold text-blue-600 mt-1 uppercase"
+                                 >
+                                   + Add New Delivery Address
+                                 </button>
+                               </div>
+                             )}
                              {savedAddresses.length > 0 && (
                                 <div className="space-y-2 mt-2">
                                    <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Select Saved Address</p>
@@ -1710,7 +1837,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                                       {savedAddresses.map((addr, idx) => (
                                          <div 
                                            key={idx} 
-                                           onClick={() => setDeliveryAddress(addr)}
+                                           onClick={() => { setDeliveryAddress(addr); setUseStructuredAddress(false); }}
                                            className="snap-start shrink-0 w-[200px] bg-white border border-neutral-300 rounded-xl p-3 cursor-pointer hover:border-gold-500 transition-colors"
                                          >
                                             <p className="text-xs text-primary-light line-clamp-2">{addr}</p>
