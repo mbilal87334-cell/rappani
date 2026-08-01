@@ -132,6 +132,7 @@ const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: false },
   role: { type: String, default: 'customer' },
+  status: { type: String, default: 'Active' },
   addresses: [{
     label: { type: String, required: true }, // e.g. Home, Office
     street: { type: String, required: true },
@@ -288,6 +289,12 @@ async function startServer() {
     const { phone } = req.body;
     if (!phone || phone.length !== 10) return res.status(400).json({ error: "Invalid phone number" });
 
+    // Check if user is blocked
+    const user = await User.findOne({ phone });
+    if (user && user.status === 'Blocked') {
+      return res.status(403).json({ error: "Your account has been blocked from placing orders. Contact support." });
+    }
+
     // Generate a 4-digit OTP
     const otp = Math.floor(1000 + Math.random() * 9000).toString();
     // Valid for 5 minutes
@@ -336,9 +343,14 @@ async function startServer() {
     }
   });
 
-  app.post("/api/verify-otp", (req, res) => {
+  app.post("/api/verify-otp", async (req, res) => {
     const { phone, otp } = req.body;
     console.log(`[OTP] Verification request for ${phone} with OTP ${otp}`);
+
+    const user = await User.findOne({ phone });
+    if (user && user.status === 'Blocked') {
+      return res.status(403).json({ error: "Your account has been blocked." });
+    }
 
     const record = otpStore.get(phone);
 
@@ -415,6 +427,37 @@ async function startServer() {
       const { addresses } = req.body;
       const user = await User.findByIdAndUpdate(req.user.id, { addresses }, { new: true });
       res.json({ success: true, addresses: user?.addresses });
+    } catch (err) {
+      res.status(500).json({ error: "Server error" });
+    }
+  });
+
+  // Admin Customer Management Routes
+  app.get("/api/customers", async (req, res) => {
+    try {
+      const customers = await User.find({}, '-__v').sort({ createdAt: -1 });
+      // Calculate total spent for each customer
+      const customersWithStats = await Promise.all(customers.map(async (customer) => {
+        const orders = await Order.find({ customerPhone: customer.phone });
+        const totalSpent = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+        return {
+          ...customer.toObject(),
+          totalOrders: orders.length,
+          totalSpent
+        };
+      }));
+      res.json(customersWithStats);
+    } catch (err) {
+      res.status(500).json({ error: "Server error" });
+    }
+  });
+
+  app.put("/api/customers/:id/status", async (req, res) => {
+    try {
+      const { status } = req.body;
+      const user = await User.findByIdAndUpdate(req.params.id, { status }, { new: true });
+      if (!user) return res.status(404).json({ error: "User not found" });
+      res.json({ success: true, user });
     } catch (err) {
       res.status(500).json({ error: "Server error" });
     }
@@ -520,6 +563,14 @@ async function startServer() {
   app.delete("/api/categories/:id", async (req, res) => {
     try {
       const { id } = req.params;
+      const category = await Category.findOne({ id });
+      if (!category) return res.status(404).json({ success: false, error: "Category not found" });
+
+      const productCount = await Product.countDocuments({ category: category.name });
+      if (productCount > 0) {
+        return res.status(400).json({ success: false, error: `Cannot delete category with ${productCount} assigned products.` });
+      }
+
       await Category.deleteOne({ id });
       res.json({ success: true });
     } catch (err) {
@@ -566,6 +617,20 @@ async function startServer() {
 
       const orderId = Date.now().toString();
       
+      // Ensure the user exists in our Customers Database
+      await User.updateOne(
+        { phone: customerPhone },
+        { 
+          $setOnInsert: { 
+            name: customerName, 
+            phone: customerPhone,
+            role: 'customer',
+            status: 'Active'
+          }
+        },
+        { upsert: true }
+      );
+
       const newOrder = await Order.create({
         id: orderId,
         userId: userId || null,

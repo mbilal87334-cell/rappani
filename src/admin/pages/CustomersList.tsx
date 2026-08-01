@@ -1,38 +1,57 @@
-import React, { useState } from 'react';
-import { Search, Filter, MoreHorizontal, User, Mail, Phone, ShoppingBag } from 'lucide-react';
-import { Order } from '../../App';
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, MoreHorizontal, User, Mail, Phone, ShoppingBag, ShieldAlert, ShieldCheck } from 'lucide-react';
+import toast from 'react-hot-toast';
 
-export default function CustomersList({ orders = [] }: { orders?: Order[] }) {
+export default function CustomersList() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Group orders by customer phone to find unique customers
-  const customerMap = new Map<string, { id: string, name: string, phone: string, email: string, orders: number, spent: number, status: string }>();
-  
-  const safeOrders = Array.isArray(orders) ? orders : [];
-  safeOrders.forEach(order => {
-    const phone = order.customerPhone || 'Unknown';
-    if (!customerMap.has(phone)) {
-      customerMap.set(phone, {
-        id: `CUS-${Math.floor(Math.random() * 10000)}`,
-        name: order.customerName || 'Guest',
-        phone: phone,
-        email: 'N/A', // Assuming email is not in Order type yet
-        orders: 0,
-        spent: 0,
-        status: 'Active'
-      });
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  const fetchCustomers = async () => {
+    try {
+      const res = await fetch('/api/customers');
+      if (res.ok) {
+        const data = await res.json();
+        setCustomers(data);
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to load customers');
+    } finally {
+      setLoading(false);
     }
-    const customer = customerMap.get(phone)!;
-    customer.orders += 1;
-    customer.spent += order.totalAmount || 0;
-  });
+  };
 
-  const CUSTOMERS_DATA = Array.from(customerMap.values());
+  const toggleCustomerStatus = async (id: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'Active' ? 'Blocked' : 'Active';
+    if (!window.confirm(`Are you sure you want to ${newStatus === 'Blocked' ? 'block' : 'unblock'} this customer?`)) return;
+    
+    try {
+      const res = await fetch(`/api/customers/${id}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      
+      if (res.ok) {
+        toast.success(`Customer ${newStatus === 'Blocked' ? 'blocked' : 'unblocked'} successfully`);
+        fetchCustomers();
+      } else {
+        toast.error("Failed to update status");
+      }
+    } catch (err) {
+      toast.error("Error updating status");
+    }
+  };
 
-  const filteredCustomers = CUSTOMERS_DATA.filter(cus => 
-    cus.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cus.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cus.phone.includes(searchTerm)
+  const filteredCustomers = customers.filter(cus => 
+    (cus.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (cus.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (cus.phone || '').includes(searchTerm)
   );
 
   return (
@@ -83,7 +102,7 @@ export default function CustomersList({ orders = [] }: { orders?: Order[] }) {
                       </div>
                       <div>
                         <p className="font-semibold text-gray-900">{customer.name}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">{customer.id}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{customer._id}</p>
                       </div>
                     </div>
                   </td>
@@ -102,22 +121,33 @@ export default function CustomersList({ orders = [] }: { orders?: Order[] }) {
                   <td className="px-5 py-4 text-center">
                     <div className="inline-flex items-center justify-center gap-1.5 bg-gray-50 px-2 py-1 rounded-md text-gray-700 font-semibold border border-gray-200">
                       <ShoppingBag size={14} className="text-gray-400" />
-                      {customer.orders}
+                      {customer.totalOrders || 0}
                     </div>
                   </td>
                   <td className="px-5 py-4 text-right font-bold text-gray-900">
-                    ₹{customer.spent.toLocaleString()}
+                    ₹{(customer.totalSpent || 0).toLocaleString()}
                   </td>
                   <td className="px-5 py-4 text-center">
-                    {customer.status === 'Active' ? (
+                    {customer.status === 'Active' || !customer.status ? (
                       <span className="px-2 py-1 bg-green-50 text-green-600 text-xs font-semibold rounded-md inline-block">Active</span>
                     ) : (
-                      <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs font-semibold rounded-md inline-block">Inactive</span>
+                      <span className="px-2 py-1 bg-red-50 text-red-600 text-xs font-semibold rounded-md inline-block">Blocked</span>
                     )}
                   </td>
                   <td className="px-5 py-4 text-right">
-                    <button className="p-1.5 text-gray-400 hover:text-gray-900 transition-colors">
-                      <MoreHorizontal size={18} />
+                    <button 
+                      onClick={() => toggleCustomerStatus(customer._id, customer.status || 'Active')}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-md flex items-center justify-center gap-1.5 ml-auto transition-colors ${
+                        (customer.status === 'Active' || !customer.status) 
+                        ? 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200' 
+                        : 'bg-green-50 text-green-600 hover:bg-green-100 border border-green-200'
+                      }`}
+                    >
+                      {(customer.status === 'Active' || !customer.status) ? (
+                        <><ShieldAlert size={14} /> Block User</>
+                      ) : (
+                        <><ShieldCheck size={14} /> Unblock</>
+                      )}
                     </button>
                   </td>
                 </tr>
