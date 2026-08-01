@@ -579,6 +579,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   const [showGPayConfirm, setShowGPayConfirm] = useState(false);
   const [utrNumber, setUtrNumber] = useState('');
   const [mockOtp, setMockOtp] = useState<string | null>(null);
+  const [orderSuccessModal, setOrderSuccessModal] = useState<string | null>(null);
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const featuredProducts = products.filter(p => p.isFeatured);
@@ -999,6 +1000,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
           const verifyData = await verifyRes.json();
           if (verifyData.success) {
             toast.success("✅ Payment successful! Order placed.");
+            setOrderSuccessModal(data.orderId);
             setCart([]);
             localStorage.removeItem('rappani_cart');
             setAppliedCoupon(null);
@@ -1024,6 +1026,69 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
       rzp.open();
     } catch (err: any) {
       toast.error(err.message || "Failed to initialize payment");
+    }
+  };
+
+  const handleRetryPayment = async (order: any) => {
+    try {
+      if (!window.Razorpay) {
+        toast.error("Payment system loading...");
+        return;
+      }
+      
+      const keyRes = await fetch(`${API_BASE}/razorpay/key`);
+      const keyData = await keyRes.json();
+      
+      const options = {
+        key: keyData.key,
+        amount: Math.round(order.totalAmount * 100),
+        currency: "INR",
+        name: "Rappani Store",
+        description: "Retry Order Payment",
+        image: "/logo.png",
+        order_id: order.razorpayOrderId,
+        handler: async function (response: any) {
+          const verifyRes = await fetch(`${API_BASE}/razorpay/verify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              orderId: order.id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature
+            })
+          });
+          const verifyData = await verifyRes.json();
+          if (verifyData.success) {
+            toast.success("✅ Payment successful! Order placed.");
+            setOrderSuccessModal(order.id);
+            // Refresh orders to show updated status
+            fetch(`${API_BASE}/orders?phone=${customerPhone}`)
+              .then(res => res.json())
+              .then(data => {
+                if (Array.isArray(data)) setCustomerOrders(data.reverse());
+              });
+            fetchOrders().then(d => setOrders(Array.isArray(d) ? d : [])).catch(console.error);
+          } else {
+            toast.error("Payment verification failed! " + verifyData.error);
+          }
+        },
+        prefill: {
+          name: order.customerName,
+          contact: order.customerPhone
+        },
+        theme: {
+          color: "#000000"
+        }
+      };
+      
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response: any){
+        toast.error("Payment Failed! Reason: " + response.error.description);
+      });
+      rzp.open();
+    } catch (err: any) {
+      toast.error("Failed to retry payment");
     }
   };
 
@@ -2201,6 +2266,30 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                </div>
             </div>
          </div>
+      )}
+
+      {/* Order Success Modal */}
+      {orderSuccessModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-scale-up">
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle2 className="w-10 h-10 text-green-600" />
+            </div>
+            <h2 className="text-2xl font-black text-gray-900 mb-2">Order Confirmed!</h2>
+            <p className="text-gray-500 text-sm mb-6">
+              Thank you for shopping with Rappani Store! Your order has been successfully placed.
+            </p>
+            <button 
+              onClick={() => {
+                setOrderSuccessModal(null);
+                setCurrentTab('account'); // Navigate to account tab to see the order
+              }}
+              className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl shadow-md shadow-blue-500/20 hover:bg-blue-700 transition-colors"
+            >
+              View My Orders
+            </button>
+          </div>
+        </div>
       )}
 
 </div>
