@@ -1,10 +1,22 @@
 import React, { useState } from 'react';
-import { Download, Trash2, Filter, PackageOpen } from 'lucide-react';
+import { Download, Trash2, Filter, PackageOpen, X, MapPin } from 'lucide-react';
 import { Order } from '../../App';
 import { fetchWithAuth } from '../../api';
+import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix for default marker icon in react-leaflet
+const customIcon = new L.Icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41]
+});
 
 export default function OrderManager({ orders }: { orders: Order[] }) {
   const [statusFilter, setStatusFilter] = useState('All Status');
+  const [viewMap, setViewMap] = useState<{lat: number, lng: number} | null>(null);
 
   const filteredOrders = orders.filter(order => 
     statusFilter === 'All Status' || 
@@ -153,9 +165,19 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                                 const url = urlMatch ? urlMatch[0] : '';
                                 return (
                                   <div key={i} className="mt-1">
-                                    <a href={url} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline flex items-center gap-1 font-semibold">
-                                      📍 View on Map
-                                    </a>
+                                    <button 
+                                      onClick={() => {
+                                        const coordsMatch = url.match(/q=([\d.-]+),([\d.-]+)/);
+                                        if (coordsMatch) {
+                                          setViewMap({ lat: parseFloat(coordsMatch[1]), lng: parseFloat(coordsMatch[2]) });
+                                        } else {
+                                          window.open(url, '_blank');
+                                        }
+                                      }}
+                                      className="text-blue-500 hover:underline flex items-center gap-1 font-semibold cursor-pointer"
+                                    >
+                                      🗺️ View on Map
+                                    </button>
                                   </div>
                                 );
                               }
@@ -171,14 +193,23 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                               </div>
                               {(order.shippingAddress.mapsLink || (order.shippingAddress.lat && order.shippingAddress.lng)) && (
                                 <div className="mt-1">
-                                  <a 
-                                    href={order.shippingAddress.mapsLink || `https://maps.google.com/?q=${order.shippingAddress.lat},${order.shippingAddress.lng}`} 
-                                    target="_blank" 
-                                    rel="noreferrer" 
-                                    className="text-blue-500 hover:underline flex items-center gap-1 font-semibold"
+                                  <button 
+                                    onClick={() => {
+                                      if (order.shippingAddress.lat && order.shippingAddress.lng) {
+                                        setViewMap({ lat: order.shippingAddress.lat, lng: order.shippingAddress.lng });
+                                      } else if (order.shippingAddress.mapsLink) {
+                                        const coordsMatch = order.shippingAddress.mapsLink.match(/q=([\d.-]+),([\d.-]+)/);
+                                        if (coordsMatch) {
+                                          setViewMap({ lat: parseFloat(coordsMatch[1]), lng: parseFloat(coordsMatch[2]) });
+                                        } else {
+                                          window.open(order.shippingAddress.mapsLink, '_blank');
+                                        }
+                                      }
+                                    }}
+                                    className="text-blue-500 hover:underline flex items-center gap-1 font-semibold cursor-pointer text-left"
                                   >
                                     🗺️ View on Map
-                                  </a>
+                                  </button>
                                 </div>
                               )}
                             </>
@@ -281,6 +312,22 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
           </div>
         )}
       </div>
+      {viewMap && (
+        <div className="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h3 className="font-bold text-lg flex items-center gap-2"><MapPin className="w-5 h-5 text-gold-500"/> Order Location</h3>
+              <button onClick={() => setViewMap(null)} className="p-2 hover:bg-neutral-100 rounded-full transition"><X className="w-5 h-5"/></button>
+            </div>
+            <div className="h-[500px] w-full bg-neutral-100 relative">
+              <MapContainer center={[viewMap.lat, viewMap.lng]} zoom={15} style={{ height: '100%', width: '100%', zIndex: 10 }}>
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                <Marker position={[viewMap.lat, viewMap.lng]} icon={customIcon} />
+              </MapContainer>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
