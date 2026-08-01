@@ -90,8 +90,17 @@ async function fetchSettings() {
   return res.json();
 }
 
+export async function fetchWithAuth(url: string, options: RequestInit = {}) {
+  const token = localStorage.getItem('adminToken');
+  const headers = {
+    ...options.headers,
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+  };
+  return fetch(url, { ...options, headers });
+}
+
 export async function updateSetting(key: string, value: string) {
-  const res = await fetch(`${API_BASE}/settings`, {
+  const res = await fetchWithAuth(`${API_BASE}/settings`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ key, value }),
@@ -109,7 +118,7 @@ async function fetchProducts(page = 1, limit = 50) {
 export async function saveProduct(product: Product, isEditing: boolean) {
   const method = isEditing ? 'PUT' : 'POST';
   const url = isEditing ? `${API_BASE}/products/${product.id}` : `${API_BASE}/products`;
-  const res = await fetch(url, {
+  const res = await fetchWithAuth(url, {
     method,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(product),
@@ -127,7 +136,7 @@ export async function fetchCategoriesApi() {
 export async function saveCategoryApi(category: any, isEditing: boolean) {
   const method = isEditing ? 'PUT' : 'POST';
   const url = isEditing ? `${API_BASE}/categories/${category.id}` : `${API_BASE}/categories`;
-  const res = await fetch(url, {
+  const res = await fetchWithAuth(url, {
     method,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(category),
@@ -137,7 +146,7 @@ export async function saveCategoryApi(category: any, isEditing: boolean) {
 }
 
 export async function deleteCategoryApi(id: string) {
-  const res = await fetch(`${API_BASE}/categories/${id}`, { method: 'DELETE' });
+  const res = await fetchWithAuth(`${API_BASE}/categories/${id}`, { method: 'DELETE' });
   if (!res.ok) throw new Error("Failed to delete category");
   return res.json();
 }

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Ticket, Plus, Trash2, Edit2, Loader, Save, X } from 'lucide-react';
+import { fetchWithAuth } from '../../App';
 
 export default function CouponManager() {
   const [coupons, setCoupons] = useState<any[]>([]);
@@ -15,7 +16,7 @@ export default function CouponManager() {
 
   const fetchCoupons = async () => {
     try {
-      const res = await fetch('/api/coupons');
+      const res = await fetchWithAuth('/api/coupons');
       const data = await res.json();
       setCoupons(data);
     } catch (err) {
@@ -29,7 +30,7 @@ export default function CouponManager() {
     e.preventDefault();
     if (!newCoupon.code) return setError('Code is required');
     try {
-      const res = await fetch('/api/coupons', {
+      const res = await fetchWithAuth('/api/coupons', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newCoupon)
@@ -49,7 +50,7 @@ export default function CouponManager() {
 
   const handleToggleActive = async (id: string, isActive: boolean) => {
     try {
-      await fetch(`/api/coupons/${id}`, {
+      await fetchWithAuth(`/api/coupons/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ isActive: !isActive })
@@ -63,7 +64,7 @@ export default function CouponManager() {
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this coupon permanently?')) return;
     try {
-      await fetch(`/api/coupons/${id}`, { method: 'DELETE' });
+      await fetchWithAuth(`/api/coupons/${id}`, { method: 'DELETE' });
       fetchCoupons();
     } catch (err) {
       console.error(err);

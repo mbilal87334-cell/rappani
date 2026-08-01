@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, MoreHorizontal, User, Mail, Phone, ShoppingBag, ShieldAlert, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { fetchWithAuth } from '../../App';
 
 export default function CustomersList() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -13,7 +14,7 @@ export default function CustomersList() {
 
   const fetchCustomers = async () => {
     try {
-      const res = await fetch('/api/customers');
+      const res = await fetchWithAuth('/api/customers');
       if (res.ok) {
         const data = await res.json();
         setCustomers(data);
@@ -31,7 +32,7 @@ export default function CustomersList() {
     if (!window.confirm(`Are you sure you want to ${newStatus === 'Blocked' ? 'block' : 'unblock'} this customer?`)) return;
     
     try {
-      const res = await fetch(`/api/customers/${id}/status`, {
+      const res = await fetchWithAuth(`/api/customers/${id}/status`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus })

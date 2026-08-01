@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Star, Trash2, Loader, Search } from 'lucide-react';
+import { fetchWithAuth } from '../../App';
 
 export default function ReviewManager() {
   const [reviews, setReviews] = useState<any[]>([]);
@@ -13,7 +14,7 @@ export default function ReviewManager() {
 
   const fetchReviews = async () => {
     try {
-      const res = await fetch('/api/admin/reviews');
+      const res = await fetchWithAuth('/api/admin/reviews');
       const data = await res.json();
       setReviews(data);
     } catch (err) {
@@ -26,7 +27,7 @@ export default function ReviewManager() {
   const handleDelete = async (productId: string, reviewId: string) => {
     if (!confirm('Are you sure you want to delete this review?')) return;
     try {
-      await fetch(`/api/admin/reviews/${productId}/${reviewId}`, { method: 'DELETE' });
+      await fetchWithAuth(`/api/admin/reviews/${productId}/${reviewId}`, { method: 'DELETE' });
       setReviews(reviews.filter(r => r.reviewId !== reviewId));
     } catch (err) {
       console.error(err);

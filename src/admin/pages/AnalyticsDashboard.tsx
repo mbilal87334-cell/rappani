@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { BarChart3, TrendingUp, DollarSign, ShoppingBag, Loader } from 'lucide-react';
+import { fetchWithAuth } from '../../App';
 
 export default function AnalyticsDashboard() {
   const [data, setData] = useState<any>(null);
@@ -12,7 +13,7 @@ export default function AnalyticsDashboard() {
 
   const fetchAnalytics = async () => {
     try {
-      const res = await fetch('/api/analytics/summary');
+      const res = await fetchWithAuth('/api/analytics/summary');
       const data = await res.json();
       setData(data);
     } catch (err) {

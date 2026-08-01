@@ -433,7 +433,7 @@ async function startServer() {
   });
 
   // Admin Customer Management Routes
-  app.get("/api/customers", async (req, res) => {
+  app.get("/api/customers", authenticateToken, async (req, res) => {
     try {
       const customers = await User.find({}, '-__v').sort({ createdAt: -1 });
       // Calculate total spent for each customer
@@ -473,7 +473,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/settings", async (req, res) => {
+  app.post("/api/settings", authenticateToken, async (req, res) => {
     try {
       const { key, value } = req.body;
       if (key === 'admin_password_disabled') {
@@ -504,7 +504,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/products", async (req, res) => {
+  app.post("/api/products", authenticateToken, async (req, res) => {
     try {
       const { id, name, category, price, originalPrice, stock, image, images, videoUrl, features, tags, isFeatured, isVisible, brand, sku, description, specifications, variants } = req.body;
       const visibleFlag = isVisible !== undefined ? isVisible : true;
@@ -515,7 +515,7 @@ async function startServer() {
     }
   });
 
-  app.put("/api/products/:id", async (req, res) => {
+  app.put("/api/products/:id", authenticateToken, async (req, res) => {
     try {
       const { id } = req.params;
       const { name, category, price, originalPrice, stock, image, images, videoUrl, features, tags, isFeatured, isVisible, brand, sku, description, specifications, variants } = req.body;
@@ -539,7 +539,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/categories", async (req, res) => {
+  app.post("/api/categories", authenticateToken, async (req, res) => {
     try {
       const { id, name, icon } = req.body;
       await Category.create({ id, name, icon });
@@ -549,7 +549,7 @@ async function startServer() {
     }
   });
 
-  app.put("/api/categories/:id", async (req, res) => {
+  app.put("/api/categories/:id", authenticateToken, async (req, res) => {
     try {
       const { id } = req.params;
       const { name, icon } = req.body;
@@ -560,7 +560,7 @@ async function startServer() {
     }
   });
 
-  app.delete("/api/categories/:id", async (req, res) => {
+  app.delete("/api/categories/:id", authenticateToken, async (req, res) => {
     try {
       const { id } = req.params;
       const category = await Category.findOne({ id });
@@ -767,7 +767,7 @@ async function startServer() {
     }
   });
 
-  app.put("/api/orders/:id", async (req, res) => {
+  app.put("/api/orders/:id", authenticateToken, async (req, res) => {
     try {
       const { id } = req.params;
       const { status, trackingStatus } = req.body;
@@ -781,7 +781,7 @@ async function startServer() {
     }
   });
  
-  app.delete("/api/orders/:id", async (req, res) => {
+  app.delete("/api/orders/:id", authenticateToken, async (req, res) => {
     try {
       const { id } = req.params;
       await Order.deleteOne({ id });
@@ -791,7 +791,7 @@ async function startServer() {
     }
   });
 
-  app.delete("/api/orders", async (req, res) => {
+  app.delete("/api/orders", authenticateToken, async (req, res) => {
     try {
       await Order.deleteMany({});
       res.json({ success: true, message: "All orders reset" });
@@ -801,7 +801,7 @@ async function startServer() {
   });
 
   // --- Admin Review Routes ---
-  app.get("/api/admin/reviews", async (req, res) => {
+  app.get("/api/admin/reviews", authenticateToken, async (req, res) => {
     try {
       const products = await Product.find({ 'reviews.0': { $exists: true } }, 'id name image reviews');
       let allReviews: any[] = [];
@@ -828,7 +828,7 @@ async function startServer() {
     }
   });
 
-  app.delete("/api/admin/reviews/:productId/:reviewId", async (req, res) => {
+  app.delete("/api/admin/reviews/:productId/:reviewId", authenticateToken, async (req, res) => {
     try {
       const { productId, reviewId } = req.params;
       await Product.updateOne(
@@ -851,7 +851,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/coupons", async (req, res) => {
+  app.post("/api/coupons", authenticateToken, async (req, res) => {
     try {
       const { code, discountPercent, maxUses } = req.body;
       await Coupon.create({ code: code.toUpperCase(), discountPercent, maxUses });
@@ -861,7 +861,7 @@ async function startServer() {
     }
   });
 
-  app.put("/api/coupons/:id", async (req, res) => {
+  app.put("/api/coupons/:id", authenticateToken, async (req, res) => {
     try {
       const { isActive } = req.body;
       await Coupon.findByIdAndUpdate(req.params.id, { isActive });
@@ -871,7 +871,7 @@ async function startServer() {
     }
   });
 
-  app.delete("/api/coupons/:id", async (req, res) => {
+  app.delete("/api/coupons/:id", authenticateToken, async (req, res) => {
     try {
       await Coupon.findByIdAndDelete(req.params.id);
       res.json({ success: true });
@@ -945,7 +945,7 @@ async function startServer() {
     }
   });
 
-  app.delete("/api/products/:id", async (req, res) => {
+  app.delete("/api/products/:id", authenticateToken, async (req, res) => {
     try {
       const id = req.params.id.trim();
       console.log(`[SERVER] DELETE request for ID: "${id}"`);

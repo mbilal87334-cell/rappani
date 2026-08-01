@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Download, Trash2, Filter, PackageOpen } from 'lucide-react';
 import { Order } from '../../App';
+import { fetchWithAuth } from '../../App';
 
 export default function OrderManager({ orders }: { orders: Order[] }) {
   const [statusFilter, setStatusFilter] = useState('All Status');
@@ -45,7 +46,7 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
   const handleResetDB = () => {
     const confirmInput = window.prompt("WARNING: This will permanently delete ALL orders. Type RESET to confirm.");
     if (confirmInput === 'RESET') {
-      fetch('/api/orders', { method: 'DELETE' })
+      fetchWithAuth('/api/orders', { method: 'DELETE' })
         .then(res => res.json())
         .then(data => {
           if (data.success) {
@@ -152,7 +153,7 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                       <select 
                         value={order.status || 'Processing'}
                         onChange={(e) => {
-                          fetch(`/api/orders/${order.id}`, {
+                          fetchWithAuth(`/api/orders/${order.id}`, {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ status: e.target.value })
@@ -179,7 +180,7 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                       <select 
                         value={order.trackingStatus || 'Processing'}
                         onChange={(e) => {
-                          fetch(`/api/orders/${order.id}`, {
+                          fetchWithAuth(`/api/orders/${order.id}`, {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ trackingStatus: e.target.value })
@@ -197,7 +198,7 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                       <button 
                         onClick={() => {
                           if (window.confirm('Are you sure you want to delete this order?')) {
-                            fetch(`/api/orders/${order.id}`, { method: 'DELETE' })
+                            fetchWithAuth(`/api/orders/${order.id}`, { method: 'DELETE' })
                               .then(() => window.location.reload());
                           }
                         }}

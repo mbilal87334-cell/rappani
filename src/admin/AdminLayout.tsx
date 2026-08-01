@@ -178,13 +178,22 @@ export default function AdminLayout({ setIsAuthenticated, children }: { setIsAut
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="hidden md:flex items-center">
-              {/* Optional top bar search or actions */}
+          <div className="flex items-center gap-4 pr-2">
+            <div className="hidden md:flex items-center relative">
+              <input 
+                type="text" 
+                placeholder="Global Search..." 
+                className="w-64 pl-9 pr-4 py-1.5 bg-neutral-100 border-none rounded-full text-sm focus:ring-2 focus:ring-gold-500 focus:bg-white outline-none transition-all"
+              />
+              <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-2" />
             </div>
             
-            <button className="p-2 text-neutral-500 hover:bg-neutral-100 rounded-full transition-colors relative">
-               {/* Used for global actions if any, but profile is standard here */}
+            <button className="p-2 text-neutral-500 hover:bg-neutral-100 rounded-full transition-colors relative" onClick={() => navigate('/admin/notifications')}>
+              <Bell size={20} />
+              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
+            </button>
+
+            <button className="p-2 text-neutral-500 hover:bg-neutral-100 rounded-full transition-colors" onClick={() => navigate('/admin/profile')}>
                <User size={22} />
             </button>
           </div>

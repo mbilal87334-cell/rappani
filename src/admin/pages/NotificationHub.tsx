@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Bell, Check, Loader, Info, AlertTriangle, AlertCircle, CheckCircle } from 'lucide-react';
+import { fetchWithAuth } from '../../App';
 
 export default function NotificationHub() {
   const [notifications, setNotifications] = useState<any[]>([]);
@@ -12,7 +13,7 @@ export default function NotificationHub() {
 
   const fetchNotifications = async () => {
     try {
-      const res = await fetch('/api/notifications');
+      const res = await fetchWithAuth('/api/notifications');
       const data = await res.json();
       setNotifications(data);
     } catch (err) {
@@ -24,7 +25,7 @@ export default function NotificationHub() {
 
   const handleMarkAllRead = async () => {
     try {
-      await fetch('/api/notifications/mark-read', { method: 'PUT' });
+      await fetchWithAuth('/api/notifications/mark-read', { method: 'PUT' });
       fetchNotifications();
     } catch (err) {
       console.error(err);

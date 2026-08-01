@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Search, Plus, Eye, EyeOff, Edit2, Trash2, Copy, Image as ImageIcon, X, Upload, Camera, Loader } from 'lucide-react';
 import { Product, saveProduct, deleteProduct } from '../../App';
 import toast from 'react-hot-toast';
+import { fetchWithAuth } from '../../App';
 
 export default function ProductManager({ products, setProducts, apiCategories = [] }: { products: Product[], setProducts: any, apiCategories?: any[] }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -83,7 +84,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
         for (let i = 0; i < files.length; i++) {
           const formDataPayload = new FormData();
           formDataPayload.append('image', files[i]);
-          const res = await fetch('/api/upload', { method: 'POST', body: formDataPayload });
+          const res = await fetchWithAuth('/api/upload', { method: 'POST', body: formDataPayload });
           const data = await res.json();
           if (data.imageUrl) uploadedUrls.push(data.imageUrl);
         }
@@ -99,7 +100,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
         // Single file upload
         const formDataPayload = new FormData();
         formDataPayload.append('image', files[0]);
-        const res = await fetch('/api/upload', { method: 'POST', body: formDataPayload });
+        const res = await fetchWithAuth('/api/upload', { method: 'POST', body: formDataPayload });
         const data = await res.json();
         
         if (data.imageUrl) {
