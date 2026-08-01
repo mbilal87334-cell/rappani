@@ -771,22 +771,27 @@ async function startServer() {
     try {
       const { id } = req.params;
       const { status, trackingStatus } = req.body;
-      const updateData: any = { $set: {} };
+      
+      const order = await Order.findOne({ id });
+      if (!order) return res.status(404).json({ success: false, error: "Order not found" });
+
       const timelineEntry = status || trackingStatus;
 
-      if (status) updateData.$set.status = status;
-      if (trackingStatus) updateData.$set.trackingStatus = trackingStatus;
+      if (status) order.status = status;
+      if (trackingStatus) order.trackingStatus = trackingStatus;
       
       if (timelineEntry) {
-        updateData.$push = {
-          timeline: { status: timelineEntry, date: new Date() }
-        };
+        if (!Array.isArray(order.timeline)) {
+          order.timeline = [];
+        }
+        order.timeline.push({ status: timelineEntry, date: new Date() });
       }
 
-      await Order.updateOne({ id }, updateData);
+      await order.save();
       res.json({ success: true });
-    } catch (err) {
-      res.status(500).json({ success: false, error: "Server error" });
+    } catch (err: any) {
+      console.error("[SERVER] PUT /api/orders/:id Error:", err);
+      res.status(500).json({ success: false, error: err.message || "Server error" });
     }
   });
  
