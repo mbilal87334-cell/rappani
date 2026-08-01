@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Save, Store, Globe, MapPin, Phone } from 'lucide-react';
 import { updateSetting } from '../../App';
+import LocationMap from '../../LocationMap';
 
 export default function WebsiteSettings({ settings, setSettings }: { settings: any, setSettings: any }) {
   const [storeName, setStoreName] = useState(settings.store_name || 'Rappani Store');
@@ -9,6 +10,7 @@ export default function WebsiteSettings({ settings, setSettings }: { settings: a
   const [adminEmail, setAdminEmail] = useState(settings.admin_email || 'admin@rappani.in');
   const [storeAddress, setStoreAddress] = useState(settings.store_address || 'Rappani Store, Main Street, TN, India');
   const [metaDesc, setMetaDesc] = useState(settings.meta_description || 'Discover a wide range of premium stationery, beautiful gifts, and fancy items for all your needs.');
+  const [showMap, setShowMap] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,7 +83,16 @@ export default function WebsiteSettings({ settings, setSettings }: { settings: a
                 <input type="email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none transition-all text-sm" />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Physical Address</label>
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="block text-sm font-semibold text-gray-700">Physical Address</label>
+                  <button 
+                    type="button" 
+                    onClick={() => setShowMap(true)}
+                    className="text-xs font-semibold text-gray-900 bg-gray-100 px-2.5 py-1 rounded-md flex items-center gap-1.5 hover:bg-gray-200 transition-colors border border-gray-200"
+                  >
+                    <MapPin size={12} /> Pick from Map
+                  </button>
+                </div>
                 <textarea rows={3} value={storeAddress} onChange={(e) => setStoreAddress(e.target.value)} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none transition-all text-sm resize-none"></textarea>
               </div>
             </div>
@@ -110,6 +121,16 @@ export default function WebsiteSettings({ settings, setSettings }: { settings: a
           </button>
         </div>
       </form>
+
+      {showMap && (
+        <LocationMap 
+          onConfirm={(address) => {
+            setStoreAddress(address);
+            setShowMap(false);
+          }}
+          onCancel={() => setShowMap(false)}
+        />
+      )}
     </div>
   );
 }
