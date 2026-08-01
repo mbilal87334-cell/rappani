@@ -1,7 +1,7 @@
 import React, {  useState, useEffect, useRef  } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
-import { Phone, Mail, Instagram, MessageCircle, MapPin, Map, Lock, LogOut, Plus, Edit, Trash2, Store, ShoppingBag, Menu, X, Camera, Aperture, Globe, Database, Search, ArrowUp, Package, LayoutGrid, ShoppingCart, Minus, Image, ShieldCheck, Gift, Sparkles, Sticker, Rocket, Coffee, Eye, Star, TrendingUp, CheckCircle2, Info , Home, Heart, User, ChevronRight, CreditCard, Briefcase, Ticket } from 'lucide-react';
+import { Phone, Mail, Instagram, MessageCircle, MapPin, Map, Lock, LogOut, Plus, Edit, Trash2, Store, ShoppingBag, Menu, X, Camera, Aperture, Globe, Database, Search, ArrowUp, Package, LayoutGrid, ShoppingCart, Minus, Image, ShieldCheck, Gift, Sparkles, Sticker, Rocket, Coffee, Eye, Star, TrendingUp, CheckCircle2, Info , Home, Heart, User, ChevronRight, CreditCard, Briefcase, Ticket, Navigation } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import AdminApp from './admin/AdminApp';
 import LocationMap from './LocationMap';
@@ -60,6 +60,7 @@ export interface Order {
   razorpayPaymentId?: string;
   razorpaySignature?: string;
   paymentStatus?: string;
+  shippingAddress?: string;
 }
 
 declare global {

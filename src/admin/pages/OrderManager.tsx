@@ -51,7 +51,6 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
       try {
         const res = await fetchWithAuth('/api/orders', { method: 'DELETE' });
         if (!res.ok) throw new Error('Failed to reset');
-        setOrders([]);
         window.location.reload();
       } catch (err) {
         alert("Failed to reset orders.");
