@@ -1,1 +1,1 @@
-export async function fetchWithAuth(url: string, options: RequestInit = {}) { const token = localStorage.getItem('adminToken'); const headers = { ...options.headers, ...(token ? { 'Authorization': 'Bearer ' } : {}) }; return fetch(url, { ...options, headers }); }
+export async function fetchWithAuth(url: string, options: RequestInit = {}) { const token = localStorage.getItem('adminToken'); const headers = { ...options.headers, ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }; return fetch(url, { ...options, headers }); }
