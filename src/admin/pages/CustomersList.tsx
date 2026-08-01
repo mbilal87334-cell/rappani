@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Filter, MoreHorizontal, User, Mail, Phone, ShoppingBag, ShieldAlert, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { fetchWithAuth } from '../../App';
+import { fetchWithAuth } from '../../api';
 
 export default function CustomersList() {
   const [searchTerm, setSearchTerm] = useState('');

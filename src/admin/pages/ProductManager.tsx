@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Search, Plus, Eye, EyeOff, Edit2, Trash2, Copy, Image as ImageIcon, X, Upload, Camera, Loader } from 'lucide-react';
 import { Product, saveProduct, deleteProduct } from '../../App';
 import toast from 'react-hot-toast';
-import { fetchWithAuth } from '../../App';
+import { fetchWithAuth } from '../../api';
 
 export default function ProductManager({ products, setProducts, apiCategories = [] }: { products: Product[], setProducts: any, apiCategories?: any[] }) {
   const [searchTerm, setSearchTerm] = useState('');

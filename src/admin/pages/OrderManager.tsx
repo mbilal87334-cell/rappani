@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Download, Trash2, Filter, PackageOpen } from 'lucide-react';
 import { Order } from '../../App';
-import { fetchWithAuth } from '../../App';
+import { fetchWithAuth } from '../../api';
 
 export default function OrderManager({ orders }: { orders: Order[] }) {
   const [statusFilter, setStatusFilter] = useState('All Status');

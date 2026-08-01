@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Star, Trash2, Loader, Search } from 'lucide-react';
-import { fetchWithAuth } from '../../App';
+import { fetchWithAuth } from '../../api';
 
 export default function ReviewManager() {
   const [reviews, setReviews] = useState<any[]>([]);

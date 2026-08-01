@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Bell, Check, Loader, Info, AlertTriangle, AlertCircle, CheckCircle } from 'lucide-react';
-import { fetchWithAuth } from '../../App';
+import { fetchWithAuth } from '../../api';
 
 export default function NotificationHub() {
   const [notifications, setNotifications] = useState<any[]>([]);

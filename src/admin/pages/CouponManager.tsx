@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Ticket, Plus, Trash2, Edit2, Loader, Save, X } from 'lucide-react';
-import { fetchWithAuth } from '../../App';
+import { fetchWithAuth } from '../../api';
 
 export default function CouponManager() {
   const [coupons, setCoupons] = useState<any[]>([]);

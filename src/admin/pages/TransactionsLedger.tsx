@@ -72,7 +72,7 @@ export default function TransactionsLedger({ orders = [] }: { orders?: Order[] }
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-1.5 text-gray-700 font-medium">
                         {method === 'Cash' && <Wallet size={16} className="text-gray-400" />}
-                        {(method === 'UPI' || method === 'GPay') && <Smartphone size={16} className="text-gray-400" />}
+                        {method === 'UPI' && <Smartphone size={16} className="text-gray-400" />}
                         {method}
                       </div>
                     </td>
