@@ -6,13 +6,14 @@ import fs from "fs-extra";
 import cors from "cors";
 import mongoose from "mongoose";
 import jwt from 'jsonwebtoken';
-import { GoogleGenerativeAI } from '@google/genai';
+
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import Razorpay from "razorpay";
 import crypto from "crypto";
+import { connectToWhatsApp, waQrCode, isWaConnected, sendWhatsAppMessage } from "./whatsappBot";
 
 dotenv.config();
 
@@ -105,7 +106,7 @@ const orderSchema = new mongoose.Schema({
   userId: { type: String, required: false },
   customerName: { type: String, required: true },
   customerPhone: { type: String, required: true },
-  shippingAddress: { type: Object, required: false },
+  shippingAddress: { type: mongoose.Schema.Types.Mixed, required: false },
   items: { type: Array, required: true },
   totalAmount: { type: Number, required: true },
   paymentMethod: { type: String, required: true },
@@ -134,11 +135,22 @@ const userSchema = new mongoose.Schema({
   role: { type: String, default: 'customer' },
   status: { type: String, default: 'Active' },
   addresses: [{
-    label: { type: String, required: true }, // e.g. Home, Office
+    id: { type: String, default: () => Math.random().toString(36).substring(2, 9) },
+    fullName: { type: String, required: true },
+    mobile: { type: String, required: true },
+    altMobile: { type: String, default: '' },
+    houseNo: { type: String, required: true },
     street: { type: String, required: true },
-    city: { type: String, required: true },
+    landmark: { type: String, default: '' },
+    country: { type: String, default: 'India' },
     state: { type: String, required: true },
-    pincode: { type: String, required: true }
+    district: { type: String, required: true },
+    city: { type: String, required: true },
+    pincode: { type: String, required: true },
+    addressType: { type: String, default: 'Home' }, // Home, Work, Other
+    isDefault: { type: Boolean, default: false },
+    lat: { type: Number, required: false },
+    lng: { type: Number, required: false }
   }],
   loyaltyPoints: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now }
@@ -208,6 +220,9 @@ async function startServer() {
     dbConnectionState = "connected";
     console.log("Connected to MongoDB Cloud Database");
     await seedInitialData();
+    
+    // Start WhatsApp Bot
+    connectToWhatsApp().catch(err => console.error("WhatsApp Bot Error:", err));
   } catch (error: any) {
     dbConnectionState = "error";
     dbConnectionError = error?.message || String(error);
@@ -678,6 +693,13 @@ async function startServer() {
           { $inc: { stock: -item.quantity } }
         );
       }
+      
+      await newOrder.save();
+
+      // SEND WHATSAPP MESSAGE
+      const msg = `Hi ${customerName},\n\nYour order (ID: ${orderId}) has been successfully placed for ₹${totalAmount}.\n\nThank you for shopping with Rappani Store! 🚀`;
+      await sendWhatsAppMessage(customerPhone, msg);
+
       res.json({ success: true, orderId });
     } catch (err: any) {
       console.error("[SERVER] Checkout error:", err);
@@ -709,18 +731,23 @@ async function startServer() {
         // Payment successful
         order.paymentStatus = 'Paid';
         order.status = 'Processing';
+        order.timeline.push({ status: 'Processing', date: new Date() });
         order.razorpayPaymentId = razorpay_payment_id;
         order.razorpaySignature = razorpay_signature;
         order.paymentTime = new Date();
-        await order.save();
-
-        // Reduce stock after successful payment
+        
         for (const item of order.items) {
           await Product.updateOne(
             { id: item.product.id, stock: { $exists: true, $gte: item.quantity } },
             { $inc: { stock: -item.quantity } }
           );
         }
+
+        await order.save();
+        
+        // SEND WHATSAPP MESSAGE
+        const msg = `Hi ${order.customerName},\n\nYour payment of ₹${order.totalAmount} for order ${order.id} was successful! 🚀\nWe are now processing your order.`;
+        await sendWhatsAppMessage(order.customerPhone, msg);
 
         res.json({ success: true, message: "Payment verified successfully" });
       } else {
@@ -860,6 +887,11 @@ async function startServer() {
     }
   });
 
+  // --- Admin WhatsApp API ---
+  app.get("/api/admin/whatsapp/status", authenticateToken, (req, res) => {
+    res.json({ connected: isWaConnected, qr: waQrCode });
+  });
+
   // --- Coupon Routes ---
   app.get("/api/coupons", authenticateToken, async (req, res) => {
     try {
@@ -970,7 +1002,13 @@ async function startServer() {
       console.log(`[SERVER] DELETE request for ID: "${id}"`);
 
       // 1. Find the product first to get the image URL
-      const product = await Product.findOne({ id });
+      let product = await Product.findOne({ id });
+      
+      // Fallback to checking by _id if id was not found
+      if (!product && mongoose.Types.ObjectId.isValid(id)) {
+        product = await Product.findById(id);
+      }
+
       if (!product) {
         console.warn(`[SERVER] Product with ID "${id}" not found.`);
         return res.status(404).json({ success: false, error: "Product not found" });
@@ -994,8 +1032,8 @@ async function startServer() {
         }
       }
 
-      // 3. Delete the product from MongoDB
-      const result = await Product.deleteOne({ id });
+      // 3. Delete the product from MongoDB (using _id to be absolutely sure)
+      const result = await Product.deleteOne({ _id: product._id });
       console.log(`[SERVER] Delete result for "${id}": ${result.deletedCount} items affected`);
 
       res.json({ success: true, changes: result.deletedCount });

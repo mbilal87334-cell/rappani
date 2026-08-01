@@ -144,22 +144,35 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                       <div className="text-xs text-gray-400">{order.customerPhone}</div>
                     </td>
                     <td className="px-5 py-4 text-gray-600 max-w-[200px] whitespace-normal">
-                      <div className="text-xs line-clamp-3" title={order.shippingAddress || 'N/A'}>
+                      <div className="text-xs line-clamp-3" title={typeof order.shippingAddress === 'string' ? order.shippingAddress : order.shippingAddress?.addressText || 'N/A'}>
                         {order.shippingAddress ? (
-                          order.shippingAddress.split('\n').map((line: string, i: number) => {
-                            if (line.includes('https://maps.google.com')) {
-                              const urlMatch = line.match(/(https?:\/\/[^\s]+)/g);
-                              const url = urlMatch ? urlMatch[0] : '';
-                              return (
-                                <div key={i} className="mt-1">
-                                  <a href={url} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline flex items-center gap-1 font-semibold">
+                          typeof order.shippingAddress === 'string' ? (
+                            order.shippingAddress.split('\n').map((line: string, i: number) => {
+                              if (line.includes('https://maps.google.com')) {
+                                const urlMatch = line.match(/(https?:\/\/[^\s]+)/g);
+                                const url = urlMatch ? urlMatch[0] : '';
+                                return (
+                                  <div key={i} className="mt-1">
+                                    <a href={url} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline flex items-center gap-1 font-semibold">
+                                      📍 View on Map
+                                    </a>
+                                  </div>
+                                );
+                              }
+                              return <div key={i}>{line}</div>;
+                            })
+                          ) : (
+                            <>
+                              <div>{order.shippingAddress.addressText}</div>
+                              {order.shippingAddress.mapsLink && (
+                                <div className="mt-1">
+                                  <a href={order.shippingAddress.mapsLink} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline flex items-center gap-1 font-semibold">
                                     📍 View on Map
                                   </a>
                                 </div>
-                              );
-                            }
-                            return <div key={i}>{line}</div>;
-                          })
+                              )}
+                            </>
+                          )
                         ) : (
                           'N/A'
                         )}

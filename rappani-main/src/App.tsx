@@ -5,6 +5,7 @@ import { Phone, Mail, Instagram, MessageCircle, MapPin, Map, Lock, LogOut, Plus,
 import { motion, AnimatePresence } from 'motion/react';
 import AdminApp from './admin/AdminApp';
 import LocationMap from './LocationMap';
+import AddressManager from './AddressManager';
 import QRCode from 'react-qr-code';
 
 // --- Types ---
@@ -59,7 +60,7 @@ export interface Order {
   razorpayPaymentId?: string;
   razorpaySignature?: string;
   paymentStatus?: string;
-  shippingAddress?: string;
+  shippingAddress?: string | { addressText?: string, mapsLink?: string } | any;
 }
 
 declare global {
@@ -69,7 +70,7 @@ declare global {
 }
 
 // --- API Service ---
-const API_BASE = '/api';
+export const API_BASE = '/api';
 
 const getPremiumImageUrl = (url: string) => {
   if (!url) return url;
@@ -464,6 +465,38 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
     return true;
   };
 
+  const [isFetchingCheckoutPincode, setIsFetchingCheckoutPincode] = useState(false);
+
+  const handleCheckoutPincodeChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const pin = e.target.value.replace(/\D/g, '').slice(0, 6);
+    setCheckoutAddressFields(prev => ({ ...prev, pincode: pin }));
+    setAddressErrors(prev => ({ ...prev, pincode: false }));
+    
+    if (pin.length === 6) {
+      setIsFetchingCheckoutPincode(true);
+      try {
+        const res = await fetch(`https://api.postalpincode.in/pincode/${pin}`);
+        const data = await res.json();
+        if (data && data[0].Status === "Success") {
+          const postOffice = data[0].PostOffice[0];
+          setCheckoutAddressFields(prev => ({
+            ...prev,
+            state: postOffice.State || prev.state,
+            district: postOffice.District || prev.district,
+            city: postOffice.Name || prev.city
+          }));
+          toast.success("Location auto-filled from pincode!");
+        } else {
+          toast.error("Invalid pincode or not found.");
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setIsFetchingCheckoutPincode(false);
+      }
+    }
+  };
+
   useEffect(() => {
     if (useStructuredAddress) {
       const parts = [];
@@ -483,23 +516,44 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
       setDeliveryAddress(parts.join('\n'));
     }
   }, [checkoutAddressFields, useStructuredAddress]);
-  const [savedAddresses, setSavedAddresses] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem('rappani_saved_addresses');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+  const [customerToken, setCustomerToken] = useState(() => localStorage.getItem('rappani_customer_token') || '');
 
   useEffect(() => {
-    try {
-      localStorage.setItem('rappani_saved_addresses', JSON.stringify(savedAddresses));
-    } catch (e) {
-      console.error("Failed to save addresses", e);
+    if (customerToken) {
+      fetch('/api/user/me', {
+        headers: { 'Authorization': `Bearer ${customerToken}` }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.addresses) {
+          setSavedAddresses(data.addresses);
+        }
+      })
+      .catch(console.error);
     }
-  }, [savedAddresses]);
+  }, [customerToken]);
+
+
   
+  const handleUpdateAddresses = async (newAddresses: any[]) => {
+    setSavedAddresses(newAddresses);
+    if (customerToken) {
+      try {
+        await fetch('/api/user/addresses', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${customerToken}`
+          },
+          body: JSON.stringify({ addresses: newAddresses })
+        });
+      } catch (err) {
+        console.error("Failed to update addresses", err);
+      }
+    }
+  };
+
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isOrdersModalOpen, setIsOrdersModalOpen] = useState(false);
@@ -739,6 +793,10 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
         setIsPhoneVerified(true);
         setIsOtpSent(false);
         setMockOtp(null); // Clear mock OTP
+        if (data.token) {
+          localStorage.setItem('rappani_customer_token', data.token);
+          setCustomerToken(data.token);
+        }
       } else {
         setCheckoutError(data.error || "Invalid OTP");
       }
@@ -830,7 +888,10 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   };
 
   const cartTotalAmount = Math.round(cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0));
-  const deliveryFee = 0; // Delivery is now completely free as requested
+  // Set delivery fee from settings or default to 30. Allow 0 if explicitly set to "0" in settings.
+  const deliveryFee = deliveryMethod === 'home' 
+    ? (settings.delivery_charge !== undefined ? Number(settings.delivery_charge) || 0 : 30)
+    : 0;
   const discountAmount = appliedCoupon ? Math.round(cartTotalAmount * (appliedCoupon.discountPercent / 100)) : 0;
   const finalTotal = Math.round(cartTotalAmount + deliveryFee - discountAmount);
 
@@ -897,7 +958,13 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
         totalAmount: finalTotal,
         couponCode: appliedCoupon?.code,
         discountAmount: discountAmount,
-        shippingAddress: deliveryMethod === 'home' ? (deliveryAddress || (savedAddresses.length > 0 ? savedAddresses[0] : '')) : null,
+        shippingAddress: deliveryMethod === 'home' ? (
+          (savedAddresses.length > 0 && typeof deliveryAddress === 'string' && savedAddresses.find(a => `${a.fullName} - ${a.mobile}\n${a.houseNo}, ${a.street}\n${a.city}, ${a.state} - ${a.pincode}` === deliveryAddress))
+          || (useStructuredAddress ? {
+            addressText: deliveryAddress,
+            mapsLink: checkoutAddressFields.mapsLink
+          } : deliveryAddress)
+        ) : null,
         items: cart,
         deliveryMethod,
         utrNumber: utrNumber ? utrNumber.trim() : undefined
@@ -979,7 +1046,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
     if (!isSaved) return;
 
     const encodedMsg = encodeURIComponent(message);
-    window.open(`https://wa.me/${settings.admin_phone?.replace(/\\D/g, '') || '918189940301'}?text=${encodedMsg}`, '_blank');
+    window.open(`https://wa.me/${settings.admin_phone?.replace(/\D/g, '') || '918189940301'}?text=${encodedMsg}`, '_blank');
     setAppliedCoupon(null);
     setTimeout(() => setIsCartOpen(false), 500);
   };
@@ -1002,7 +1069,13 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
         totalAmount: finalTotal,
         couponCode: appliedCoupon?.code,
         discountAmount: discountAmount,
-        shippingAddress: deliveryMethod === 'home' ? (deliveryAddress || (savedAddresses.length > 0 ? savedAddresses[0] : '')) : null,
+        shippingAddress: deliveryMethod === 'home' ? (
+          (savedAddresses.length > 0 && typeof deliveryAddress === 'string' && savedAddresses.find(a => `${a.fullName} - ${a.mobile}\n${a.houseNo}, ${a.street}\n${a.city}, ${a.state} - ${a.pincode}` === deliveryAddress))
+          || (useStructuredAddress ? {
+            addressText: deliveryAddress,
+            mapsLink: checkoutAddressFields.mapsLink
+          } : deliveryAddress)
+        ) : null,
         items: cart,
         deliveryMethod,
         userId: customerPhone
@@ -1799,15 +1872,17 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                                     </div>
                                   </div>
                                   <div className="flex gap-3">
-                                    <div className="flex-1">
+                                    <div className="flex-1 relative">
                                        <label className="text-[10px] font-bold text-neutral-500 uppercase">Pincode / Zipcode *</label>
                                        <input 
                                          type="text" 
                                          value={checkoutAddressFields.pincode}
-                                         onChange={e => { setCheckoutAddressFields(prev => ({...prev, pincode: e.target.value})); setAddressErrors(prev => ({...prev, pincode: false})); }}
+                                         onChange={handleCheckoutPincodeChange}
+                                         maxLength={6}
                                          className={`w-full bg-stone-50 border ${addressErrors.pincode ? 'border-red-500' : 'border-neutral-200'} rounded-lg py-3 px-4 text-sm focus:outline-none focus:ring-1 focus:ring-gold-500`}
                                          placeholder="Enter your pincode"
                                        />
+                                       {isFetchingCheckoutPincode && <div className="absolute right-3 top-8 w-4 h-4 border-2 border-gold-500 border-t-transparent rounded-full animate-spin"></div>}
                                      </div>
                                     <div className="flex-1">
                                       <label className="text-[10px] font-bold text-neutral-500 uppercase">Country *</label>
@@ -1845,17 +1920,30 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
 
                              {savedAddresses.length > 0 && (
                                 <div className="space-y-2 mt-2">
-                                   <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Select Saved Address</p>
+                                   <div className="flex justify-between items-center">
+                                     <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Select Saved Address</p>
+                                     <button onClick={() => setIsAddressModalOpen(true)} className="text-xs font-bold text-gold-600 hover:underline">Manage</button>
+                                   </div>
                                    <div className="flex gap-2 overflow-x-auto pb-2 snap-x hide-scrollbar">
-                                      {savedAddresses.map((addr, idx) => (
-                                         <div 
-                                           key={idx} 
-                                           onClick={() => { setDeliveryAddress(addr); setUseStructuredAddress(false); }}
-                                           className="snap-start shrink-0 w-[200px] bg-white border border-neutral-300 rounded-xl p-3 cursor-pointer hover:border-gold-500 transition-colors"
-                                         >
-                                            <p className="text-xs text-primary-light line-clamp-2">{addr}</p>
-                                         </div>
-                                      ))}
+                                      {savedAddresses.map((addr, idx) => {
+                                        const addrString = `${addr.fullName} - ${addr.mobile}\n${addr.houseNo}, ${addr.street}\n${addr.city}, ${addr.state} - ${addr.pincode}`;
+                                        return (
+                                          <div 
+                                            key={addr.id || idx} 
+                                            onClick={() => { 
+                                              setDeliveryAddress(addrString); 
+                                              setUseStructuredAddress(false); 
+                                            }}
+                                            className={`snap-start shrink-0 w-[240px] bg-white border ${deliveryAddress === addrString ? 'border-gold-500 bg-gold-50 shadow-sm' : 'border-neutral-300'} rounded-xl p-3 cursor-pointer hover:border-gold-500 transition-all`}
+                                          >
+                                            <div className="flex items-center gap-2 mb-1">
+                                              <span className="text-[10px] bg-neutral-100 px-2 py-0.5 rounded font-bold">{addr.addressType}</span>
+                                              {addr.isDefault && <span className="text-[10px] bg-gold-500 text-white px-2 py-0.5 rounded font-bold">Default</span>}
+                                            </div>
+                                            <p className="text-xs text-primary-light line-clamp-3 whitespace-pre-wrap">{addrString}</p>
+                                          </div>
+                                        )
+                                      })}
                                    </div>
                                 </div>
                              )}
@@ -1863,13 +1951,6 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
 
                        <div className="pt-2 space-y-3">
                           <h3 className="font-bold text-primary flex items-center gap-2"><CreditCard className="w-5 h-5" /> Payment</h3>
-                          <div className="bg-neutral-50 p-6 rounded-xl border border-neutral-200 flex flex-col items-center justify-center text-center">
-                            <p className="text-sm text-neutral-600 mb-2">Scan the QR Code to pay <br/><strong className="text-lg">₹{finalTotal}</strong> via any UPI App.</p>
-                            <div className="w-40 h-40 bg-white rounded-xl shadow flex items-center justify-center text-neutral-300 border border-neutral-200 mb-3">
-                              <span className="text-xs">[QR Placeholder]</span>
-                            </div>
-                            <p className="text-xs text-neutral-500">Or proceed with Razorpay / WhatsApp</p>
-                          </div>
                           
                           <button onClick={handleWhatsAppCheckout} className="w-full bg-green-500 text-white py-3.5 rounded-xl font-bold shadow-md shadow-green-500/20 flex items-center justify-center gap-2 hover:bg-green-600 transition-colors mt-2">
                              Checkout via WhatsApp
@@ -1925,7 +2006,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                 <div className="p-4 border-b border-gray-50 flex items-center justify-between bg-gold-50/50">
                    <h3 className="font-bold text-primary">Store Contact Info</h3>
                 </div>
-                <a href={`https://wa.me/${settings.admin_phone?.replace(/\\D/g, '') || '918189940301'}`} target="_blank" rel="noreferrer" className="p-4 border-b border-gray-50 flex items-center gap-4 hover:bg-gold-50 transition-colors">
+                <a href={`https://wa.me/${settings.admin_phone?.replace(/\D/g, '') || '918189940301'}`} target="_blank" rel="noreferrer" className="p-4 border-b border-gray-50 flex items-center gap-4 hover:bg-gold-50 transition-colors">
                    <div className="w-10 h-10 bg-gold-50 text-gold-600 rounded-full flex items-center justify-center shrink-0">
                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
                    </div>
@@ -2191,7 +2272,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
       </AnimatePresence>
 
       {/* Floating WhatsApp Widget */}
-      <a href={`https://wa.me/${settings.admin_phone?.replace(/\\D/g, '') || '918189940301'}`} target="_blank" rel="noreferrer" className="fixed bottom-24 right-4 z-50 premium-button p-3.5 rounded-full shadow-lg hover:bg-primary transition-colors flex items-center justify-center animate-bounce">
+      <a href={`https://wa.me/${settings.admin_phone?.replace(/\D/g, '') || '918189940301'}`} target="_blank" rel="noreferrer" className="fixed bottom-24 right-4 z-50 premium-button p-3.5 rounded-full shadow-lg hover:bg-primary transition-colors flex items-center justify-center animate-bounce">
         <MessageCircle className="w-6 h-6 fill-white" />
       </a>
 
@@ -2235,63 +2316,8 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
             <h2 className="font-black text-xl text-primary">Saved Addresses</h2>
           </div>
           
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {savedAddresses.length === 0 ? (
-              <div className="text-center py-12 text-neutral-400">
-                <MapPin className="w-12 h-12 mx-auto mb-2 opacity-30" />
-                <p>No saved addresses yet</p>
-              </div>
-            ) : (
-              savedAddresses.map((addr, idx) => (
-                <div key={idx} className="bg-white p-4 rounded-2xl shadow-sm border border-neutral-300/50 flex gap-3 relative">
-                  <div className="w-10 h-10 bg-gold-50 text-gold-600 rounded-full flex items-center justify-center shrink-0">
-                    <MapPin className="w-5 h-5" />
-                  </div>
-                  <div className="flex-1 pr-8">
-                    <h4 className="font-bold text-primary mb-1">Address {idx + 1}</h4>
-                    <p className="text-sm text-neutral-500 whitespace-pre-wrap">{addr}</p>
-                  </div>
-                  <button 
-                    onClick={() => setSavedAddresses(savedAddresses.filter((_, i) => i !== idx))}
-                    className="absolute top-4 right-4 p-2 text-rose-500 bg-rose-50 rounded-full"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ))
-            )}
-            
-            <div className="bg-white p-4 rounded-2xl shadow-sm border border-neutral-300/50 mt-6">
-              <div className="flex justify-between items-center mb-3">
-                <h4 className="font-bold text-primary">Add New Address</h4>
-                <button 
-                  onClick={fetchCurrentLocation}
-                  disabled={isFetchingLocation}
-                  className="flex items-center gap-1 text-xs font-bold text-gold-500 bg-gold-500/10 px-3 py-1.5 rounded-lg disabled:opacity-50"
-                >
-                  <MapPin className="w-3 h-3" />
-                  {isFetchingLocation ? "Fetching..." : "Use Current Location"}
-                </button>
-              </div>
-              <textarea 
-                className="w-full bg-gold-50 border-0 rounded-xl px-4 py-3 text-sm text-primary placeholder-gray-400 focus:ring-2 focus:ring-gold-500 h-24 resize-none transition-shadow mb-3" 
-                placeholder="Enter Full Delivery Address" 
-                value={newSavedAddress}
-                onChange={e => setNewSavedAddress(e.target.value)}
-              />
-              <button 
-                onClick={() => {
-                  if(newSavedAddress.trim()) {
-                    setSavedAddresses([...savedAddresses, newSavedAddress.trim()]);
-                    setNewSavedAddress('');
-                  }
-                }}
-                disabled={!newSavedAddress.trim()}
-                className="w-full premium-button rounded-xl py-3 font-bold disabled:opacity-50 disabled:bg-gray-300 flex items-center justify-center gap-2"
-              >
-                <Plus className="w-5 h-5" /> Save Address
-              </button>
-            </div>
+          <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
+            <AddressManager addresses={savedAddresses} onUpdateAddresses={handleUpdateAddresses} />
           </div>
         </div>
       )}

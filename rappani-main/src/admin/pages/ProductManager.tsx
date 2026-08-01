@@ -137,11 +137,12 @@ export default function ProductManager({ products, setProducts, apiCategories = 
     setFormData({ ...formData, images: newImages, image: newPrimary });
   };
 
-  const handleDelete = async (product: Product) => {
+  const handleDelete = async (product: any) => {
     if (!window.confirm(`Are you sure you want to delete ${product.name}?`)) return;
     try {
-      await deleteProduct(product.id);
-      setProducts((prev: Product[]) => prev.filter(p => p.id !== product.id));
+      const targetId = product.id || product._id;
+      await deleteProduct(targetId);
+      setProducts((prev: Product[]) => prev.filter((p: any) => (p.id || p._id) !== targetId));
       toast.success("Product deleted");
     } catch (err) {
       toast.error("Failed to delete product");

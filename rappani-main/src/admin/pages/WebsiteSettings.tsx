@@ -10,6 +10,7 @@ export default function WebsiteSettings({ settings, setSettings }: { settings: a
   const [adminEmail, setAdminEmail] = useState(settings.admin_email || 'admin@rappani.in');
   const [storeAddress, setStoreAddress] = useState(settings.store_address || 'Rappani Store, Main Street, TN, India');
   const [metaDesc, setMetaDesc] = useState(settings.meta_description || 'Discover a wide range of premium stationery, beautiful gifts, and fancy items for all your needs.');
+  const [deliveryCharge, setDeliveryCharge] = useState(settings.delivery_charge || '30');
   const [showMap, setShowMap] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -21,6 +22,7 @@ export default function WebsiteSettings({ settings, setSettings }: { settings: a
       await updateSetting('admin_email', adminEmail);
       await updateSetting('store_address', storeAddress);
       await updateSetting('meta_description', metaDesc);
+      await updateSetting('delivery_charge', deliveryCharge);
       
       setSettings({
         ...settings,
@@ -29,7 +31,8 @@ export default function WebsiteSettings({ settings, setSettings }: { settings: a
         admin_phone: adminPhone,
         admin_email: adminEmail,
         store_address: storeAddress,
-        meta_description: metaDesc
+        meta_description: metaDesc,
+        delivery_charge: deliveryCharge
       });
       alert('Settings saved successfully!');
     } catch (err) {
@@ -61,6 +64,10 @@ export default function WebsiteSettings({ settings, setSettings }: { settings: a
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Store Tagline</label>
                 <input type="text" value={storeTagline} onChange={(e) => setStoreTagline(e.target.value)} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none transition-all text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Home Delivery Charge (?) </label>
+                <input type="number" min="0" value={deliveryCharge} onChange={(e) => setDeliveryCharge(e.target.value)} className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-md focus:bg-white focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none transition-all text-sm" placeholder="e.g. 30" />
               </div>
             </div>
           </div>

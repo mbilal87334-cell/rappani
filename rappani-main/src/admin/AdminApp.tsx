@@ -20,6 +20,7 @@ import ReviewManager from './pages/ReviewManager';
 import CouponManager from './pages/CouponManager';
 import NotificationHub from './pages/NotificationHub';
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
+import WhatsAppManager from './pages/WhatsAppManager';
 
 export default function AdminApp({ 
   orders, products, setProducts, settings, setSettings, apiCategories, setApiCategories 
@@ -58,6 +59,7 @@ export default function AdminApp({
         <Route path="/customers" element={<CustomersList orders={orders} />} />
         <Route path="/revenue" element={<RevenueDashboard orders={orders} />} />
         <Route path="/transactions" element={<TransactionsLedger orders={orders} />} />
+        <Route path="/whatsapp" element={<WhatsAppManager />} />
         <Route path="/settings" element={<WebsiteSettings settings={settings} setSettings={setSettings} />} />
         <Route path="/reports" element={<ReportsHub orders={orders} products={products} />} />
         

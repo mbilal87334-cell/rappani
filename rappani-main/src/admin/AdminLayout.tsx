@@ -19,7 +19,8 @@ import {
   Menu,
   X,
   Search,
-  LogOut
+  LogOut,
+  MessageSquare
 } from 'lucide-react';
 
 const MENU_ITEMS = [
@@ -30,6 +31,7 @@ const MENU_ITEMS = [
   { path: '/admin/customers', icon: Users, label: 'Customers' },
   { path: '/admin/revenue', icon: DollarSign, label: 'Revenue' },
   { path: '/admin/transactions', icon: CreditCard, label: 'Transactions' },
+  { path: '/admin/whatsapp', icon: MessageSquare, label: 'WhatsApp Bot' },
   { path: '/admin/settings', icon: Settings, label: 'Website Settings' },
   { path: '/admin/coupons', icon: Ticket, label: 'Coupons' },
   { path: '/admin/reviews', icon: Star, label: 'Reviews' },
