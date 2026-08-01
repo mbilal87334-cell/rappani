@@ -163,11 +163,21 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                             })
                           ) : (
                             <>
-                              <div>{order.shippingAddress.addressText}</div>
-                              {order.shippingAddress.mapsLink && (
+                              <div>
+                                {order.shippingAddress.addressText 
+                                  ? order.shippingAddress.addressText 
+                                  : `${order.shippingAddress.fullName || ''}\n${order.shippingAddress.houseNo || ''}, ${order.shippingAddress.street || ''}\n${order.shippingAddress.city || ''}, ${order.shippingAddress.state || ''} - ${order.shippingAddress.pincode || ''}`.trim()
+                                }
+                              </div>
+                              {(order.shippingAddress.mapsLink || (order.shippingAddress.lat && order.shippingAddress.lng)) && (
                                 <div className="mt-1">
-                                  <a href={order.shippingAddress.mapsLink} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline flex items-center gap-1 font-semibold">
-                                    📍 View on Map
+                                  <a 
+                                    href={order.shippingAddress.mapsLink || `https://maps.google.com/?q=${order.shippingAddress.lat},${order.shippingAddress.lng}`} 
+                                    target="_blank" 
+                                    rel="noreferrer" 
+                                    className="text-blue-500 hover:underline flex items-center gap-1 font-semibold"
+                                  >
+                                    🗺️ View on Map
                                   </a>
                                 </div>
                               )}
