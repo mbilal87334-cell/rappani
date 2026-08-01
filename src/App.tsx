@@ -580,6 +580,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
           const data = await res.json();
           if (data && data.display_name) {
             setDeliveryAddress(data.display_name);
+            setCheckoutAddressFields(prev => ({...prev, mapsLink: `https://maps.google.com/?q=${latitude},${longitude}`}));
           } else {
             toast.error("Could not fetch address details.");
           }
@@ -2404,8 +2405,11 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
       {showLocationMap === 'checkout' && (
         <LocationMap 
           onCancel={() => setShowLocationMap(null)}
-          onConfirm={(address) => {
+          onConfirm={(address, lat, lng) => {
             setDeliveryAddress(address);
+            if (lat && lng) {
+              setCheckoutAddressFields(prev => ({...prev, mapsLink: `https://maps.google.com/?q=${lat},${lng}`}));
+            }
             setShowLocationMap(null);
           }}
         />
@@ -2413,8 +2417,12 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
       {showLocationMap === 'account' && (
         <LocationMap 
           onCancel={() => setShowLocationMap(null)}
-          onConfirm={(address) => {
-            setNewSavedAddress(address);
+          onConfirm={(address, lat, lng) => {
+            let finalAddress = address;
+            if (lat && lng) {
+              finalAddress += `\nMaps Link: https://maps.google.com/?q=${lat},${lng}`;
+            }
+            setNewSavedAddress(finalAddress);
             setShowLocationMap(null);
           }}
         />

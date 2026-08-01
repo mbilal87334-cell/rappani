@@ -127,6 +127,7 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                 <tr>
                   <th className="px-5 py-3">ORDER ID</th>
                   <th className="px-5 py-3">CUSTOMER</th>
+                  <th className="px-5 py-3">DELIVERY ADDRESS</th>
                   <th className="px-5 py-3">DATE</th>
                   <th className="px-5 py-3">TOTAL</th>
                   <th className="px-5 py-3">PAYMENT / UTR</th>
@@ -142,6 +143,28 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                     <td className="px-5 py-4 text-gray-600">
                       <div>{order.customerName || 'Guest'}</div>
                       <div className="text-xs text-gray-400">{order.customerPhone}</div>
+                    </td>
+                    <td className="px-5 py-4 text-gray-600 max-w-[200px] whitespace-normal">
+                      <div className="text-xs line-clamp-3" title={order.deliveryAddress || 'N/A'}>
+                        {order.deliveryAddress ? (
+                          order.deliveryAddress.split('\n').map((line: string, i: number) => {
+                            if (line.includes('https://maps.google.com')) {
+                              const urlMatch = line.match(/(https?:\/\/[^\s]+)/g);
+                              const url = urlMatch ? urlMatch[0] : '';
+                              return (
+                                <div key={i} className="mt-1">
+                                  <a href={url} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline flex items-center gap-1 font-semibold">
+                                    📍 View on Map
+                                  </a>
+                                </div>
+                              );
+                            }
+                            return <div key={i}>{line}</div>;
+                          })
+                        ) : (
+                          'N/A'
+                        )}
+                      </div>
                     </td>
                     <td className="px-5 py-4 text-gray-600">{new Date(order.createdAt).toLocaleDateString()}</td>
                     <td className="px-5 py-4 font-medium text-gray-900">₹{order.totalAmount?.toLocaleString() || 0}</td>

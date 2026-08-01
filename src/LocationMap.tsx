@@ -14,7 +14,7 @@ const customIcon = new L.Icon({
 });
 
 interface LocationMapProps {
-  onConfirm: (address: string) => void;
+  onConfirm: (address: string, lat?: number, lng?: number) => void;
   onCancel: () => void;
 }
 
@@ -107,7 +107,7 @@ export default function LocationMap({ onConfirm, onCancel }: LocationMapProps) {
         </div>
         
         <button 
-          onClick={() => position && onConfirm(address)}
+          onClick={() => position && onConfirm(address, position.lat, position.lng)}
           disabled={!position || isLoading}
           className="w-full bg-black text-white rounded-xl py-3.5 font-bold disabled:opacity-50 disabled:bg-gray-400 flex items-center justify-center gap-2 shadow-md shadow-green-500/20"
         >
