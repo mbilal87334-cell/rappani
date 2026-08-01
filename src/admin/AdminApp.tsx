@@ -42,7 +42,8 @@ export default function AdminApp({
 
   if (!isAuthenticated) {
     const actualPassword = settings.admin_password || 'rappani123';
-    return <AdminLogin onLogin={() => setIsAuthenticated(true)} actualPassword={actualPassword} />;
+    const actualPhone = settings.admin_phone || '9876543210';
+    return <AdminLogin onLogin={() => setIsAuthenticated(true)} actualPassword={actualPassword} actualPhone={actualPhone} />;
   }
 
   return (
@@ -75,16 +76,28 @@ export default function AdminApp({
   );
 }
 
-function AdminLogin({ onLogin, actualPassword }: { onLogin: () => void, actualPassword: string }) {
+function AdminLogin({ onLogin, actualPassword, actualPhone }: { onLogin: () => void, actualPassword: string, actualPhone: string }) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === actualPassword) { 
-      onLogin();
-    } else {
-      setError('Invalid password. Please try again.');
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: actualPhone, password })
+      });
+      
+      const data = await res.json();
+      if (data.success) {
+        localStorage.setItem('adminToken', data.token);
+        onLogin();
+      } else {
+        setError(data.error || 'Invalid credentials');
+      }
+    } catch (err) {
+      setError('Server error during login');
     }
   };
 
