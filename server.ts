@@ -721,6 +721,15 @@ async function startServer() {
     }
   });
 
+  app.delete("/api/orders", async (req, res) => {
+    try {
+      await Order.deleteMany({});
+      res.json({ success: true, message: "All orders reset" });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
   // --- Admin Review Routes ---
   app.get("/api/admin/reviews", async (req, res) => {
     try {

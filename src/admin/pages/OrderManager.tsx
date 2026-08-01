@@ -5,6 +5,61 @@ import { Order } from '../../App';
 export default function OrderManager({ orders }: { orders: Order[] }) {
   const [statusFilter, setStatusFilter] = useState('All Status');
 
+  const filteredOrders = orders.filter(order => 
+    statusFilter === 'All Status' || 
+    (order.status && order.status.toLowerCase() === statusFilter.toLowerCase())
+  );
+
+  const handleExportCSV = () => {
+    if (filteredOrders.length === 0) {
+      alert("No orders to export!");
+      return;
+    }
+    const headers = ["Order ID", "Customer Name", "Phone", "Date", "Total Amount", "Payment Method", "Status", "Tracking Status"];
+    const csvRows = [headers.join(',')];
+
+    filteredOrders.forEach(order => {
+      const row = [
+        order.id,
+        `"${order.customerName || 'Guest'}"`,
+        order.customerPhone || '',
+        new Date(order.createdAt).toLocaleDateString(),
+        order.totalAmount || 0,
+        order.paymentMethod || '',
+        order.status || 'Processing',
+        order.trackingStatus || 'Processing'
+      ];
+      csvRows.push(row.join(','));
+    });
+
+    const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `orders_export_${new Date().getTime()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handleResetDB = () => {
+    const confirmInput = window.prompt("WARNING: This will permanently delete ALL orders. Type RESET to confirm.");
+    if (confirmInput === 'RESET') {
+      fetch('/api/orders', { method: 'DELETE' })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            window.location.reload();
+          } else {
+            alert("Failed to reset orders.");
+          }
+        })
+        .catch(console.error);
+    } else if (confirmInput !== null) {
+      alert("Action cancelled. You must type RESET exactly.");
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     switch(status) {
       case 'Completed':
@@ -22,11 +77,11 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Orders</h1>
-          <button className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-md px-3 py-1.5 hover:bg-gray-50 transition-colors shadow-sm">
+          <button onClick={handleExportCSV} className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-md px-3 py-1.5 hover:bg-gray-50 transition-colors shadow-sm">
             <Download size={16} />
             Export CSV
           </button>
-          <button className="flex items-center gap-2 bg-red-50 text-red-600 text-sm font-medium rounded-md px-3 py-1.5 hover:bg-red-100 transition-colors">
+          <button onClick={handleResetDB} className="flex items-center gap-2 bg-red-50 text-red-600 text-sm font-medium rounded-md px-3 py-1.5 hover:bg-red-100 transition-colors">
             <Trash2 size={16} />
             Reset Orders DB
           </button>
@@ -41,9 +96,16 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
           className="bg-transparent text-gray-700 text-sm font-medium outline-none border-none focus:ring-0"
         >
           <option>All Status</option>
-          <option>Completed</option>
+          <option>Pending</option>
+          <option>Confirmed</option>
           <option>Processing</option>
+          <option>Packed</option>
+          <option>Shipped</option>
+          <option>Out For Delivery</option>
+          <option>Delivered</option>
           <option>Cancelled</option>
+          <option>Returned</option>
+          <option>Refunded</option>
         </select>
       </div>
 
@@ -73,7 +135,7 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {orders.map((order) => (
+                {filteredOrders.map((order) => (
                   <tr key={order.id} className="hover:bg-gray-50/50">
                     <td className="px-5 py-4 font-medium text-gray-900">#{order.id.slice(0, 8).toUpperCase()}</td>
                     <td className="px-5 py-4 text-gray-600">
@@ -87,7 +149,31 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                       {order.utrNumber && <div className="text-xs text-gray-400 mt-1 font-mono">UTR: {order.utrNumber}</div>}
                     </td>
                     <td className="px-5 py-4">
-                      {getStatusBadge(order.status)}
+                      <select 
+                        value={order.status || 'Processing'}
+                        onChange={(e) => {
+                          fetch(`/api/orders/${order.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ status: e.target.value })
+                          }).then(() => window.location.reload());
+                        }}
+                        className={`text-xs rounded-full px-3 py-1 font-medium outline-none border-none focus:ring-1 cursor-pointer
+                          ${order.status === 'Completed' || order.status === 'Delivered' ? 'bg-green-50 text-green-700' : 
+                            order.status === 'Cancelled' ? 'bg-red-50 text-red-700' : 'bg-yellow-50 text-yellow-700'}`}
+                      >
+                        <option value="Pending">Pending</option>
+                        <option value="Confirmed">Confirmed</option>
+                        <option value="Processing">Processing</option>
+                        <option value="Packed">Packed</option>
+                        <option value="Shipped">Shipped</option>
+                        <option value="Out For Delivery">Out For Delivery</option>
+                        <option value="Delivered">Delivered</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Cancelled">Cancelled</option>
+                        <option value="Returned">Returned</option>
+                        <option value="Refunded">Refunded</option>
+                      </select>
                     </td>
                     <td className="px-5 py-4">
                       <select 
