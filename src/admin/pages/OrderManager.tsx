@@ -145,9 +145,9 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                       <div className="text-xs text-gray-400">{order.customerPhone}</div>
                     </td>
                     <td className="px-5 py-4 text-gray-600 max-w-[200px] whitespace-normal">
-                      <div className="text-xs line-clamp-3" title={order.deliveryAddress || 'N/A'}>
-                        {order.deliveryAddress ? (
-                          order.deliveryAddress.split('\n').map((line: string, i: number) => {
+                      <div className="text-xs line-clamp-3" title={order.shippingAddress || 'N/A'}>
+                        {order.shippingAddress ? (
+                          order.shippingAddress.split('\n').map((line: string, i: number) => {
                             if (line.includes('https://maps.google.com')) {
                               const urlMatch = line.match(/(https?:\/\/[^\s]+)/g);
                               const url = urlMatch ? urlMatch[0] : '';
