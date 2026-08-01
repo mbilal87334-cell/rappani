@@ -375,6 +375,26 @@ const translations = {
 const STORE_LAT = 8.7012438;
 const STORE_LON = 77.7110061;
 
+const INDIAN_STATES = [
+  "Andaman and Nicobar Islands", "Andhra Pradesh", "Arunachal Pradesh", "Assam",
+  "Bihar", "Chandigarh", "Chhattisgarh", "Dadra and Nagar Haveli and Daman and Diu",
+  "Delhi", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jammu and Kashmir",
+  "Jharkhand", "Karnataka", "Kerala", "Ladakh", "Lakshadweep", "Madhya Pradesh",
+  "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha",
+  "Puducherry", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana",
+  "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal"
+];
+
+const TN_DISTRICTS = [
+  "Ariyalur", "Chengalpattu", "Chennai", "Coimbatore", "Cuddalore", "Dharmapuri",
+  "Dindigul", "Erode", "Kallakurichi", "Kanchipuram", "Kanyakumari", "Karur",
+  "Krishnagiri", "Madurai", "Mayiladuthurai", "Nagapattinam", "Namakkal", "Nilgiris",
+  "Perambalur", "Pudukkottai", "Ramanathapuram", "Ranipet", "Salem", "Sivaganga",
+  "Tenkasi", "Thanjavur", "Theni", "Thoothukudi (Tuticorin)", "Tiruchirappalli",
+  "Tirunelveli", "Tirupathur", "Tiruppur", "Tiruvallur", "Tiruvannamalai", "Tiruvarur",
+  "Vellore", "Viluppuram", "Virudhunagar"
+];
+
 function getDistanceInKm(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -444,13 +464,19 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [useStructuredAddress, setUseStructuredAddress] = useState(true);
   const [checkoutAddressFields, setCheckoutAddressFields] = useState({
+    name: localStorage.getItem('rappani_customer_name') || '',
+    phone: localStorage.getItem('rappani_customer_phone') || '',
     doorNo: '',
     building: '',
     street: '',
     area: '',
+    landmark: '',
+    country: 'India',
+    state: 'Tamil Nadu',
     district: '',
     pincode: '',
-    mapsLink: ''
+    addressType: 'Home (All day delivery)',
+    instructions: ''
   });
   const [addressErrors, setAddressErrors] = useState<Record<string, boolean>>({});
 
@@ -465,9 +491,12 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
     }
     
     const errors: Record<string, boolean> = {};
+    if (!checkoutAddressFields.name.trim()) errors.name = true;
+    if (!checkoutAddressFields.phone.trim()) errors.phone = true;
     if (!checkoutAddressFields.doorNo.trim()) errors.doorNo = true;
     if (!checkoutAddressFields.street.trim()) errors.street = true;
     if (!checkoutAddressFields.area.trim()) errors.area = true;
+    if (!checkoutAddressFields.state.trim()) errors.state = true;
     if (!checkoutAddressFields.district.trim()) errors.district = true;
     if (!checkoutAddressFields.pincode.trim()) errors.pincode = true;
     
@@ -482,13 +511,18 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   useEffect(() => {
     if (useStructuredAddress) {
       const parts = [];
+      if (checkoutAddressFields.name) parts.push(`Name: ${checkoutAddressFields.name}`);
+      if (checkoutAddressFields.phone) parts.push(`Phone: ${checkoutAddressFields.phone}`);
       if (checkoutAddressFields.doorNo) parts.push(`Door No: ${checkoutAddressFields.doorNo}`);
       if (checkoutAddressFields.building) parts.push(`Building: ${checkoutAddressFields.building}`);
       if (checkoutAddressFields.street) parts.push(`Street: ${checkoutAddressFields.street}`);
-      if (checkoutAddressFields.area) parts.push(`Area/Landmark: ${checkoutAddressFields.area}`);
+      if (checkoutAddressFields.area) parts.push(`Area/Locality: ${checkoutAddressFields.area}`);
+      if (checkoutAddressFields.landmark) parts.push(`Landmark: ${checkoutAddressFields.landmark}`);
       if (checkoutAddressFields.district) parts.push(`District/City: ${checkoutAddressFields.district}`);
+      if (checkoutAddressFields.state) parts.push(`State: ${checkoutAddressFields.state}`);
       if (checkoutAddressFields.pincode) parts.push(`Pincode: ${checkoutAddressFields.pincode}`);
-      if (checkoutAddressFields.mapsLink) parts.push(`Maps Link: ${checkoutAddressFields.mapsLink}`);
+      if (checkoutAddressFields.addressType) parts.push(`Address Type: ${checkoutAddressFields.addressType}`);
+      if (checkoutAddressFields.instructions) parts.push(`Instructions: ${checkoutAddressFields.instructions}`);
       
       setDeliveryAddress(parts.join('\n'));
     }
@@ -1675,66 +1709,77 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
 
                   {/* Checkout Details */}
                   <div className="bg-white p-4 rounded-2xl shadow-sm border border-neutral-300/50 space-y-4">
-                    <h3 className="font-bold text-primary">Delivery Details</h3>
+                    <h3 className="font-bold text-primary">Shipping Information</h3>
                     {checkoutError && (
                       <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm border border-red-100 flex items-start gap-2">
                          <Info className="w-4 h-4 shrink-0 mt-0.5" />
                          <span>{checkoutError}</span>
                       </div>
                     )}
-                    <div className="space-y-3">
-                       <input 
-                          type="text" 
-                          placeholder="Your Name" 
-                          value={customerName}
-                          onChange={e => setCustomerName(e.target.value)}
-                          className="w-full bg-gold-50 border border-neutral-300 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-gold-500/20 focus:border-gold-500 transition-all shadow-sm"
-                       />
-                       <input 
-                          type="tel" 
-                          placeholder="Phone Number (10 digits)" 
-                          value={customerPhone}
-                          onChange={e => setCustomerPhone(e.target.value)}
-                          className="w-full bg-gold-50 border border-neutral-300 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-gold-500/20 focus:border-gold-500 transition-all shadow-sm"
-                       />
-                       {!isPhoneVerified && (
-                          <div className="flex gap-2">
-                            {isOtpSent ? (
-                               <div className="flex w-full gap-2">
-                                 <input type="text" placeholder="Enter OTP" value={otpInput} onChange={e=>setOtpInput(e.target.value)} className="w-full bg-gold-50 border border-neutral-300 rounded-xl py-3 px-4" />
-                                 <button onClick={handleVerifyOtp} disabled={isVerifyingOtp} className="premium-button px-4 rounded-xl font-bold whitespace-nowrap">{isVerifyingOtp ? '...' : 'Verify'}</button>
-                               </div>
-                            ) : (
-                               <button onClick={handleSendOtp} disabled={isSendingOtp} className="w-full bg-gold-500/10 text-gold-500 border border-gold-500/30 py-3 rounded-xl font-bold shadow-sm">{isSendingOtp ? 'Sending...' : 'Send OTP'}</button>
-                            )}
-                          </div>
-                       )}
-                       {isPhoneVerified && <div className="text-gold-600 font-bold text-sm bg-gold-50 p-2 rounded-lg text-center">✔ Phone Verified</div>}
-                       
-                       <div className="flex gap-2 p-1 bg-neutral-100 rounded-xl">
-                          <button onClick={() => setDeliveryMethod('pickup')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${deliveryMethod === 'pickup' ? 'bg-white shadow text-gold-600' : 'text-neutral-500'}`}>Shop Pickup</button>
-                          <button onClick={() => setDeliveryMethod('home')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${deliveryMethod === 'home' ? 'bg-white shadow text-gold-600' : 'text-neutral-500'}`}>Home Delivery</button>
+                    <div className="space-y-4">
+                       <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-200">
+                         <div className="flex justify-between items-center mb-3">
+                           <div className="flex gap-2">
+                             <button 
+                                onClick={fetchLocationForCheckout}
+                                disabled={isFetchingLocationCheckout}
+                                className="text-xs font-bold bg-white text-neutral-700 border border-neutral-300 px-3 py-2 rounded-lg flex items-center gap-1 hover:bg-neutral-100 transition-colors shadow-sm"
+                              >
+                                <MapPin className="w-3.5 h-3.5" /> {isFetchingLocationCheckout ? "Fetching..." : "Pin your location"}
+                              </button>
+                              <button 
+                                onClick={() => setShowLocationMap('checkout')}
+                                className="text-xs font-bold bg-white text-neutral-700 border border-neutral-300 px-3 py-2 rounded-lg flex items-center gap-1 hover:bg-neutral-100 transition-colors shadow-sm"
+                              >
+                                <Navigation className="w-3.5 h-3.5" /> Allow live location
+                              </button>
+                           </div>
+                         </div>
+                         <div className="h-32 bg-gray-200 rounded-lg overflow-hidden relative cursor-pointer" onClick={() => setShowLocationMap('checkout')}>
+                           <div className="absolute inset-0 bg-map-pattern opacity-50"></div>
+                           <div className="absolute inset-0 flex items-center justify-center flex-col">
+                             <Map className="w-8 h-8 text-neutral-400 mb-1" />
+                             <p className="text-[10px] text-neutral-500 font-bold text-center px-4">Click to auto-detect and pin your live delivery location.</p>
+                           </div>
+                         </div>
                        </div>
 
-                       {deliveryMethod === 'home' && (
-                          <div className="space-y-3">
-                             <div className="flex justify-between items-end mb-1">
-                               <p className="text-sm font-bold text-primary-light">Delivery Address</p>
-                               <button 
-                                  onClick={fetchLocationForCheckout}
-                                  disabled={isFetchingLocationCheckout}
-                                  className="text-xs font-bold text-gold-500 bg-gold-500/10 px-2 py-1 rounded-md flex items-center gap-1 disabled:opacity-50"
-                                >
-                                  <MapPin className="w-3 h-3" /> {isFetchingLocationCheckout ? "Fetching..." : "Use Current Location"}
-                                </button>
-                                <button 
-                                  onClick={() => setShowLocationMap('checkout')}
-                                  className="text-xs font-bold text-gold-500 bg-gold-500/10 px-2 py-1 rounded-md flex items-center gap-1"
-                                >
-                                  <Map className="w-3 h-3" /> Pick from Map
-                                </button>
-                             </div>
-                             {useStructuredAddress ? (
+                       <div className="space-y-3">
+                         <div>
+                           <label className="text-[10px] font-bold text-neutral-500 uppercase">Full Name *</label>
+                           <input 
+                              type="text" 
+                              placeholder="Enter your full name" 
+                              value={checkoutAddressFields.name}
+                              onChange={e => { setCheckoutAddressFields(prev => ({...prev, name: e.target.value})); setCustomerName(e.target.value); setAddressErrors(prev => ({...prev, name: false})); }}
+                              className={`w-full bg-stone-50 border ${addressErrors.name ? 'border-red-500' : 'border-neutral-200'} rounded-lg py-3 px-4 text-sm focus:outline-none focus:ring-1 focus:ring-gold-500`}
+                           />
+                         </div>
+                         <div>
+                           <label className="text-[10px] font-bold text-neutral-500 uppercase">Mobile Number *</label>
+                           <input 
+                              type="tel" 
+                              placeholder="Enter your 10-digit mobile number" 
+                              value={checkoutAddressFields.phone}
+                              onChange={e => { setCheckoutAddressFields(prev => ({...prev, phone: e.target.value})); setCustomerPhone(e.target.value); setAddressErrors(prev => ({...prev, phone: false})); }}
+                              className={`w-full bg-stone-50 border ${addressErrors.phone ? 'border-red-500' : 'border-neutral-200'} rounded-lg py-3 px-4 text-sm focus:outline-none focus:ring-1 focus:ring-gold-500`}
+                           />
+                         </div>
+                         
+                         {!isPhoneVerified && checkoutAddressFields.phone.length === 10 && (
+                            <div className="flex gap-2">
+                              {isOtpSent ? (
+                                 <div className="flex w-full gap-2">
+                                   <input type="text" placeholder="Enter OTP" value={otpInput} onChange={e=>setOtpInput(e.target.value)} className="w-full bg-gold-50 border border-neutral-300 rounded-xl py-3 px-4" />
+                                   <button onClick={handleVerifyOtp} disabled={isVerifyingOtp} className="premium-button px-4 rounded-xl font-bold whitespace-nowrap">{isVerifyingOtp ? '...' : 'Verify'}</button>
+                                 </div>
+                              ) : (
+                                 <button onClick={handleSendOtp} disabled={isSendingOtp} className="w-full bg-gold-500/10 text-gold-500 border border-gold-500/30 py-3 rounded-xl font-bold shadow-sm">{isSendingOtp ? 'Sending...' : 'Send OTP'}</button>
+                              )}
+                            </div>
+                         )}
+                         {isPhoneVerified && <div className="text-gold-600 font-bold text-sm bg-gold-50 p-2 rounded-lg text-center">✔ Phone Verified</div>}
+                       </div>
                                <div className="space-y-3 mt-2 bg-white p-4 rounded-xl border border-neutral-200 shadow-sm">
                                   <div className="flex gap-3">
                                     <div className="flex-1">
@@ -1792,44 +1837,49 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                                   </div>
                                   <div className="flex gap-3">
                                     <div className="flex-1">
-                                      <label className="text-[10px] font-bold text-neutral-500 uppercase">Pincode *</label>
-                                      <input 
-                                        type="text" 
-                                        value={checkoutAddressFields.pincode}
-                                        onChange={e => { setCheckoutAddressFields(prev => ({...prev, pincode: e.target.value})); setAddressErrors(prev => ({...prev, pincode: false})); }}
-                                        className={`w-full bg-stone-50 border ${addressErrors.pincode ? 'border-red-500' : 'border-neutral-200'} rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-gold-500`}
-                                        placeholder="e.g. 627005"
-                                      />
-                                    </div>
+                                       <label className="text-[10px] font-bold text-neutral-500 uppercase">Pincode / Zipcode *</label>
+                                       <input 
+                                         type="text" 
+                                         value={checkoutAddressFields.pincode}
+                                         onChange={e => { setCheckoutAddressFields(prev => ({...prev, pincode: e.target.value})); setAddressErrors(prev => ({...prev, pincode: false})); }}
+                                         className={`w-full bg-stone-50 border ${addressErrors.pincode ? 'border-red-500' : 'border-neutral-200'} rounded-lg py-3 px-4 text-sm focus:outline-none focus:ring-1 focus:ring-gold-500`}
+                                         placeholder="Enter your pincode"
+                                       />
+                                     </div>
                                     <div className="flex-1">
-                                      <label className="text-[10px] font-bold text-neutral-500 uppercase">Maps Link (Optional)</label>
-                                      <input 
-                                        type="text" 
-                                        value={checkoutAddressFields.mapsLink}
-                                        onChange={e => setCheckoutAddressFields(prev => ({...prev, mapsLink: e.target.value}))}
-                                        className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-gold-500"
-                                        placeholder="Paste Google Maps Link"
-                                      />
+                                      <label className="text-[10px] font-bold text-neutral-500 uppercase">Country *</label>
+                                      <select 
+                                        value={checkoutAddressFields.country}
+                                        onChange={e => { setCheckoutAddressFields(prev => ({...prev, country: e.target.value})); }}
+                                        className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-3 px-4 text-sm focus:outline-none focus:ring-1 focus:ring-gold-500 appearance-none"
+                                      >
+                                        <option value="India">India</option>
+                                      </select>
                                     </div>
                                   </div>
+                                  <div>
+                                    <label className="text-[10px] font-bold text-neutral-500 uppercase">Address Type *</label>
+                                    <select 
+                                      value={checkoutAddressFields.addressType}
+                                      onChange={e => setCheckoutAddressFields(prev => ({...prev, addressType: e.target.value}))}
+                                      className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-3 px-4 text-sm focus:outline-none focus:ring-1 focus:ring-gold-500 appearance-none"
+                                    >
+                                      <option value="Home (All day delivery)">Home (All day delivery)</option>
+                                      <option value="Office (Delivery between 10 AM - 5 PM)">Office (Delivery between 10 AM - 5 PM)</option>
+                                    </select>
+                                  </div>
+                                  <div>
+                                    <label className="text-[10px] font-bold text-neutral-500 uppercase">Delivery Instructions (Optional)</label>
+                                    <textarea 
+                                      value={checkoutAddressFields.instructions}
+                                      onChange={e => setCheckoutAddressFields(prev => ({...prev, instructions: e.target.value}))}
+                                      className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-3 px-4 text-sm focus:outline-none focus:ring-1 focus:ring-gold-500 resize-none"
+                                      placeholder="Describe your delivery instructions (e.g. Leave at security)"
+                                      rows={2}
+                                    />
+                                  </div>
                                </div>
-                             ) : (
-                               <div className="mt-2">
-                                 <textarea 
-                                    placeholder="Enter Full Delivery Address" 
-                                    value={deliveryAddress}
-                                    onChange={e => setDeliveryAddress(e.target.value)}
-                                    rows={3}
-                                    className="w-full bg-gold-50 border border-neutral-300 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-gold-500/20 focus:border-gold-500 transition-all shadow-sm resize-none"
-                                 />
-                                 <button 
-                                   onClick={() => setUseStructuredAddress(true)}
-                                   className="text-[10px] font-bold text-blue-600 mt-1 uppercase"
-                                 >
-                                   + Add New Delivery Address
-                                 </button>
-                               </div>
-                             )}
+
                              {savedAddresses.length > 0 && (
                                 <div className="space-y-2 mt-2">
                                    <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider">Select Saved Address</p>
@@ -1849,7 +1899,19 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                           </div>
                        )}
 
-                       <div className="pt-4 space-y-3">
+                       <div className="pt-2 space-y-3">
+                          <h3 className="font-bold text-primary flex items-center gap-2"><CreditCard className="w-5 h-5" /> Payment</h3>
+                          <div className="bg-neutral-50 p-6 rounded-xl border border-neutral-200 flex flex-col items-center justify-center text-center">
+                            <p className="text-sm text-neutral-600 mb-2">Scan the QR Code to pay <br/><strong className="text-lg">₹{finalTotal}</strong> via any UPI App.</p>
+                            <div className="w-40 h-40 bg-white rounded-xl shadow flex items-center justify-center text-neutral-300 border border-neutral-200 mb-3">
+                              <span className="text-xs">[QR Placeholder]</span>
+                            </div>
+                            <p className="text-xs text-neutral-500">Or proceed with Razorpay / WhatsApp</p>
+                          </div>
+                          
+                          <button onClick={handleWhatsAppCheckout} className="w-full bg-green-500 text-white py-3.5 rounded-xl font-bold shadow-md shadow-green-500/20 flex items-center justify-center gap-2 hover:bg-green-600 transition-colors mt-2">
+                             Checkout via WhatsApp
+                          </button>
                           <button onClick={handleRazorpayCheckout} className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors">
                              <CreditCard className="w-5 h-5" /> Pay Online (Razorpay)
                           </button>
