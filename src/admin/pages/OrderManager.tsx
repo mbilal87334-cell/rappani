@@ -193,6 +193,7 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                         <option value="Processing">Processing</option>
                         <option value="Packed">Packed</option>
                         <option value="Shipped">Shipped</option>
+                        <option value="Out For Delivery">Out For Delivery</option>
                         <option value="Delivered">Delivered</option>
                       </select>
                     </td>

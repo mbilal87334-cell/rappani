@@ -771,9 +771,18 @@ async function startServer() {
     try {
       const { id } = req.params;
       const { status, trackingStatus } = req.body;
-      const updateData: any = {};
-      if (status) updateData.status = status;
-      if (trackingStatus) updateData.trackingStatus = trackingStatus;
+      const updateData: any = { $set: {} };
+      const timelineEntry = status || trackingStatus;
+
+      if (status) updateData.$set.status = status;
+      if (trackingStatus) updateData.$set.trackingStatus = trackingStatus;
+      
+      if (timelineEntry) {
+        updateData.$push = {
+          timeline: { status: timelineEntry, date: new Date() }
+        };
+      }
+
       await Order.updateOne({ id }, updateData);
       res.json({ success: true });
     } catch (err) {
