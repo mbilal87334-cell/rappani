@@ -20,10 +20,41 @@ export default function RevenueDashboard({ orders = [] }: { orders?: Order[] }) 
   const totalRevenue = completedOrders.reduce((acc, o) => acc + (o.totalAmount || 0), 0);
   const pendingRevenue = pendingOrders.reduce((acc, o) => acc + (o.totalAmount || 0), 0);
   
-  // Since we don't have historical data, just use totalRevenue as monthly for now
-  const monthlyRecurring = totalRevenue; 
+  const now = new Date();
   
+  // Last 7 days vs Prev 7 days for Total Revenue Trend
+  const last7DaysOrders = completedOrders.filter(o => {
+    const diffTime = Math.abs(now.getTime() - new Date(o.createdAt || Date.now()).getTime());
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) <= 7;
+  });
+  const prev7DaysOrders = completedOrders.filter(o => {
+    const diffTime = Math.abs(now.getTime() - new Date(o.createdAt || Date.now()).getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 7 && diffDays <= 14;
+  });
+  const last7Rev = last7DaysOrders.reduce((acc, o) => acc + (o.totalAmount || 0), 0);
+  const prev7Rev = prev7DaysOrders.reduce((acc, o) => acc + (o.totalAmount || 0), 0);
+  const revTrendNum = prev7Rev === 0 ? (last7Rev > 0 ? 100 : 0) : ((last7Rev - prev7Rev) / prev7Rev) * 100;
+  const revTrend = revTrendNum > 0 ? `+${revTrendNum.toFixed(1)}%` : `${revTrendNum.toFixed(1)}%`;
+
+  // This Month vs Last Month
+  const thisMonthOrders = completedOrders.filter(o => new Date(o.createdAt || Date.now()).getMonth() === now.getMonth() && new Date(o.createdAt || Date.now()).getFullYear() === now.getFullYear());
+  const lastMonthOrders = completedOrders.filter(o => {
+     let m = now.getMonth() - 1;
+     let y = now.getFullYear();
+     if (m < 0) { m = 11; y--; }
+     return new Date(o.createdAt || Date.now()).getMonth() === m && new Date(o.createdAt || Date.now()).getFullYear() === y;
+  });
+  const thisMonthRev = thisMonthOrders.reduce((acc, o) => acc + (o.totalAmount || 0), 0);
+  const lastMonthRev = lastMonthOrders.reduce((acc, o) => acc + (o.totalAmount || 0), 0);
+  const monthTrendNum = lastMonthRev === 0 ? (thisMonthRev > 0 ? 100 : 0) : ((thisMonthRev - lastMonthRev) / lastMonthRev) * 100;
+  const monthTrend = monthTrendNum > 0 ? `+${monthTrendNum.toFixed(1)}%` : `${monthTrendNum.toFixed(1)}%`;
+
   const averageOrderValue = completedOrders.length > 0 ? (totalRevenue / completedOrders.length) : 0;
+  const aovThisMonth = thisMonthOrders.length > 0 ? (thisMonthRev / thisMonthOrders.length) : 0;
+  const aovLastMonth = lastMonthOrders.length > 0 ? (lastMonthRev / lastMonthOrders.length) : 0;
+  const aovTrendNum = aovLastMonth === 0 ? (aovThisMonth > 0 ? 100 : 0) : ((aovThisMonth - aovLastMonth) / aovLastMonth) * 100;
+  const aovTrend = aovTrendNum > 0 ? `+${aovTrendNum.toFixed(1)}%` : `${aovTrendNum.toFixed(1)}%`;
 
   const chartData = useMemo(() => {
     // Generate last 7 days of revenue from orders
@@ -47,24 +78,24 @@ export default function RevenueDashboard({ orders = [] }: { orders?: Order[] }) 
     { 
       title: 'Total Revenue', 
       amount: `₹${totalRevenue.toLocaleString('en-IN')}`, 
-      trend: '+12.5%', 
-      isPositive: true,
+      trend: revTrend, 
+      isPositive: revTrendNum >= 0,
       icon: <IndianRupee size={24} className="text-emerald-600" />,
       bg: 'bg-emerald-100'
     },
     { 
-      title: 'Monthly Recurring', 
-      amount: `₹${monthlyRecurring.toLocaleString('en-IN')}`, 
-      trend: '+5.2%', 
-      isPositive: true,
+      title: 'Monthly Revenue', 
+      amount: `₹${thisMonthRev.toLocaleString('en-IN')}`, 
+      trend: monthTrend, 
+      isPositive: monthTrendNum >= 0,
       icon: <TrendingUp size={24} className="text-blue-600" />,
       bg: 'bg-blue-100'
     },
     { 
       title: 'Average Order Value', 
       amount: `₹${Math.round(averageOrderValue).toLocaleString('en-IN')}`, 
-      trend: '-1.4%', 
-      isPositive: false,
+      trend: aovTrend, 
+      isPositive: aovTrendNum >= 0,
       icon: <CreditCard size={24} className="text-purple-600" />,
       bg: 'bg-purple-100'
     },
