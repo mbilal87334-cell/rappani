@@ -253,7 +253,8 @@ async function startServer() {
       const currentPhone = phoneSetting ? phoneSetting.value : '9876543210';
       
       if (password === currentPassword && phone === currentPhone) {
-        res.json({ success: true, token: "admin_token_xyz" });
+        const token = jwt.sign({ role: 'admin' }, process.env.JWT_SECRET || 'rappani_super_secret_key');
+        res.json({ success: true, token });
       } else {
         res.status(401).json({ error: "Invalid phone number or password" });
       }
