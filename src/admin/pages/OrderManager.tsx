@@ -69,6 +69,7 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                   <th className="px-5 py-3">PAYMENT / UTR</th>
                   <th className="px-5 py-3">STATUS</th>
                   <th className="px-5 py-3">TRACKING</th>
+                  <th className="px-5 py-3 text-right">ACTIONS</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -105,6 +106,20 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                         <option value="Shipped">Shipped</option>
                         <option value="Delivered">Delivered</option>
                       </select>
+                    </td>
+                    <td className="px-5 py-4 text-right">
+                      <button 
+                        onClick={() => {
+                          if (window.confirm('Are you sure you want to delete this order?')) {
+                            fetch(`/api/orders/${order.id}`, { method: 'DELETE' })
+                              .then(() => window.location.reload());
+                          }
+                        }}
+                        className="p-1.5 text-red-500 hover:bg-red-50 rounded-md transition-colors inline-flex items-center justify-center"
+                        title="Delete Order"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </td>
                   </tr>
                 ))}
