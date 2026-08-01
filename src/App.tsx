@@ -1896,8 +1896,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                                    </div>
                                 </div>
                              )}
-                          </div>
-                       )}
+
 
                        <div className="pt-2 space-y-3">
                           <h3 className="font-bold text-primary flex items-center gap-2"><CreditCard className="w-5 h-5" /> Payment</h3>
