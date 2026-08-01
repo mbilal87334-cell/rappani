@@ -159,10 +159,14 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({ status: e.target.value })
                             });
-                            if (!res.ok) throw new Error('Failed');
+                            if (!res.ok) {
+                              const text = await res.text();
+                              alert(`Backend error: ${res.status} - ${text}`);
+                              return;
+                            }
                             window.location.reload();
-                          } catch (err) {
-                            alert('Failed to update status');
+                          } catch (err: any) {
+                            alert('Network or JS error: ' + err.message);
                           }
                         }}
                         className={`text-xs rounded-full px-3 py-1 font-medium outline-none border-none focus:ring-1 cursor-pointer
@@ -192,10 +196,14 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({ trackingStatus: e.target.value })
                             });
-                            if (!res.ok) throw new Error('Failed');
+                            if (!res.ok) {
+                              const text = await res.text();
+                              alert(`Backend error: ${res.status} - ${text}`);
+                              return;
+                            }
                             window.location.reload();
-                          } catch (err) {
-                            alert('Failed to update tracking status');
+                          } catch (err: any) {
+                            alert('Network or JS error: ' + err.message);
                           }
                         }}
                         className="bg-stone-50 border border-gray-200 text-xs rounded-md px-2 py-1 outline-none focus:ring-1 focus:ring-violet-500"
