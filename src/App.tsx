@@ -20,6 +20,7 @@ export interface Product {
   variants?: any[];
   price: number;
   originalPrice?: number;
+  deliveryCharge?: number;
   stock?: number;
   image: string;
   images?: string[];
@@ -875,7 +876,9 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   };
 
   const cartTotalAmount = Math.round(cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0));
-  const deliveryFee = 0; // Delivery is now completely free as requested
+  const deliveryFee = deliveryMethod === 'home' 
+    ? cart.reduce((total, item) => total + ((item.product.deliveryCharge ?? 30) * item.quantity), 0)
+    : 0;
   const discountAmount = appliedCoupon ? Math.round(cartTotalAmount * (appliedCoupon.discountPercent / 100)) : 0;
   const finalTotal = Math.round(cartTotalAmount + deliveryFee - discountAmount);
 
@@ -1662,7 +1665,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                        </div>
                        <div className="flex justify-between text-sm text-neutral-500 mb-4">
                          <span>Delivery Fee</span>
-                         <span className="font-bold text-gold-600">Free</span>
+                         <span className="font-bold text-gold-600">{deliveryFee === 0 ? 'Free' : `₹${deliveryFee}`}</span>
                        </div>
                         {appliedCoupon && (
                           <div className="flex justify-between text-green-600 font-medium pb-2">

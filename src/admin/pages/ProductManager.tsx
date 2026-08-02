@@ -455,6 +455,15 @@ export default function ProductManager({ products, setProducts, apiCategories = 
                         className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-gray-900"
                       />
                     </div>
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Charge</label>
+                      <input 
+                        type="number" min="0" value={formData.deliveryCharge ?? 30}
+                        onChange={e => setFormData({...formData, deliveryCharge: Number(e.target.value)})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-gray-900"
+                        placeholder="30"
+                      />
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-4">
