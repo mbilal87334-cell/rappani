@@ -14,12 +14,13 @@ export default function TransactionsLedger({ orders = [] }: { orders?: Order[] }
     if (filterStatus === 'confirmed') {
       const isPaid = order.paymentStatus?.toLowerCase() === 'paid' || 
                      order.paymentStatus?.toLowerCase() === 'completed' || 
-                     order.paymentStatus?.toLowerCase() === 'success';
+                     order.paymentStatus?.toLowerCase() === 'success' ||
+                     !!order.razorpayPaymentId;
       
-      const isCodDelivered = order.paymentMethod === 'cod' && 
+      const isCodDelivered = order.paymentMethod?.toLowerCase() === 'cod' && 
                              (order.status?.toLowerCase() === 'delivered' || order.status?.toLowerCase() === 'completed');
                              
-      const isUpiConfirmed = order.paymentMethod === 'upi' && order.utrNumber;
+      const isUpiConfirmed = order.paymentMethod?.toLowerCase() === 'upi' && !!order.utrNumber;
       
       if (!isPaid && !isCodDelivered && !isUpiConfirmed) {
         return false;
@@ -79,10 +80,11 @@ export default function TransactionsLedger({ orders = [] }: { orders?: Order[] }
 
                 const isPaid = order.paymentStatus?.toLowerCase() === 'paid' || 
                                order.paymentStatus?.toLowerCase() === 'completed' || 
-                               order.paymentStatus?.toLowerCase() === 'success';
-                const isCodDelivered = order.paymentMethod === 'cod' && 
+                               order.paymentStatus?.toLowerCase() === 'success' ||
+                               !!order.razorpayPaymentId;
+                const isCodDelivered = order.paymentMethod?.toLowerCase() === 'cod' && 
                                        (order.status?.toLowerCase() === 'delivered' || order.status?.toLowerCase() === 'completed');
-                const isUpiConfirmed = order.paymentMethod === 'upi' && order.utrNumber;
+                const isUpiConfirmed = order.paymentMethod?.toLowerCase() === 'upi' && !!order.utrNumber;
 
                 if (isPaid || isCodDelivered || isUpiConfirmed) {
                   statusText = 'Confirm Payment';
