@@ -15,10 +15,11 @@ export default function TransactionsLedger({ orders = [] }: { orders?: Order[] }
       const isPaid = order.paymentStatus?.toLowerCase() === 'paid' || 
                      order.paymentStatus?.toLowerCase() === 'completed' || 
                      order.paymentStatus?.toLowerCase() === 'success' ||
-                     !!order.razorpayPaymentId;
+                     !!order.razorpayPaymentId ||
+                     order.status?.toLowerCase() === 'completed' ||
+                     order.status?.toLowerCase() === 'delivered';
       
-      const isCodDelivered = order.paymentMethod?.toLowerCase() === 'cod' && 
-                             (order.status?.toLowerCase() === 'delivered' || order.status?.toLowerCase() === 'completed');
+      const isCodDelivered = false; // logic moved to isPaid
                              
       const isUpiConfirmed = order.paymentMethod?.toLowerCase() === 'upi' && !!order.utrNumber;
       
@@ -81,9 +82,10 @@ export default function TransactionsLedger({ orders = [] }: { orders?: Order[] }
                 const isPaid = order.paymentStatus?.toLowerCase() === 'paid' || 
                                order.paymentStatus?.toLowerCase() === 'completed' || 
                                order.paymentStatus?.toLowerCase() === 'success' ||
-                               !!order.razorpayPaymentId;
-                const isCodDelivered = order.paymentMethod?.toLowerCase() === 'cod' && 
-                                       (order.status?.toLowerCase() === 'delivered' || order.status?.toLowerCase() === 'completed');
+                               !!order.razorpayPaymentId ||
+                               order.status?.toLowerCase() === 'completed' ||
+                               order.status?.toLowerCase() === 'delivered';
+                const isCodDelivered = false;
                 const isUpiConfirmed = order.paymentMethod?.toLowerCase() === 'upi' && !!order.utrNumber;
 
                 if (isPaid || isCodDelivered || isUpiConfirmed) {
