@@ -4,12 +4,30 @@ import { Order } from '../../App';
 
 export default function TransactionsLedger({ orders = [] }: { orders?: Order[] }) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState('confirmed');
 
   const safeOrders = Array.isArray(orders) ? orders : [];
   
-  const filteredTransactions = safeOrders.filter((order) =>
-    (order.id || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredTransactions = safeOrders.filter((order) => {
+    const matchesSearch = (order.id || '').toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (filterStatus === 'confirmed') {
+      const isPaid = order.paymentStatus?.toLowerCase() === 'paid' || 
+                     order.paymentStatus?.toLowerCase() === 'completed' || 
+                     order.paymentStatus?.toLowerCase() === 'success';
+      
+      const isCodDelivered = order.paymentMethod === 'cod' && 
+                             (order.status?.toLowerCase() === 'delivered' || order.status?.toLowerCase() === 'completed');
+                             
+      const isUpiConfirmed = order.paymentMethod === 'upi' && order.utrNumber;
+      
+      if (!isPaid && !isCodDelivered && !isUpiConfirmed) {
+        return false;
+      }
+    }
+    
+    return matchesSearch;
+  });
 
   return (
     <div className="max-w-6xl mx-auto pb-10">
@@ -29,10 +47,14 @@ export default function TransactionsLedger({ orders = [] }: { orders?: Order[] }
               className="pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-md text-sm font-medium w-64 focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none shadow-sm transition-all"
             />
           </div>
-          <button className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-md px-3 py-2 hover:bg-gray-50 transition-colors shadow-sm">
-            <Filter size={16} />
-            Filters
-          </button>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-gray-900 shadow-sm"
+          >
+            <option value="confirmed">Confirmed Only</option>
+            <option value="all">All Transactions</option>
+          </select>
         </div>
       </div>
 
