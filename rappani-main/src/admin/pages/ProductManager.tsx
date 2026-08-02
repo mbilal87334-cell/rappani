@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+﻿import React, { useState, useRef } from 'react';
 import { Search, Plus, Eye, EyeOff, Edit2, Trash2, Copy, Image as ImageIcon, X, Upload, Camera, Loader } from 'lucide-react';
 import { Product, saveProduct, deleteProduct } from '../../App';
 import toast from 'react-hot-toast';
@@ -330,7 +330,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
                     </div>
                   </td>
                   <td className="px-5 py-4 font-semibold text-gray-900">
-                    ₹{product.price}
+                    â‚¹{product.price}
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex justify-center">
@@ -454,6 +454,15 @@ export default function ProductManager({ products, setProducts, apiCategories = 
                         type="number" min="0" value={formData.originalPrice || ''}
                         onChange={e => setFormData({...formData, originalPrice: Number(e.target.value)})}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-gray-900"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Charge</label>
+                      <input 
+                        type="number" min="0" value={formData.deliveryCharge ?? 30}
+                        onChange={e => setFormData({...formData, deliveryCharge: Number(e.target.value)})}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-gray-900"
+                        placeholder="30"
                       />
                     </div>
                   </div>
