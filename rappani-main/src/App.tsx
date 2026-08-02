@@ -410,6 +410,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   const [customerName, setCustomerName] = useState(() => localStorage.getItem('rappani_customer_name') || '');
   const [customerPhone, setCustomerPhone] = useState(() => localStorage.getItem('rappani_customer_phone') || '');
   const [isPhoneVerified, setIsPhoneVerified] = useState(() => localStorage.getItem('rappani_is_verified') === 'true');
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [showLocationMap, setShowLocationMap] = useState<'checkout' | 'account' | null>(null);
 
   const [isFirstOrder, setIsFirstOrder] = useState<boolean | null>(null);
@@ -518,6 +519,20 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   }, [checkoutAddressFields, useStructuredAddress]);
   const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
   const [customerToken, setCustomerToken] = useState(() => localStorage.getItem('rappani_customer_token') || '');
+
+  const handleLogout = () => {
+    localStorage.removeItem('rappani_customer_token');
+    localStorage.removeItem('rappani_is_verified');
+    localStorage.removeItem('rappani_customer_phone');
+    localStorage.removeItem('rappani_customer_name');
+    setCustomerToken('');
+    setIsPhoneVerified(false);
+    setCustomerPhone('');
+    setCustomerName('');
+    setSavedAddresses([]);
+    setOrders([]);
+    setCurrentTab('home');
+  };
 
   useEffect(() => {
     if (customerToken) {
@@ -1744,6 +1759,18 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                    </div>
 
                   {/* Checkout Details */}
+                  {!customerToken ? (
+                    <div className="bg-white p-8 rounded-2xl shadow-sm border border-neutral-300/50 flex flex-col items-center justify-center text-center">
+                       <div className="w-16 h-16 bg-gold-50 text-gold-500 rounded-full flex items-center justify-center mb-4">
+                         <User className="w-8 h-8" />
+                       </div>
+                       <h3 className="font-black text-xl text-primary mb-2">Login to Checkout</h3>
+                       <p className="text-sm text-neutral-500 mb-6">Please login or register with your mobile number to securely place your order.</p>
+                       <button onClick={() => setIsAuthModalOpen(true)} className="premium-button px-8 py-3 rounded-full font-bold shadow-md">
+                         Login / Register
+                       </button>
+                    </div>
+                  ) : (
                   <div className="bg-white p-4 rounded-2xl shadow-sm border border-neutral-300/50 space-y-4">
                     <h3 className="font-bold text-primary">Shipping Information</h3>
                     {checkoutError && (
@@ -1802,19 +1829,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                            />
                          </div>
                          
-                         {!isPhoneVerified && checkoutAddressFields.phone.length === 10 && (
-                            <div className="flex gap-2">
-                              {isOtpSent ? (
-                                 <div className="flex w-full gap-2">
-                                   <input type="text" placeholder="Enter OTP" value={otpInput} onChange={e=>setOtpInput(e.target.value)} className="w-full bg-gold-50 border border-neutral-300 rounded-xl py-3 px-4" />
-                                   <button onClick={handleVerifyOtp} disabled={isVerifyingOtp} className="premium-button px-4 rounded-xl font-bold whitespace-nowrap">{isVerifyingOtp ? '...' : 'Verify'}</button>
-                                 </div>
-                              ) : (
-                                 <button onClick={handleSendOtp} disabled={isSendingOtp} className="w-full bg-gold-500/10 text-gold-500 border border-gold-500/30 py-3 rounded-xl font-bold shadow-sm">{isSendingOtp ? 'Sending...' : 'Send OTP'}</button>
-                              )}
-                            </div>
-                         )}
-                         {isPhoneVerified && <div className="text-gold-600 font-bold text-sm bg-gold-50 p-2 rounded-lg text-center">✔ Phone Verified</div>}
+                          {/* OTP verification is now handled by the global AuthModal */}
                        </div>
                                <div className="space-y-3 mt-2 bg-white p-4 rounded-xl border border-neutral-200 shadow-sm">
                                   <div className="flex gap-3">
@@ -1960,7 +1975,8 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                           </button>
                        </div>
                     </div>
-                  </div>
+                    </div>
+                  )}
                </>
              )}
            </div>
@@ -1968,19 +1984,32 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
 
         {currentTab === 'account' && (
            <div className="space-y-6">
-             <div 
-                onClick={() => setIsProfileModalOpen(true)}
-                className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-300/50 flex flex-col items-center justify-center relative hover:bg-gold-50 cursor-pointer transition-colors"
-             >
-                <div className="absolute top-4 right-4 bg-gold-50 text-gold-600 p-2 rounded-full">
-                  <Edit className="w-4 h-4" />
-                </div>
-                <div className="w-24 h-24 bg-gold-100 rounded-full mb-4 flex items-center justify-center text-gold-600">
-                  <User className="w-12 h-12" />
-                </div>
-                <h2 className="text-xl font-bold text-primary">{customerName || 'Guest User'}</h2>
-                <p className="text-neutral-500">{customerPhone || 'Register Number to track orders'}</p>
-             </div>
+             {!customerToken ? (
+               <div className="bg-white p-8 rounded-2xl shadow-sm border border-neutral-300/50 flex flex-col items-center justify-center text-center">
+                  <div className="w-20 h-20 bg-gold-50 text-gold-500 rounded-full flex items-center justify-center mb-4">
+                    <User className="w-10 h-10" />
+                  </div>
+                  <h2 className="text-xl font-black text-primary mb-2">Welcome to Rappani</h2>
+                  <p className="text-sm text-neutral-500 mb-6 px-4">Login or register to track your orders, save addresses, and more.</p>
+                  <button onClick={() => setIsAuthModalOpen(true)} className="premium-button px-8 py-3 rounded-full font-bold shadow-md w-full max-w-xs">
+                    Login / Register
+                  </button>
+               </div>
+             ) : (
+               <div 
+                  onClick={() => setIsProfileModalOpen(true)}
+                  className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-300/50 flex flex-col items-center justify-center relative hover:bg-gold-50 cursor-pointer transition-colors"
+               >
+                  <div className="absolute top-4 right-4 bg-gold-50 text-gold-600 p-2 rounded-full">
+                    <Edit className="w-4 h-4" />
+                  </div>
+                  <div className="w-24 h-24 bg-gold-100 rounded-full mb-4 flex items-center justify-center text-gold-600">
+                    <User className="w-12 h-12" />
+                  </div>
+                  <h2 className="text-xl font-bold text-primary">{customerName || 'Customer'}</h2>
+                  <p className="text-neutral-500">{customerPhone}</p>
+               </div>
+             )}
 
              <div className="premium-card overflow-hidden">
                 <div className="p-4 border-b border-gray-50 flex items-center gap-4 hover:bg-gold-50 cursor-pointer transition-colors" onClick={() => setIsOrdersModalOpen(true)}>
@@ -2033,8 +2062,18 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                      <p className="text-xs text-neutral-500">@mr_rappani</p>
                    </div>
                 </a>
-             </div>
-             
+              </div>
+              
+              {customerToken && (
+                <button 
+                  onClick={handleLogout} 
+                  className="w-full bg-red-50 text-red-600 hover:bg-red-100 border border-red-100 py-4 rounded-2xl font-bold shadow-sm transition-colors flex items-center justify-center gap-2 mt-4"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                  Log Out
+                </button>
+              )}
+              
              
              {isProfileModalOpen && (
                 <div className="fixed inset-0 z-[100] flex flex-col bg-neutral-100">
@@ -2307,6 +2346,63 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
          </button>
       </nav>
     
+      {isAuthModalOpen && (
+        <div className="fixed inset-0 z-[100] flex flex-col bg-neutral-100">
+          <div className="bg-white border-b border-neutral-300 px-4 py-3 flex items-center gap-3 shadow-sm pt-safe">
+            <button onClick={() => setIsAuthModalOpen(false)} className="p-2 -ml-2 rounded-full hover:bg-gold-50">
+              <ChevronRight className="w-6 h-6 text-primary rotate-180" />
+            </button>
+            <h2 className="font-black text-xl text-primary">Login / Register</h2>
+          </div>
+          <div className="flex-1 overflow-y-auto p-6 bg-white flex flex-col items-center justify-center">
+             <div className="w-20 h-20 bg-gold-50 rounded-full flex items-center justify-center text-gold-600 mb-6">
+                <Smartphone className="w-10 h-10" />
+             </div>
+             <h3 className="text-2xl font-black text-primary mb-2 text-center">Welcome Back</h3>
+             <p className="text-neutral-500 text-center mb-8 px-4 text-sm font-medium">Enter your mobile number to securely login or register.</p>
+             
+             <div className="w-full max-w-sm space-y-4">
+                <div>
+                  <label className="text-xs font-bold text-neutral-500 uppercase ml-1">Mobile Number</label>
+                  <input 
+                    type="tel" 
+                    placeholder="Enter your 10-digit mobile number" 
+                    value={customerPhone}
+                    onChange={e => { setCustomerPhone(e.target.value); setCheckoutError(''); }}
+                    className="w-full bg-stone-50 border border-neutral-200 rounded-xl py-3.5 px-4 focus:outline-none focus:ring-2 focus:ring-gold-500 font-bold"
+                  />
+                </div>
+                {checkoutError && <p className="text-red-500 text-sm font-bold text-center">{checkoutError}</p>}
+                
+                {isOtpSent ? (
+                   <div className="space-y-4 animate-fade-in">
+                     <div>
+                       <label className="text-xs font-bold text-neutral-500 uppercase ml-1">Enter OTP</label>
+                       <input 
+                         type="text" 
+                         placeholder="4-digit OTP" 
+                         value={otpInput} 
+                         onChange={e => setOtpInput(e.target.value)} 
+                         className="w-full bg-gold-50 border border-gold-200 rounded-xl py-3.5 px-4 focus:outline-none focus:ring-2 focus:ring-gold-500 font-bold text-center tracking-widest text-lg" 
+                       />
+                     </div>
+                     <button onClick={async (e) => {
+                       await handleVerifyOtp(e);
+                       if (localStorage.getItem('rappani_customer_token')) {
+                          setIsAuthModalOpen(false);
+                       }
+                     }} disabled={isVerifyingOtp} className="w-full premium-button py-3.5 rounded-xl font-bold shadow-md shadow-gold-500/20">{isVerifyingOtp ? 'Verifying...' : 'Verify & Login'}</button>
+                   </div>
+                ) : (
+                   <button onClick={handleSendOtp} disabled={isSendingOtp} className="w-full bg-primary hover:bg-[#6D28D9] text-white py-3.5 rounded-xl font-bold shadow-md shadow-primary/20 transition-colors">
+                     {isSendingOtp ? 'Sending...' : 'Send OTP'}
+                   </button>
+                )}
+             </div>
+          </div>
+        </div>
+      )}
+
       {isAddressModalOpen && (
         <div className="fixed inset-0 z-[100] flex flex-col bg-neutral-100">
           <div className="bg-white border-b border-neutral-300 px-4 py-3 flex items-center gap-3 shadow-sm pt-safe">
