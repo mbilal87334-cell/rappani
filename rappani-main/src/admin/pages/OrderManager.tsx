@@ -156,7 +156,7 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                       <div className="text-xs text-gray-400">{order.customerPhone}</div>
                     </td>
                     <td className="px-5 py-4 text-gray-600 max-w-[200px] whitespace-normal">
-                      <div className="text-xs line-clamp-3" title={typeof order.shippingAddress === 'string' ? order.shippingAddress : order.shippingAddress?.addressText || 'N/A'}>
+                      <div className="text-xs" title={typeof order.shippingAddress === 'string' ? order.shippingAddress : order.shippingAddress?.addressText || 'N/A'}>
                         {order.shippingAddress ? (
                           (() => {
                             const isString = typeof order.shippingAddress === 'string';
