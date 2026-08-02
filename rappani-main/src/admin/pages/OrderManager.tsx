@@ -158,52 +158,56 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                     <td className="px-5 py-4 text-gray-600 max-w-[200px] whitespace-normal">
                       <div className="text-xs line-clamp-3" title={typeof order.shippingAddress === 'string' ? order.shippingAddress : order.shippingAddress?.addressText || 'N/A'}>
                         {order.shippingAddress ? (
-                          typeof order.shippingAddress === 'string' ? (
-                            order.shippingAddress.split('\n').map((line: string, i: number) => {
-                              if (line.includes('https://maps.google.com')) {
-                                const urlMatch = line.match(/(https?:\/\/[^\s]+)/g);
-                                const url = urlMatch ? urlMatch[0] : '';
-                                return (
-                                  <div key={i} className="mt-1">
-                                    <button 
-                                      onClick={() => {
-                                        const coordsMatch = url.match(/q=([\d.-]+),([\d.-]+)/);
-                                        if (coordsMatch) {
-                                          setViewMap({ lat: parseFloat(coordsMatch[1]), lng: parseFloat(coordsMatch[2]) });
-                                        } else {
-                                          window.open(url, '_blank');
-                                        }
-                                      }}
-                                      className="text-blue-500 hover:underline flex items-center gap-1 font-semibold cursor-pointer"
-                                    >
-                                      🗺️ View on Map
-                                    </button>
-                                  </div>
-                                );
+                          (() => {
+                            const isString = typeof order.shippingAddress === 'string';
+                            const addressString = isString ? order.shippingAddress : (
+                              order.shippingAddress.addressText 
+                                ? order.shippingAddress.addressText 
+                                : `${order.shippingAddress.fullName || ''}\n${order.shippingAddress.houseNo || ''}, ${order.shippingAddress.street || ''}\n${order.shippingAddress.city || ''}, ${order.shippingAddress.state || ''} - ${order.shippingAddress.pincode || ''}`.trim()
+                            );
+                            
+                            let exactLat: number | null = null;
+                            let exactLng: number | null = null;
+                            let externalMapLink = '';
+
+                            if (isString) {
+                              const coordsMatch = addressString.match(/https:\/\/maps\.google\.com\/\?q=([\d.-]+),([\d.-]+)/);
+                              if (coordsMatch) {
+                                  exactLat = parseFloat(coordsMatch[1]);
+                                  exactLng = parseFloat(coordsMatch[2]);
                               }
-                              return <div key={i}>{line}</div>;
-                            })
-                          ) : (
-                            <>
-                              <div>
-                                {order.shippingAddress.addressText 
-                                  ? order.shippingAddress.addressText 
-                                  : `${order.shippingAddress.fullName || ''}\n${order.shippingAddress.houseNo || ''}, ${order.shippingAddress.street || ''}\n${order.shippingAddress.city || ''}, ${order.shippingAddress.state || ''} - ${order.shippingAddress.pincode || ''}`.trim()
-                                }
-                              </div>
-                              {(order.shippingAddress.mapsLink || (order.shippingAddress.lat && order.shippingAddress.lng)) && (
+                            } else {
+                              if (order.shippingAddress.lat && order.shippingAddress.lng) {
+                                  exactLat = order.shippingAddress.lat;
+                                  exactLng = order.shippingAddress.lng;
+                              } else if (order.shippingAddress.mapsLink) {
+                                  const coordsMatch = order.shippingAddress.mapsLink.match(/q=([\d.-]+),([\d.-]+)/);
+                                  if (coordsMatch) {
+                                    exactLat = parseFloat(coordsMatch[1]);
+                                    exactLng = parseFloat(coordsMatch[2]);
+                                  } else {
+                                    externalMapLink = order.shippingAddress.mapsLink;
+                                  }
+                              }
+                            }
+
+                            const displayLines = addressString.split('\n').filter((line: string) => !line.includes('https://maps.google.com'));
+
+                            return (
+                              <>
+                                <div>
+                                  {displayLines.map((line: string, i: number) => <div key={i}>{line}</div>)}
+                                </div>
                                 <div className="mt-1">
                                   <button 
                                     onClick={() => {
-                                      if (order.shippingAddress.lat && order.shippingAddress.lng) {
-                                        setViewMap({ lat: order.shippingAddress.lat, lng: order.shippingAddress.lng });
-                                      } else if (order.shippingAddress.mapsLink) {
-                                        const coordsMatch = order.shippingAddress.mapsLink.match(/q=([\d.-]+),([\d.-]+)/);
-                                        if (coordsMatch) {
-                                          setViewMap({ lat: parseFloat(coordsMatch[1]), lng: parseFloat(coordsMatch[2]) });
-                                        } else {
-                                          window.open(order.shippingAddress.mapsLink, '_blank');
-                                        }
+                                      if (exactLat !== null && exactLng !== null) {
+                                        setViewMap({ lat: exactLat, lng: exactLng });
+                                      } else if (externalMapLink) {
+                                        window.open(externalMapLink, '_blank');
+                                      } else {
+                                        const searchQuery = displayLines.join(', ').replace(/\s+/g, ' ').trim();
+                                        window.open(`https://maps.google.com/?q=${encodeURIComponent(searchQuery)}`, '_blank');
                                       }
                                     }}
                                     className="text-blue-500 hover:underline flex items-center gap-1 font-semibold cursor-pointer text-left"
@@ -211,9 +215,9 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                                     🗺️ View on Map
                                   </button>
                                 </div>
-                              )}
-                            </>
-                          )
+                              </>
+                            );
+                          })()
                         ) : (
                           'N/A'
                         )}
