@@ -73,7 +73,25 @@ export default function TransactionsLedger({ orders = [] }: { orders?: Order[] }
             <tbody className="divide-y divide-gray-100">
               {filteredTransactions.map((order) => {
                 const method = order.paymentMethod === 'cod' ? 'Cash' : 'UPI';
-                const status = order.status === 'completed' || order.status === 'delivered' ? 'Completed' : order.status === 'pending' ? 'Pending' : 'Refunded';
+                
+                let statusText = 'Pending Payment';
+                let statusColor = 'bg-yellow-50 text-yellow-600';
+
+                const isPaid = order.paymentStatus?.toLowerCase() === 'paid' || 
+                               order.paymentStatus?.toLowerCase() === 'completed' || 
+                               order.paymentStatus?.toLowerCase() === 'success';
+                const isCodDelivered = order.paymentMethod === 'cod' && 
+                                       (order.status?.toLowerCase() === 'delivered' || order.status?.toLowerCase() === 'completed');
+                const isUpiConfirmed = order.paymentMethod === 'upi' && order.utrNumber;
+
+                if (isPaid || isCodDelivered || isUpiConfirmed) {
+                  statusText = 'Confirm Payment';
+                  statusColor = 'bg-green-50 text-green-600';
+                } else if (order.paymentStatus?.toLowerCase() === 'failed' || order.status?.toLowerCase() === 'cancelled') {
+                  statusText = 'Reject Payment';
+                  statusColor = 'bg-red-50 text-red-600';
+                }
+
                 return (
                   <tr key={order.id} className="hover:bg-gray-50/50">
                     <td className="px-5 py-4">
@@ -104,12 +122,8 @@ export default function TransactionsLedger({ orders = [] }: { orders?: Order[] }
                       </span>
                     </td>
                     <td className="px-5 py-4 text-center">
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-md inline-block ${
-                        status === 'Completed' ? 'bg-green-50 text-green-600' :
-                        status === 'Pending' ? 'bg-yellow-50 text-yellow-600' :
-                        'bg-gray-100 text-gray-600'
-                      }`}>
-                        {status}
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-md inline-block ${statusColor}`}>
+                        {statusText}
                       </span>
                     </td>
                   </tr>
