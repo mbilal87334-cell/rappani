@@ -139,6 +139,7 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                   <th className="px-5 py-3">ORDER ID</th>
                   <th className="px-5 py-3">CUSTOMER</th>
                   <th className="px-5 py-3">DELIVERY ADDRESS</th>
+                  <th className="px-5 py-3">LOCATION</th>
                   <th className="px-5 py-3">DATE</th>
                   <th className="px-5 py-3">TOTAL</th>
                   <th className="px-5 py-3">PAYMENT / UTR</th>
@@ -159,6 +160,28 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                       <div className="text-xs" title={typeof order.shippingAddress === 'string' ? order.shippingAddress : order.shippingAddress?.addressText || 'N/A'}>
                         {order.shippingAddress ? (
                           (() => {
+                            const isString = typeof order.shippingAddress === 'string';
+                            const addressString = isString ? order.shippingAddress : (
+                              order.shippingAddress.addressText 
+                                ? order.shippingAddress.addressText 
+                                : `${order.shippingAddress.fullName || ''}\n${order.shippingAddress.houseNo || ''}, ${order.shippingAddress.street || ''}\n${order.shippingAddress.city || ''}, ${order.shippingAddress.state || ''} - ${order.shippingAddress.pincode || ''}`.trim()
+                            );
+                            const displayLines = addressString.split('\n').filter((line: string) => !line.includes('https://maps.google.com'));
+
+                            return (
+                              <div>
+                                {displayLines.map((line: string, i: number) => <div key={i}>{line}</div>)}
+                              </div>
+                            );
+                          })()
+                        ) : (
+                          'N/A'
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-5 py-4">
+                      {order.shippingAddress ? (
+                        (() => {
                             const isString = typeof order.shippingAddress === 'string';
                             const addressString = isString ? order.shippingAddress : (
                               order.shippingAddress.addressText 
@@ -190,38 +213,28 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                                   }
                               }
                             }
-
+                            
                             const displayLines = addressString.split('\n').filter((line: string) => !line.includes('https://maps.google.com'));
 
                             return (
-                              <>
-                                <div>
-                                  {displayLines.map((line: string, i: number) => <div key={i}>{line}</div>)}
-                                </div>
-                                <div className="mt-1">
-                                  <button 
-                                    onClick={() => {
-                                      if (exactLat !== null && exactLng !== null) {
-                                        setViewMap({ lat: exactLat, lng: exactLng });
-                                      } else if (externalMapLink) {
-                                        window.open(externalMapLink, '_blank');
-                                      } else {
-                                        const searchQuery = displayLines.join(', ').replace(/\s+/g, ' ').trim();
-                                        window.open(`https://maps.google.com/?q=${encodeURIComponent(searchQuery)}`, '_blank');
-                                      }
-                                    }}
-                                    className="text-blue-500 hover:underline flex items-center gap-1 font-semibold cursor-pointer text-left"
-                                  >
-                                    🗺️ View on Map
-                                  </button>
-                                </div>
-                              </>
+                              <button 
+                                onClick={() => {
+                                  if (exactLat !== null && exactLng !== null) {
+                                    setViewMap({ lat: exactLat, lng: exactLng });
+                                  } else if (externalMapLink) {
+                                    window.open(externalMapLink, '_blank');
+                                  } else {
+                                    const searchQuery = displayLines.join(', ').replace(/\s+/g, ' ').trim();
+                                    window.open(`https://maps.google.com/?q=${encodeURIComponent(searchQuery)}`, '_blank');
+                                  }
+                                }}
+                                className="text-blue-500 hover:underline flex items-center gap-1 font-semibold cursor-pointer text-left whitespace-nowrap"
+                              >
+                                🗺️ View on Map
+                              </button>
                             );
-                          })()
-                        ) : (
-                          'N/A'
-                        )}
-                      </div>
+                        })()
+                      ) : null}
                     </td>
                     <td className="px-5 py-4 text-gray-600">{new Date(order.createdAt).toLocaleDateString()}</td>
                     <td className="px-5 py-4 font-medium text-gray-900">₹{order.totalAmount?.toLocaleString() || 0}</td>
