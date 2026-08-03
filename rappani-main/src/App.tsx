@@ -1,9 +1,9 @@
-import React, {  useState, useEffect, useRef  } from 'react';
+import React, {  useState, useEffect, useRef, lazy, Suspense  } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
 import { Phone, Mail, Instagram, MessageCircle, MapPin, Map, Lock, LogOut, Plus, Edit, Trash2, Store, ShoppingBag, Menu, X, Camera, Aperture, Globe, Database, Search, ArrowUp, Package, LayoutGrid, ShoppingCart, Minus, Image, ShieldCheck, Gift, Sparkles, Sticker, Rocket, Coffee, Eye, Star, TrendingUp, CheckCircle2, Info , Home, Heart, User, ChevronRight, CreditCard, Briefcase, Ticket, Navigation, Smartphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import AdminApp from './admin/AdminApp';
+const AdminApp = lazy(() => import('./admin/AdminApp'));
 import LocationMap from './LocationMap';
 import AddressManager from './AddressManager';
 import QRCode from 'react-qr-code';
@@ -2674,7 +2674,11 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<VisitorPanel products={products} settings={settings} setProducts={setProducts} hasMore={hasMore} isLoadingMore={isLoadingMore} loadMoreProducts={loadMoreProducts} apiCategories={apiCategories} setOrders={setOrders} />} />
-        <Route path="/admin/*" element={<AdminApp orders={orders} products={products} setProducts={setProducts} apiCategories={apiCategories} setApiCategories={setApiCategories} settings={settings} setSettings={setSettings} />} />
+        <Route path="/admin/*" element={
+          <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="w-8 h-8 border-4 border-gold-500 border-t-transparent rounded-full animate-spin"></div></div>}>
+            <AdminApp orders={orders} products={products} setProducts={setProducts} apiCategories={apiCategories} setApiCategories={setApiCategories} settings={settings} setSettings={setSettings} />
+          </Suspense>
+        } />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
