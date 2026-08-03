@@ -145,7 +145,10 @@ export async function sendWhatsAppMessage(phone: string, text: string) {
     }
     try {
         // Format phone number to JID
-        const formattedPhone = phone.replace(/\D/g, '');
+        let formattedPhone = phone.replace(/\D/g, '');
+        if (formattedPhone.length === 10) {
+            formattedPhone = '91' + formattedPhone; // Default to India country code
+        }
         const jid = `${formattedPhone}@s.whatsapp.net`;
         
         const [result] = await waSocket.onWhatsApp(jid);
