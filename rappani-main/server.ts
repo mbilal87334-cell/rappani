@@ -525,8 +525,8 @@ async function startServer() {
     try {
       const { id, name, category, price, originalPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, isVisible, brand, sku, description, specifications, variants } = req.body;
       const visibleFlag = isVisible !== undefined ? isVisible : true;
-      await Product.create({ id, name, category, price, originalPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, isVisible: visibleFlag, brand, sku, description, specifications, variants });
-      res.json({ success: true });
+      const newProduct = await Product.create({ id, name, category, price, originalPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, isVisible: visibleFlag, brand, sku, description, specifications, variants });
+      res.json(newProduct);
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });
     }
@@ -540,7 +540,8 @@ async function startServer() {
       if (isVisible !== undefined) updateData.isVisible = isVisible;
       
       await Product.updateOne({ id }, updateData);
-      res.json({ success: true });
+      const updatedProduct = await Product.findOne({ id });
+      res.json(updatedProduct);
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });
     }
