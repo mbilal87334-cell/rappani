@@ -1,4 +1,5 @@
-import makeWASocket, { useMultiFileAuthState, DisconnectReason } from '@whiskeysockets/baileys';
+import makeWASocket, { DisconnectReason, initAuthCreds, BufferJSON, proto } from '@whiskeysockets/baileys';
+import mongoose from 'mongoose';
 import { Boom } from '@hapi/boom';
 import path from 'path';
 import QRCode from 'qrcode';
@@ -12,9 +13,69 @@ export let isWaConnected = false;
 // Create the logger
 const logger = pino({ level: 'silent' });
 
+
+const useMongoDBAuthState = async () => {
+    const WhatsAppAuth = mongoose.model('WhatsAppAuth');
+
+    const writeData = async (data, id) => {
+        const serialized = JSON.stringify(data, BufferJSON.replacer);
+        await WhatsAppAuth.findByIdAndUpdate(id, { data: serialized }, { upsert: true });
+    };
+
+    const readData = async (id) => {
+        const doc = await WhatsAppAuth.findById(id);
+        if (doc) {
+            return JSON.parse(doc.data, BufferJSON.reviver);
+        }
+        return null;
+    };
+
+    const removeData = async (id) => {
+        await WhatsAppAuth.findByIdAndDelete(id);
+    };
+
+    let creds = await readData('creds');
+    if (!creds) {
+        creds = initAuthCreds();
+        await writeData(creds, 'creds');
+    }
+
+    return {
+        state: {
+            creds,
+            keys: {
+                get: async (type, ids) => {
+                    const data = {};
+                    await Promise.all(
+                        ids.map(async id => {
+                            let value = await readData(`${type}-${id}`);
+                            if (type === 'app-state-sync-key' && value) {
+                                value = proto.Message.AppStateSyncKeyData.fromObject(value);
+                            }
+                            data[id] = value;
+                        })
+                    );
+                    return data;
+                },
+                set: async (data) => {
+                    const tasks = [];
+                    for (const category in data) {
+                        for (const id in data[category]) {
+                            const value = data[category][id];
+                            const key = `${category}-${id}`;
+                            tasks.push(value ? writeData(value, key) : removeData(key));
+                        }
+                    }
+                    await Promise.all(tasks);
+                }
+            }
+        },
+        saveCreds: () => writeData(creds, 'creds')
+    };
+};
+
 export async function connectToWhatsApp() {
-    const authFolder = path.join(process.cwd(), '.auth_info_baileys');
-    const { state, saveCreds } = await useMultiFileAuthState(authFolder);
+    const { state, saveCreds } = await useMongoDBAuthState();
 
     waSocket = makeWASocket({
         auth: state,
@@ -51,6 +112,7 @@ export async function connectToWhatsApp() {
                 console.log('[WhatsApp] Logged out. Scan QR again to reconnect.');
                 waQrCode = null;
                 // Delete auth info to force new QR
+                mongoose.model('WhatsAppAuth').deleteMany({}).catch(console.error);
             }
         } else if (connection === 'open') {
             console.log('[WhatsApp] Successfully Connected!');

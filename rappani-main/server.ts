@@ -177,6 +177,12 @@ const notificationSchema = new mongoose.Schema({
 });
 const Notification = mongoose.model("Notification", notificationSchema);
 
+const whatsAppAuthSchema = new mongoose.Schema({
+  _id: { type: String, required: true },
+  data: { type: String, required: true }
+});
+export const WhatsAppAuth = mongoose.model("WhatsAppAuth", whatsAppAuthSchema);
+
 
 async function startServer() {
   const app = express();
