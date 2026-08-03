@@ -1,4 +1,4 @@
-﻿import React, { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { Search, Plus, Eye, EyeOff, Edit2, Trash2, Copy, Image as ImageIcon, X, Upload, Camera, Loader } from 'lucide-react';
 import { Product, saveProduct, deleteProduct } from '../../App';
 import toast from 'react-hot-toast';
@@ -58,11 +58,16 @@ export default function ProductManager({ products, setProducts, apiCategories = 
       if (editingProduct) {
         setProducts(products.map(p => p.id === saved.id ? saved : p));
         toast.success("Product updated successfully");
+        // Keep modal open so they can continue editing
       } else {
         setProducts([saved, ...products]);
         toast.success("Product created successfully");
+        // Reset form for the next product to be added
+        setFormData({ 
+          id: `prod_${Date.now()}`, name: '', category: formData.category || apiCategories[0]?.name || 'Stationery', brand: '', sku: '', description: '',
+          price: 0, deliveryCharge: 30, stock: 50, image: '', images: [], isVisible: true, isFeatured: false 
+        });
       }
-      closeModal();
     } catch (err) {
       console.error(err);
       toast.error("Failed to save product");
