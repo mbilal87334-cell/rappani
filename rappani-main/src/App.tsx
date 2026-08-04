@@ -925,9 +925,9 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   };
 
   const cartTotalAmount = Math.round(cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0));
-  // Calculate delivery fee based on cart items (using product-specific deliveryCharge, defaulting to 30)
-  const deliveryFee = deliveryMethod === 'home' 
-    ? cart.reduce((total, item) => total + ((item.product.deliveryCharge ?? 30) * item.quantity), 0)
+  // Calculate delivery fee: Only apply the highest delivery charge among all products, once per order
+  const deliveryFee = (deliveryMethod === 'home' && cart.length > 0)
+    ? Math.max(...cart.map(item => item.product.deliveryCharge ?? 30))
     : 0;
   const discountAmount = appliedCoupon ? Math.round(cartTotalAmount * (appliedCoupon.discountPercent / 100)) : 0;
   const finalTotal = Math.round(cartTotalAmount + deliveryFee - discountAmount);
