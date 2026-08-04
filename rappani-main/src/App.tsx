@@ -421,6 +421,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   const [customerPhone, setCustomerPhone] = useState(() => localStorage.getItem('rappani_customer_phone') || '');
   const [isPhoneVerified, setIsPhoneVerified] = useState(() => localStorage.getItem('rappani_is_verified') === 'true');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isCheckoutProcessing, setIsCheckoutProcessing] = useState(false);
   const [showLocationMap, setShowLocationMap] = useState<'checkout' | 'account' | null>(null);
 
   const [isFirstOrder, setIsFirstOrder] = useState<boolean | null>(null);
@@ -1036,18 +1037,22 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   const handleWhatsAppCheckout = async () => {
     if (cart.length === 0) return;
     if (!customerName || !customerPhone) {
+      toast.error("Please enter your name and phone number!");
       setCheckoutError(t.enterDetails);
       return;
     }
 
     const phoneRegex = /^[0-9]{10}$/;
     if (!phoneRegex.test(customerPhone.trim())) {
+      toast.error("Please enter a valid 10-digit mobile number!");
       setCheckoutError(t.invalidPhone);
       return;
     }
 
-    if (!isPhoneVerified) {
+    if (!isPhoneVerified && !customerToken) {
+      toast.error("Please login or verify your mobile number first!");
       setCheckoutError(t.unverifiedPhoneError);
+      setIsAuthModalOpen(true);
       return;
     }
 
@@ -1056,40 +1061,54 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
         return;
       }
       if (distance !== null && distance > 5) {
+        toast.error("Delivery unavailable for locations beyond 5KM radius!");
         setCheckoutError(t.tooFarError);
         return;
       }
     }
 
-    let message = `*NEW ORDER ALERT* 🚀\n\n*Customer*: ${customerName}\n*Phone*: ${customerPhone}\n\n`;
-    cart.forEach(item => {
-      message += `- ${item.product.name} (x${item.quantity}) = ₹${Math.round(item.product.price * item.quantity)}\n`;
-    });
-    message += `\n*Cart Total: ₹${cartTotalAmount}*`;
-    if (appliedCoupon) {
-       message += `\n*Discount: -₹${Math.round(cartTotalAmount * (appliedCoupon.discountPercent / 100))} (${appliedCoupon.discountPercent}%)*`;
-    }
-    message += `\n*Delivery Fee: ₹${deliveryFee}* ${deliveryFee === 0 ? '(FREE)' : ''}`;
-    message += `\n*Final Total: ₹${finalTotal}*`;
-    message += `\n\n*Method*: ${deliveryMethod === 'home' ? 'Home Delivery' : 'Shop Pickup'}`;
-    if (deliveryMethod === 'home') {
-      message += `\n\n*Delivery Address*:\n${deliveryAddress}`;
-    }
-    message += `\n\nPlease confirm my order!`;
+    setIsCheckoutProcessing(true);
+    try {
+      let message = `*NEW ORDER ALERT* 🚀\n\n*Customer*: ${customerName}\n*Phone*: ${customerPhone}\n\n`;
+      cart.forEach(item => {
+        message += `- ${item.product.name} (x${item.quantity}) = ₹${Math.round(item.product.price * item.quantity)}\n`;
+      });
+      message += `\n*Cart Total: ₹${cartTotalAmount}*`;
+      if (appliedCoupon) {
+         message += `\n*Discount: -₹${Math.round(cartTotalAmount * (appliedCoupon.discountPercent / 100))} (${appliedCoupon.discountPercent}%)*`;
+      }
+      message += `\n*Delivery Fee: ₹${deliveryFee}* ${deliveryFee === 0 ? '(FREE)' : ''}`;
+      message += `\n*Final Total: ₹${finalTotal}*`;
+      message += `\n\n*Method*: ${deliveryMethod === 'home' ? 'Home Delivery' : 'Shop Pickup'}`;
+      if (deliveryMethod === 'home') {
+        message += `\n\n*Delivery Address*:\n${deliveryAddress}`;
+      }
+      message += `\n\nPlease confirm my order!`;
 
-    // Save the order to Database
-    const isSaved = await processCheckoutAndClearCart('WhatsApp Order');
-    if (!isSaved) return;
+      // Save the order to Database
+      const isSaved = await processCheckoutAndClearCart('WhatsApp Order');
+      if (!isSaved) return;
 
-    const encodedMsg = encodeURIComponent(message);
-    window.open(`https://wa.me/${settings.admin_phone?.replace(/\D/g, '') || '918189940301'}?text=${encodedMsg}`, '_blank');
-    setAppliedCoupon(null);
-    setTimeout(() => setIsCartOpen(false), 500);
+      const encodedMsg = encodeURIComponent(message);
+      window.open(`https://wa.me/${settings.admin_phone?.replace(/\D/g, '') || '918189940301'}?text=${encodedMsg}`, '_blank');
+      setAppliedCoupon(null);
+      setTimeout(() => setIsCartOpen(false), 500);
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Failed to process order!");
+    } finally {
+      setIsCheckoutProcessing(false);
+    }
   };
 
   const handleRazorpayCheckout = async () => {
     if (!customerName || customerPhone.length !== 10) {
       toast.error("Please enter a valid Name and 10-digit Phone Number!");
+      return;
+    }
+    if (!isPhoneVerified && !customerToken) {
+      toast.error("Please login or verify your mobile number first!");
+      setIsAuthModalOpen(true);
       return;
     }
     if (deliveryMethod === 'home') {
@@ -1098,6 +1117,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
       }
     }
 
+    setIsCheckoutProcessing(true);
     try {
       const payload = {
         customerName,
@@ -1184,6 +1204,8 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
       rzp.open();
     } catch (err: any) {
       toast.error(err.message || "Failed to initialize payment");
+    } finally {
+      setIsCheckoutProcessing(false);
     }
   };
 
@@ -2038,11 +2060,11 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                        <div className="pt-2 space-y-3">
                           <h3 className="font-bold text-primary flex items-center gap-2"><CreditCard className="w-5 h-5" /> Payment</h3>
                           
-                          <button onClick={handleWhatsAppCheckout} className="w-full bg-green-500 text-white py-3.5 rounded-xl font-bold shadow-md shadow-green-500/20 flex items-center justify-center gap-2 hover:bg-green-600 transition-colors mt-2">
-                             Checkout via WhatsApp
+                          <button onClick={handleWhatsAppCheckout} disabled={isCheckoutProcessing} className="w-full bg-green-500 text-white py-3.5 rounded-xl font-bold shadow-md shadow-green-500/20 flex items-center justify-center gap-2 hover:bg-green-600 transition-colors mt-2 disabled:opacity-50">
+                             {isCheckoutProcessing ? <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Processing Order...</> : "Checkout via WhatsApp"}
                           </button>
-                          <button onClick={handleRazorpayCheckout} className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors">
-                             <CreditCard className="w-5 h-5" /> Pay Online (Razorpay)
+                          <button onClick={handleRazorpayCheckout} disabled={isCheckoutProcessing} className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors disabled:opacity-50">
+                             {isCheckoutProcessing ? <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Processing Payment...</> : <><CreditCard className="w-5 h-5" /> Pay Online (Razorpay)</>}
                           </button>
                        </div>
                     </div>

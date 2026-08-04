@@ -643,11 +643,7 @@ async function startServer() {
         return res.status(400).json({ success: false, error: "Missing required fields" });
       }
 
-      // SERVER-SIDE SAFEGUARD: Ignore WhatsApp orders if they somehow reach here
-      if (paymentMethod && paymentMethod.toLowerCase().includes('whatsapp')) {
-        console.warn(`[SERVER] Ignoring WhatsApp checkout request for ${customerName}. Not saving to DB.`);
-        return res.json({ success: true, message: "WhatsApp inquiry received (not booked as order)" });
-      }
+
 
       const orderId = Date.now().toString();
       
