@@ -510,6 +510,16 @@ async function startServer() {
     }
   });
 
+  // Admin-only: fetch ALL products without pagination limit
+  app.get("/api/products/all", authenticateToken, async (req, res) => {
+    try {
+      const products = await Product.find({}, '-_id -__v').sort({ createdAt: -1 });
+      res.json({ products, total: products.length });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
   app.get("/api/products", async (req, res) => {
     try {
       const page = parseInt(req.query.page as string) || 1;

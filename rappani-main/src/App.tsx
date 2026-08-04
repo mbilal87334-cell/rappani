@@ -117,6 +117,15 @@ async function fetchProducts(page = 1, limit = 50) {
   return res.json();
 }
 
+async function fetchAllAdminProducts() {
+  const token = localStorage.getItem('adminToken');
+  const res = await fetch(`${API_BASE}/products/all`, {
+    headers: { 'Authorization': `Bearer ${token}` }
+  });
+  if (!res.ok) throw new Error("Failed to fetch all admin products");
+  return res.json();
+}
+
 export async function saveProduct(product: Product, isEditing: boolean) {
   const method = isEditing ? 'PUT' : 'POST';
   const url = isEditing ? `${API_BASE}/products/${product.id}` : `${API_BASE}/products`;
@@ -2634,19 +2643,20 @@ export default function App() {
   useEffect(() => {
     async function loadData() {
       try {
+        const isAdmin = !!localStorage.getItem('adminToken');
         const [allProducts, allSettings] = await Promise.all([
-          fetchProducts(1).catch(() => ({ products: [], totalPages: 1, page: 1 })),
+          (isAdmin ? fetchAllAdminProducts() : fetchProducts(1)).catch(() => ({ products: [], totalPages: 1, page: 1 })),
           fetchSettings().catch(() => [])
         ]);
         setProducts(allProducts.products || allProducts);
-        if (allProducts.totalPages) {
+        if (!isAdmin && allProducts.totalPages) {
           setPage(allProducts.page || 1);
           setHasMore((allProducts.page || 1) < allProducts.totalPages);
         }
         const settingsMap = allSettings.reduce((acc: any, curr: any) => ({ ...acc, [curr.key]: curr.value }), {});
         setSettings(settingsMap);
         
-        if (localStorage.getItem('adminToken')) {
+        if (isAdmin) {
           fetchOrders().then(data => setOrders(Array.isArray(data) ? data : [])).catch(console.error);
         }
         fetchCategoriesApi().then(data => setApiCategories(data)).catch(console.error);
