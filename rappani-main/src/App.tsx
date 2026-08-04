@@ -458,6 +458,12 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
       return true;
     }
     
+    // Mandatory: map location must be pinned for home delivery
+    if (!checkoutAddressFields.mapsLink && !deliveryAddress.trim()) {
+      toast.error("Please pin your delivery location on the map first! 📍");
+      return false;
+    }
+
     const errors: Record<string, boolean> = {};
     if (!checkoutAddressFields.name.trim()) errors.name = true;
     if (!checkoutAddressFields.phone.trim()) errors.phone = true;
@@ -1846,9 +1852,21 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                          </div>
                          <div className="h-32 bg-gray-200 rounded-lg overflow-hidden relative cursor-pointer" onClick={() => setShowLocationMap('checkout')}>
                            <div className="absolute inset-0 bg-map-pattern opacity-50"></div>
-                           <div className="absolute inset-0 flex items-center justify-center flex-col">
-                             <Map className="w-8 h-8 text-neutral-400 mb-1" />
-                             <p className="text-[10px] text-neutral-500 font-bold text-center px-4">Click to auto-detect and pin your live delivery location.</p>
+                           <div className="absolute inset-0 flex items-center justify-center flex-col px-3">
+                             {checkoutAddressFields.mapsLink || deliveryAddress ? (
+                               <>
+                                 <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center mb-1 shadow-md">
+                                   <MapPin className="w-4 h-4 text-white" />
+                                 </div>
+                                 <p className="text-[10px] text-green-700 font-bold text-center bg-white/80 rounded px-2 py-1">✅ Location Pinned! Tap to change</p>
+                                 {deliveryAddress && <p className="text-[9px] text-neutral-600 text-center mt-1 line-clamp-2">{deliveryAddress}</p>}
+                               </>
+                             ) : (
+                               <>
+                                 <Map className="w-8 h-8 text-neutral-400 mb-1" />
+                                 <p className="text-[10px] text-red-500 font-bold text-center">⚠️ Required: Tap to pin your location</p>
+                               </>
+                             )}
                            </div>
                          </div>
                        </div>

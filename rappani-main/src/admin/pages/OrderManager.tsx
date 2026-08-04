@@ -246,7 +246,7 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                               </button>
                             );
                         })()
-                      ) : null}
+                      ) : <span className="text-xs text-neutral-400">No location</span>}
                     </td>
                     <td className="px-5 py-4 text-gray-600">{new Date(order.createdAt).toLocaleDateString()}</td>
                     <td className="px-5 py-4 font-medium text-gray-900">₹{order.totalAmount?.toLocaleString() || 0}</td>
