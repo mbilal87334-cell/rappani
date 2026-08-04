@@ -450,20 +450,24 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
 
   const validateAddress = () => {
     if (deliveryMethod !== 'home') return true;
+
+    // Check if saved address is selected
     if (!useStructuredAddress) {
       if (!deliveryAddress.trim()) {
-        toast.error("Please enter a delivery address or select a saved one!");
+        toast.error("Please select or enter a delivery address!");
         return false;
       }
       return true;
     }
-    
-    // Mandatory: map location must be pinned for home delivery
-    if (!checkoutAddressFields.mapsLink && !deliveryAddress.trim()) {
+
+    // 1. Mandatory: Map location MUST be pinned
+    const hasMapLink = !!checkoutAddressFields.mapsLink || (deliveryAddress && deliveryAddress.includes('maps.google.com'));
+    if (!hasMapLink) {
       toast.error("Please pin your delivery location on the map first! 📍");
       return false;
     }
-
+    
+    // 2. Mandatory: All address fields MUST be filled
     const errors: Record<string, boolean> = {};
     if (!checkoutAddressFields.name.trim()) errors.name = true;
     if (!checkoutAddressFields.phone.trim()) errors.phone = true;
@@ -476,9 +480,10 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
     
     setAddressErrors(errors);
     if (Object.keys(errors).length > 0) {
-      toast.error("Please fill all the required address fields correctly.");
+      toast.error("Please fill all required address fields: Door No, Street, Area, District & Pincode!");
       return false;
     }
+
     return true;
   };
 
@@ -1087,9 +1092,10 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
       toast.error("Please enter a valid Name and 10-digit Phone Number!");
       return;
     }
-    if (deliveryMethod === 'home' && !deliveryAddress && savedAddresses.length === 0) {
-      toast.error("Please enter a delivery address or select a saved one!");
-      return;
+    if (deliveryMethod === 'home') {
+      if (!validateAddress()) {
+        return;
+      }
     }
 
     try {
