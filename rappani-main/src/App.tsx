@@ -1790,6 +1790,42 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                       </div>
                     )}
                     <div className="space-y-4">
+                      {/* Delivery Method Toggle */}
+                      <div>
+                        <p className="text-[10px] font-bold text-neutral-500 uppercase mb-2">Delivery Method *</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          <button type="button" onClick={() => setDeliveryMethod('pickup')}
+                            className={`flex flex-col items-center justify-center gap-1.5 p-4 rounded-xl border-2 transition-all font-bold text-sm ${deliveryMethod === 'pickup' ? 'border-amber-500 bg-amber-50 text-amber-700 shadow-md' : 'border-neutral-200 bg-white text-neutral-500 hover:border-amber-300'}`}>
+                            <span className="text-2xl">🏪</span>
+                            <span>Store Pickup</span>
+                            <span className="text-[10px] font-normal text-neutral-400">Pick up from store</span>
+                          </button>
+                          <button type="button" onClick={() => setDeliveryMethod('home')}
+                            className={`flex flex-col items-center justify-center gap-1.5 p-4 rounded-xl border-2 transition-all font-bold text-sm ${deliveryMethod === 'home' ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-md' : 'border-neutral-200 bg-white text-neutral-500 hover:border-blue-300'}`}>
+                            <span className="text-2xl">🚚</span>
+                            <span>Home Delivery</span>
+                            <span className="text-[10px] font-normal text-neutral-400">Delivered to your door</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Store Pickup Info Card */}
+                      {deliveryMethod === 'pickup' && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
+                          <span className="text-2xl shrink-0">📍</span>
+                          <div>
+                            <p className="font-bold text-amber-800 text-sm">Rappani Store</p>
+                            <p className="text-xs text-amber-700 mt-1">Come pick up your order from our store. We'll WhatsApp you when it's ready!</p>
+                            <a href={`https://maps.google.com/?q=${STORE_LAT},${STORE_LON}`} target="_blank" rel="noreferrer"
+                              className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 hover:underline mt-2">
+                              <MapPin className="w-3 h-3" /> View Store on Map
+                            </a>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Home Delivery: Map picker */}
+                      {deliveryMethod === 'home' && (
                        <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-200">
                          <div className="flex justify-between items-center mb-3">
                            <div className="flex gap-2">
@@ -1816,6 +1852,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                            </div>
                          </div>
                        </div>
+                      )}
 
                        <div className="space-y-3">
                          <div>

@@ -138,6 +138,7 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                 <tr>
                   <th className="px-5 py-3">ORDER ID</th>
                   <th className="px-5 py-3">CUSTOMER</th>
+                  <th className="px-5 py-3">METHOD</th>
                   <th className="px-5 py-3">DELIVERY ADDRESS</th>
                   <th className="px-5 py-3">LOCATION</th>
                   <th className="px-5 py-3">DATE</th>
@@ -155,6 +156,17 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                     <td className="px-5 py-4 text-gray-600">
                       <div>{order.customerName || 'Guest'}</div>
                       <div className="text-xs text-gray-400">{order.customerPhone}</div>
+                    </td>
+                    <td className="px-5 py-4">
+                      {order.deliveryMethod === 'pickup' ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 border border-amber-200">
+                          🏪 Store Pickup
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200">
+                          🚚 Home Delivery
+                        </span>
+                      )}
                     </td>
                     <td className="px-5 py-4 text-gray-600 max-w-[200px] whitespace-normal">
                       <div className="text-xs" title={typeof order.shippingAddress === 'string' ? order.shippingAddress : order.shippingAddress?.addressText || 'N/A'}>
