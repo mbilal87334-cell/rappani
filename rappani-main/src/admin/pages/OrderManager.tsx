@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Download, Trash2, Filter, PackageOpen, X, MapPin } from 'lucide-react';
+import { Download, Trash2, Filter, PackageOpen, X, MapPin, Search } from 'lucide-react';
 import { Order } from '../../App';
 import { fetchWithAuth } from '../../api';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
@@ -16,12 +16,19 @@ const customIcon = new L.Icon({
 
 export default function OrderManager({ orders }: { orders: Order[] }) {
   const [statusFilter, setStatusFilter] = useState('All Status');
+  const [searchTerm, setSearchTerm] = useState('');
   const [viewMap, setViewMap] = useState<{lat: number, lng: number} | null>(null);
 
-  const filteredOrders = orders.filter(order => 
-    statusFilter === 'All Status' || 
-    (order.status && order.status.toLowerCase() === statusFilter.toLowerCase())
-  );
+  const filteredOrders = orders.filter(order => {
+    const matchesStatus = statusFilter === 'All Status' ||
+      (order.status && order.status.toLowerCase() === statusFilter.toLowerCase());
+    const q = searchTerm.toLowerCase().trim();
+    const matchesSearch = !q || 
+      (order.id || '').toLowerCase().includes(q) ||
+      (order.customerName || '').toLowerCase().includes(q) ||
+      (order.customerPhone || '').includes(q);
+    return matchesStatus && matchesSearch;
+  });
 
   const handleExportCSV = () => {
     if (filteredOrders.length === 0) {
@@ -73,14 +80,14 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
   };
 
   const getStatusBadge = (status: string) => {
-    switch(status) {
-      case 'Completed':
-        return <span className="px-3 py-1 bg-green-50 text-green-600 font-medium text-xs rounded-full">Completed</span>;
-      case 'Cancelled':
-        return <span className="px-3 py-1 bg-red-50 text-red-600 font-medium text-xs rounded-full">Cancelled</span>;
-      default:
-        return <span className="px-3 py-1 bg-yellow-50 text-yellow-600 font-medium text-xs rounded-full">Processing</span>;
-    }
+    const s = (status || '').toLowerCase();
+    if (s === 'delivered' || s === 'completed') return <span className="px-3 py-1 bg-green-50 text-green-700 font-semibold text-xs rounded-full">✅ {status}</span>;
+    if (s === 'shipped' || s === 'out for delivery') return <span className="px-3 py-1 bg-blue-50 text-blue-700 font-semibold text-xs rounded-full">🚚 {status}</span>;
+    if (s === 'packed') return <span className="px-3 py-1 bg-indigo-50 text-indigo-700 font-semibold text-xs rounded-full">📦 {status}</span>;
+    if (s === 'confirmed') return <span className="px-3 py-1 bg-teal-50 text-teal-700 font-semibold text-xs rounded-full">✔ {status}</span>;
+    if (s === 'cancelled') return <span className="px-3 py-1 bg-red-50 text-red-700 font-semibold text-xs rounded-full">❌ {status}</span>;
+    if (s === 'returned' || s === 'refunded') return <span className="px-3 py-1 bg-orange-50 text-orange-700 font-semibold text-xs rounded-full">↩ {status}</span>;
+    return <span className="px-3 py-1 bg-yellow-50 text-yellow-700 font-semibold text-xs rounded-full">⏳ {status || 'Processing'}</span>;
   };
 
   return (
@@ -100,25 +107,38 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
         </div>
       </div>
 
-      <div className="mb-6 flex items-center gap-2 bg-white border border-gray-200 rounded-md px-3 py-2 w-max shadow-sm">
-        <Filter size={16} className="text-gray-400" />
-        <select 
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="bg-transparent text-gray-700 text-sm font-medium outline-none border-none focus:ring-0"
-        >
-          <option>All Status</option>
-          <option>Pending</option>
-          <option>Confirmed</option>
-          <option>Processing</option>
-          <option>Packed</option>
-          <option>Shipped</option>
-          <option>Out For Delivery</option>
-          <option>Delivered</option>
-          <option>Cancelled</option>
-          <option>Returned</option>
-          <option>Refunded</option>
-        </select>
+      <div className="mb-6 flex flex-col sm:flex-row gap-3">
+        <div className="relative">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search Order ID, Customer, Phone..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-md text-sm font-medium w-72 focus:ring-2 focus:ring-gray-900 outline-none shadow-sm transition-all"
+          />
+        </div>
+        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-md px-3 py-2 w-max shadow-sm">
+          <Filter size={16} className="text-gray-400" />
+          <select 
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="bg-transparent text-gray-700 text-sm font-medium outline-none border-none focus:ring-0"
+          >
+            <option>All Status</option>
+            <option>Pending</option>
+            <option>Confirmed</option>
+            <option>Processing</option>
+            <option>Packed</option>
+            <option>Shipped</option>
+            <option>Out For Delivery</option>
+            <option>Delivered</option>
+            <option>Cancelled</option>
+            <option>Returned</option>
+            <option>Refunded</option>
+          </select>
+        </div>
+        <span className="text-sm text-gray-400 self-center">{filteredOrders.length} order{filteredOrders.length !== 1 ? 's' : ''}</span>
       </div>
 
       {/* Orders List / Empty State */}

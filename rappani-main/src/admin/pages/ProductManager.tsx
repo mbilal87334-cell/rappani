@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Search, Plus, Eye, EyeOff, Edit2, Trash2, Copy, Image as ImageIcon, X, Upload, Camera, Loader } from 'lucide-react';
+import { Search, Plus, Eye, EyeOff, Edit2, Trash2, Copy, Image as ImageIcon, X, Upload, Download, Camera, Loader } from 'lucide-react';
 import { Product, saveProduct, deleteProduct } from '../../App';
 import toast from 'react-hot-toast';
 import { fetchWithAuth } from '../../api';
@@ -176,7 +176,51 @@ export default function ProductManager({ products, setProducts, apiCategories = 
     }
   };
 
-  const handleBulkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  
+  const handleExportCSV = () => {
+    try {
+      const headers = ['id', 'name', 'category', 'price', 'originalPrice', 'deliveryCharge', 'stock', 'isVisible', 'isFeatured', 'image', 'images', 'videoUrl', 'brand', 'sku', 'description'];
+      
+      const rows = products.map(p => {
+        return [
+          p.id || '',
+          `"${(p.name || '').replace(/"/g, '""')}"`,
+          `"${(p.category || '').replace(/"/g, '""')}"`,
+          p.price || 0,
+          p.originalPrice || '',
+          p.deliveryCharge || 30,
+          p.stock || 0,
+          p.isVisible !== false ? 'true' : 'false',
+          p.isFeatured ? 'true' : 'false',
+          `"${(p.image || '').replace(/"/g, '""')}"`,
+          `"${(p.images?.join(';') || '').replace(/"/g, '""')}"`,
+          `"${(p.videoUrl || '').replace(/"/g, '""')}"`,
+          `"${(p.brand || '').replace(/"/g, '""')}"`,
+          `"${(p.sku || '').replace(/"/g, '""')}"`,
+          `"${(p.description || '').replace(/"/g, '""')}"`
+        ].join(',');
+      });
+
+      const csvContent = headers.join(',') + '\n' + rows.join('\n');
+      
+      // UTF-8 BOM for Excel to read Unicode characters properly (like Tamil)
+      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `products_export_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success('Products exported successfully!');
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to export CSV');
+    }
+  };
+
+const handleBulkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 

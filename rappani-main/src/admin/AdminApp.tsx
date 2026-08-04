@@ -67,7 +67,7 @@ export default function AdminApp({
         <Route path="/coupons" element={<CouponManager />} />
         <Route path="/reviews" element={<ReviewManager />} />
         <Route path="/notifications" element={<NotificationHub />} />
-        <Route path="/analytics" element={<AnalyticsDashboard />} />
+        <Route path="/analytics" element={<AnalyticsDashboard orders={orders} products={products} />} />
         
         <Route path="/profile" element={<SettingsPage settings={settings} setSettings={setSettings} />} />
         
