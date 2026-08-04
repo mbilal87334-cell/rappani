@@ -2060,12 +2060,45 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                        <div className="pt-2 space-y-3">
                           <h3 className="font-bold text-primary flex items-center gap-2"><CreditCard className="w-5 h-5" /> Payment</h3>
                           
-                          <button onClick={handleWhatsAppCheckout} disabled={isCheckoutProcessing} className="w-full bg-green-500 text-white py-3.5 rounded-xl font-bold shadow-md shadow-green-500/20 flex items-center justify-center gap-2 hover:bg-green-600 transition-colors mt-2 disabled:opacity-50">
-                             {isCheckoutProcessing ? <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Processing Order...</> : "Checkout via WhatsApp"}
-                          </button>
-                          <button onClick={handleRazorpayCheckout} disabled={isCheckoutProcessing} className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors disabled:opacity-50">
-                             {isCheckoutProcessing ? <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Processing Payment...</> : <><CreditCard className="w-5 h-5" /> Pay Online (Razorpay)</>}
-                          </button>
+                          {/* Smart Pay Button - disabled when requirements not met */}
+                          {(() => {
+                            const isLoggedIn = !!(customerToken || isPhoneVerified);
+                            const hasMapPinned = !!checkoutAddressFields.mapsLink;
+                            const hasAddressFields = checkoutAddressFields.name.trim() && checkoutAddressFields.doorNo.trim() && checkoutAddressFields.street.trim() && checkoutAddressFields.area.trim() && checkoutAddressFields.district.trim() && checkoutAddressFields.pincode.trim();
+                            const isAddressReady = deliveryMethod === 'pickup' || (!useStructuredAddress && deliveryAddress.trim()) || (useStructuredAddress && hasMapPinned && hasAddressFields);
+                            const isCartReady = cart.length > 0;
+                            const isPayReady = isLoggedIn && isAddressReady && isCartReady && !isCheckoutProcessing;
+                            
+                            let disabledReason = '';
+                            if (!isCartReady) disabledReason = 'Add items to cart first';
+                            else if (!isLoggedIn) disabledReason = 'Please login to place order';
+                            else if (deliveryMethod === 'home' && useStructuredAddress && !hasMapPinned) disabledReason = '📍 Pin your delivery location on map first';
+                            else if (deliveryMethod === 'home' && useStructuredAddress && (!checkoutAddressFields.doorNo.trim() || !checkoutAddressFields.street.trim() || !checkoutAddressFields.district.trim() || !checkoutAddressFields.pincode.trim())) disabledReason = 'Fill all address fields (Door No, Street, District, Pincode)';
+                            else if (deliveryMethod === 'home' && !useStructuredAddress && !deliveryAddress.trim()) disabledReason = 'Select a delivery address';
+                            
+                            return (
+                              <div className="space-y-2">
+                                {!isPayReady && disabledReason && (
+                                  <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                                    <span className="text-lg">⚠️</span>
+                                    <p className="text-xs font-semibold text-amber-700">{disabledReason}</p>
+                                  </div>
+                                )}
+                                <button
+                                  onClick={isPayReady ? handleRazorpayCheckout : undefined}
+                                  disabled={!isPayReady}
+                                  className={`w-full py-4 rounded-xl font-black text-base flex items-center justify-center gap-2 transition-all duration-200 ${isPayReady
+                                    ? 'bg-primary text-white shadow-lg shadow-primary/30 hover:opacity-90 active:scale-[0.99] cursor-pointer'
+                                    : 'bg-neutral-200 text-neutral-400 cursor-not-allowed shadow-none'}`}
+                                >
+                                  {isCheckoutProcessing
+                                    ? <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Processing Payment...</>
+                                    : <><CreditCard className="w-5 h-5" /> {isPayReady ? 'Pay Now' : 'Complete Details to Pay'}</>
+                                  }
+                                </button>
+                              </div>
+                            );
+                          })()}
                        </div>
                     </div>
                     </div>
