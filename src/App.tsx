@@ -482,6 +482,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   });
   const [addressErrors, setAddressErrors] = useState<Record<string, boolean>>({});
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
 
   const validateAddress = () => {
     if (deliveryMethod !== 'home') return true;
@@ -1122,27 +1123,34 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
         image: "/logo.png",
         order_id: data.razorpayOrderId,
         handler: async function (response: any) {
-          const verifyRes = await fetch(`${API_BASE}/razorpay/verify`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              orderId: data.orderId,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_signature: response.razorpay_signature
-            })
-          });
-          const verifyData = await verifyRes.json();
-          if (verifyData.success) {
-            toast.success("✅ Payment successful! Order placed.");
-            setOrderSuccessModal(data.orderId);
-            setCart([]);
-            localStorage.removeItem('rappani_cart');
-            setAppliedCoupon(null);
-            fetchOrders().then(d => setOrders(Array.isArray(d) ? d : [])).catch(console.error);
-            setIsCartOpen(false);
-          } else {
-            toast.error("Payment verification failed! " + verifyData.error);
+          setIsVerifyingPayment(true);
+          try {
+            const verifyRes = await fetch(`${API_BASE}/razorpay/verify`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                orderId: data.orderId,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature
+              })
+            });
+            const verifyData = await verifyRes.json();
+            if (verifyData.success) {
+              toast.success("✅ Payment successful! Order placed.");
+              setOrderSuccessModal(data.orderId);
+              setCart([]);
+              localStorage.removeItem('rappani_cart');
+              setAppliedCoupon(null);
+              fetchOrders().then(d => setOrders(Array.isArray(d) ? d : [])).catch(console.error);
+              setIsCartOpen(false);
+            } else {
+              toast.error("Payment verification failed! " + verifyData.error);
+            }
+          } catch (err) {
+            toast.error("Network error during payment verification!");
+          } finally {
+            setIsVerifyingPayment(false);
           }
         },
         prefill: {
@@ -1184,29 +1192,36 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
         image: "/logo.png",
         order_id: order.razorpayOrderId,
         handler: async function (response: any) {
-          const verifyRes = await fetch(`${API_BASE}/razorpay/verify`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              orderId: order.id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_signature: response.razorpay_signature
-            })
-          });
-          const verifyData = await verifyRes.json();
-          if (verifyData.success) {
-            toast.success("✅ Payment successful! Order placed.");
-            setOrderSuccessModal(order.id);
-            // Refresh orders to show updated status
-            fetch(`${API_BASE}/orders?phone=${customerPhone}`)
-              .then(res => res.json())
-              .then(data => {
-                if (Array.isArray(data)) setCustomerOrders(data.reverse());
-              });
-            fetchOrders().then(d => setOrders(Array.isArray(d) ? d : [])).catch(console.error);
-          } else {
-            toast.error("Payment verification failed! " + verifyData.error);
+          setIsVerifyingPayment(true);
+          try {
+            const verifyRes = await fetch(`${API_BASE}/razorpay/verify`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                orderId: order.id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature
+              })
+            });
+            const verifyData = await verifyRes.json();
+            if (verifyData.success) {
+              toast.success("✅ Payment successful! Order placed.");
+              setOrderSuccessModal(order.id);
+              // Refresh orders to show updated status
+              fetch(`${API_BASE}/orders?phone=${customerPhone}`)
+                .then(res => res.json())
+                .then(data => {
+                  if (Array.isArray(data)) setCustomerOrders(data.reverse());
+                });
+              fetchOrders().then(d => setOrders(Array.isArray(d) ? d : [])).catch(console.error);
+            } else {
+              toast.error("Payment verification failed! " + verifyData.error);
+            }
+          } catch (err) {
+            toast.error("Network error during payment verification!");
+          } finally {
+            setIsVerifyingPayment(false);
           }
         },
         prefill: {
@@ -2560,6 +2575,18 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
       )}
 
       {/* Order Success Modal */}
+      {isVerifyingPayment && (
+         <div className="fixed inset-0 z-[110] flex flex-col items-center justify-center p-4 bg-primary/40 backdrop-blur-md text-white text-center">
+           <div className="bg-white p-8 rounded-3xl border border-neutral-200/50 shadow-2xl max-w-sm w-full space-y-6 flex flex-col items-center justify-center">
+             <div className="w-16 h-16 border-4 border-gold-500 border-t-transparent rounded-full animate-spin"></div>
+             <div className="space-y-2">
+               <h3 className="text-xl font-bold font-heading text-primary">Verifying Payment...</h3>
+               <p className="text-neutral-500 text-sm">Please do not close this window or press the back button.</p>
+             </div>
+           </div>
+         </div>
+      )}
+
       {orderSuccessModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl animate-scale-up">
