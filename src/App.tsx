@@ -481,6 +481,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
     instructions: ''
   });
   const [addressErrors, setAddressErrors] = useState<Record<string, boolean>>({});
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
 
   const validateAddress = () => {
     if (deliveryMethod !== 'home') return true;
@@ -926,6 +927,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   };
 
   const processCheckoutAndClearCart = async (paymentMethod: string) => {
+    if (isCheckingOut) return false;
     if (!customerName || !customerPhone) {
       setCheckoutError(t.enterDetails);
       return false;
@@ -954,6 +956,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
     }
 
     setCheckoutError('');
+    setIsCheckingOut(true);
     console.log(`[CHECKOUT] processCheckoutAndClearCart called for: ${paymentMethod}`);
 
     try {
@@ -992,10 +995,13 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
       console.error("Failed to checkout cart", err);
       // fallback just empty if fail but WhatsApp is opened
       return true;
+    } finally {
+      setIsCheckingOut(false);
     }
   };
 
   const handleWhatsAppCheckout = async () => {
+    if (isCheckingOut) return;
     if (cart.length === 0) return;
     if (!customerName || !customerPhone) {
       setCheckoutError(t.enterDetails);
@@ -1050,15 +1056,31 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   };
 
   const handleRazorpayCheckout = async () => {
+    if (isCheckingOut) return;
     if (!customerName || customerPhone.length !== 10) {
       toast.error("Please enter a valid Name and 10-digit Phone Number!");
       return;
     }
-    if (deliveryMethod === 'home' && !deliveryAddress && savedAddresses.length === 0) {
-      toast.error("Please enter a delivery address or select a saved one!");
+    const phoneRegex = /^[0-9]{10}$/;
+    if (!phoneRegex.test(customerPhone.trim())) {
+      toast.error(t.invalidPhone);
       return;
     }
+    if (!isPhoneVerified) {
+      toast.error(t.unverifiedPhoneError);
+      return;
+    }
+    if (deliveryMethod === 'home') {
+      if (!validateAddress()) {
+        return;
+      }
+      if (distance !== null && distance > 5) {
+        toast.error(t.tooFarError);
+        return;
+      }
+    }
 
+    setIsCheckingOut(true);
     try {
       const payload = {
         customerName,
@@ -1083,6 +1105,8 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
       if (!data.success) {
         throw new Error(data.error || "Checkout failed");
       }
+
+      setIsCheckingOut(false);
 
       if (!window.Razorpay) {
         toast.error("Payment system is still loading. Please wait a second.");
@@ -1137,6 +1161,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
       rzp.open();
     } catch (err: any) {
       toast.error(err.message || "Failed to initialize payment");
+      setIsCheckingOut(false);
     }
   };
 
@@ -1203,8 +1228,9 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
     }
   };
 
-  const handleGPayCheckout = async (e: React.MouseEvent<HTMLButtonElement | HTMLAnchorElement>) => {
-    e.preventDefault();
+  const handleGPayCheckout = async (e?: React.MouseEvent<any>) => {
+    if (e) e.preventDefault();
+    if (isCheckingOut) return;
     if (!customerName || !customerPhone) {
       setCheckoutError(t.enterDetails);
       toast.error(t.enterDetails);
@@ -1224,9 +1250,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
     }
 
     if (deliveryMethod === 'home') {
-      if (!deliveryAddress.trim()) {
-        setCheckoutError(t.enterAddress);
-        toast.error(t.enterAddress);
+      if (!validateAddress()) {
         return;
       }
       if (distance !== null && distance > 5) {
@@ -1249,6 +1273,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   };
 
   const handleGPayConfirm = async () => {
+    if (isCheckingOut) return;
     const utrRegex = /^[0-9]{12}$/;
     if (!utrRegex.test(utrNumber.trim())) {
       setCheckoutError('Please enter a valid 12-digit UTR/Ref No. from your bank app.');
@@ -1926,22 +1951,39 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
 
 
                        <div className="pt-2 space-y-3">
-                          <h3 className="font-bold text-primary flex items-center gap-2"><CreditCard className="w-5 h-5" /> Payment</h3>
-                          <div className="bg-neutral-50 p-6 rounded-xl border border-neutral-200 flex flex-col items-center justify-center text-center">
-                            <p className="text-sm text-neutral-600 mb-2">Scan the QR Code to pay <br/><strong className="text-lg">₹{finalTotal}</strong> via any UPI App.</p>
-                            <div className="w-40 h-40 bg-white rounded-xl shadow flex items-center justify-center text-neutral-300 border border-neutral-200 mb-3">
-                              <span className="text-xs">[QR Placeholder]</span>
-                            </div>
-                            <p className="text-xs text-neutral-500">Or proceed with Razorpay / WhatsApp</p>
-                          </div>
-                          
-                          <button onClick={handleWhatsAppCheckout} className="w-full bg-green-500 text-white py-3.5 rounded-xl font-bold shadow-md shadow-green-500/20 flex items-center justify-center gap-2 hover:bg-green-600 transition-colors mt-2">
-                             Checkout via WhatsApp
-                          </button>
-                          <button onClick={handleRazorpayCheckout} className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors">
-                             <CreditCard className="w-5 h-5" /> Pay Online (Razorpay)
-                          </button>
-                       </div>
+                           <h3 className="font-bold text-primary flex items-center gap-2"><CreditCard className="w-5 h-5" /> Payment</h3>
+                           <div 
+                             onClick={() => handleGPayCheckout()}
+                             className="w-full bg-neutral-50 p-6 rounded-xl border border-neutral-200 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-neutral-100/80 transition-all hover:border-gold-500 group relative"
+                           >
+                             <p className="text-sm text-neutral-600 mb-2 font-medium">Scan the QR Code to pay <br/><strong className="text-lg text-primary">₹{finalTotal}</strong> via any UPI App</p>
+                             <div className="w-40 h-40 bg-white rounded-xl shadow flex items-center justify-center border border-gray-100 mb-3 group-hover:scale-105 transition-transform duration-200">
+                               <QRCode 
+                                 value={`upi://pay?pa=mohammedazzam200512@okaxis&pn=Rappani Store&am=${finalTotal}&cu=INR`} 
+                                 size={140}
+                                 level="H"
+                               />
+                             </div>
+                             <p className="text-xs font-bold text-gold-600 bg-gold-50 px-3 py-1 rounded-full group-hover:bg-gold-500 group-hover:text-white transition-colors">
+                               {isCheckingOut ? 'Processing...' : 'Click here to Enter UTR / Confirm Order'}
+                             </p>
+                           </div>
+                           
+                           <button 
+                             onClick={handleWhatsAppCheckout} 
+                             disabled={isCheckingOut}
+                             className="w-full bg-green-500 text-white py-3.5 rounded-xl font-bold shadow-md shadow-green-500/20 flex items-center justify-center gap-2 hover:bg-green-600 transition-colors mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                           >
+                              {isCheckingOut ? 'Processing...' : 'Checkout via WhatsApp'}
+                           </button>
+                           <button 
+                             onClick={handleRazorpayCheckout} 
+                             disabled={isCheckingOut}
+                             className="w-full bg-blue-600 text-white py-3.5 rounded-xl font-bold shadow-md shadow-blue-600/20 flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                           >
+                              <CreditCard className="w-5 h-5" /> {isCheckingOut ? 'Processing...' : 'Pay Online (Razorpay)'}
+                           </button>
+                        </div>
                     </div>
                   </div>
                </>
@@ -2498,9 +2540,21 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                    className="w-full bg-gold-50 border border-neutral-300 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-gold-500"
                />
                <div className="flex gap-3 pt-2">
-                  <button onClick={() => setShowGPayConfirm(false)} className="flex-1 py-3 font-bold text-neutral-500 bg-neutral-100 rounded-xl">Cancel</button>
-                  <button onClick={handleGPayConfirm} className="flex-1 py-3 font-bold text-white bg-primary rounded-xl shadow-md">Confirm</button>
-               </div>
+                   <button 
+                     onClick={() => setShowGPayConfirm(false)} 
+                     disabled={isCheckingOut}
+                     className="flex-1 py-3 font-bold text-neutral-500 bg-neutral-100 rounded-xl disabled:opacity-50"
+                   >
+                     Cancel
+                   </button>
+                   <button 
+                     onClick={handleGPayConfirm} 
+                     disabled={isCheckingOut}
+                     className="flex-1 py-3 font-bold text-white bg-primary rounded-xl shadow-md disabled:opacity-50"
+                   >
+                     {isCheckingOut ? 'Confirming...' : 'Confirm'}
+                   </button>
+                </div>
             </div>
          </div>
       )}
