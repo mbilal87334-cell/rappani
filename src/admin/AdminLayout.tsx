@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
+import { fetchWithAuth } from '../api';
 import { 
   LayoutDashboard, 
   Package, 
@@ -42,8 +43,25 @@ const MENU_ITEMS = [
 export default function AdminLayout({ setIsAuthenticated, children }: { setIsAuthenticated: (v: boolean) => void, children: React.ReactNode }) {
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 1024 : false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
+  const [unreadCount, setUnreadCount] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchUnread = async () => {
+      try {
+        const res = await fetchWithAuth('/api/notifications');
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          const unread = data.filter((n: any) => !n.read).length;
+          setUnreadCount(unread);
+        }
+      } catch (e) {}
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -190,7 +208,11 @@ export default function AdminLayout({ setIsAuthenticated, children }: { setIsAut
             
             <button className="p-2 text-neutral-500 hover:bg-neutral-100 rounded-full transition-colors relative" onClick={() => navigate('/admin/notifications')}>
               <Bell size={20} />
-              <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
+              {unreadCount > 0 && (
+                <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 border-2 border-white rounded-full flex items-center justify-center text-[8px] font-bold text-white">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </button>
 
             <button className="p-2 text-neutral-500 hover:bg-neutral-100 rounded-full transition-colors" onClick={() => navigate('/admin/profile')}>

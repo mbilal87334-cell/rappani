@@ -394,6 +394,16 @@ async function startServer() {
         { expiresIn: '7d' }
       );
 
+      try {
+        await Notification.create({
+          title: "Customer Login",
+          message: `${loggedInUser.name} (${loggedInUser.phone}) logged in successfully.`,
+          type: "info"
+        });
+      } catch (err) {
+        console.error("Failed to create notification:", err);
+      }
+
       res.json({ success: true, token, user: loggedInUser });
     }).catch(err => {
       console.error(err);
@@ -651,6 +661,16 @@ async function startServer() {
         timeline: [{ status: 'Order Placed', date: new Date() }],
         createdAt: new Date()
       });
+
+      try {
+        await Notification.create({
+          title: "New Order Placed",
+          message: `${customerName} placed an order for ₹${totalAmount} via ${paymentMethod}.`,
+          type: "success"
+        });
+      } catch (err) {
+        console.error("Failed to create notification:", err);
+      }
 
       if (paymentMethod === 'Razorpay') {
         const options = {

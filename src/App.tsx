@@ -484,11 +484,22 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
 
   const validateAddress = () => {
     if (deliveryMethod !== 'home') return true;
+
+    const allowedStates = ["tamil nadu", "kerala", "karnataka", "andhra pradesh"];
+
     if (!useStructuredAddress) {
       if (!deliveryAddress.trim()) {
         toast.error("Please enter a delivery address or select a saved one!");
         return false;
       }
+      
+      const addressLower = deliveryAddress.toLowerCase();
+      const isValidState = allowedStates.some(state => addressLower.includes(state));
+      if (!isValidState) {
+        toast.error("We currently deliver only to Tamil Nadu, Kerala, Karnataka, and Andhra Pradesh.");
+        return false;
+      }
+      
       return true;
     }
     
@@ -507,6 +518,14 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
       toast.error("Please fill all the required address fields correctly.");
       return false;
     }
+
+    const stateLower = checkoutAddressFields.state.toLowerCase();
+    const isStructuredValidState = allowedStates.some(state => stateLower.includes(state));
+    if (!isStructuredValidState) {
+      toast.error("We currently deliver only to Tamil Nadu, Kerala, Karnataka, and Andhra Pradesh.");
+      return false;
+    }
+
     return true;
   };
 
@@ -1852,13 +1871,16 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                                        />
                                      </div>
                                     <div className="flex-1">
-                                      <label className="text-[10px] font-bold text-neutral-500 uppercase">Country *</label>
+                                      <label className="text-[10px] font-bold text-neutral-500 uppercase">State *</label>
                                       <select 
-                                        value={checkoutAddressFields.country}
-                                        onChange={e => { setCheckoutAddressFields(prev => ({...prev, country: e.target.value})); }}
+                                        value={checkoutAddressFields.state}
+                                        onChange={e => { setCheckoutAddressFields(prev => ({...prev, state: e.target.value})); }}
                                         className="w-full bg-stone-50 border border-neutral-200 rounded-lg py-3 px-4 text-sm focus:outline-none focus:ring-1 focus:ring-gold-500 appearance-none"
                                       >
-                                        <option value="India">India</option>
+                                        <option value="Tamil Nadu">Tamil Nadu</option>
+                                        <option value="Kerala">Kerala</option>
+                                        <option value="Karnataka">Karnataka</option>
+                                        <option value="Andhra Pradesh">Andhra Pradesh</option>
                                       </select>
                                     </div>
                                   </div>
