@@ -190,6 +190,21 @@ export default function ReportsHub({ orders = [], products = [] }: ReportsHubPro
     );
   };
 
+  const downloadCustomersCSV = () => {
+    downloadCSV(`customers_report.csv`,
+      ['Customer Name', 'Phone', 'Orders Count', 'Total Spend (₹)'],
+      topCustomers.map(c => [`"${c.name}"`, c.phone, c.orders, c.spend])
+    );
+  };
+
+  const handleGenerateCurrentReport = () => {
+    if (activeTab === 'sales') downloadSalesCSV();
+    else if (activeTab === 'stock') downloadStockCSV();
+    else if (activeTab === 'customers') downloadCustomersCSV();
+    else if (activeTab === 'orders') downloadOrdersCSV();
+    else if (activeTab === 'tax') downloadTaxCSV();
+  };
+
   const tabs = [
     { id: 'sales', label: 'Sales', icon: TrendingUp },
     { id: 'stock', label: 'Stock', icon: Package },
@@ -206,7 +221,7 @@ export default function ReportsHub({ orders = [], products = [] }: ReportsHubPro
           <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Reports & Analytics</h1>
           <p className="text-sm font-medium text-gray-500 mt-1">Detailed reports for sales, stock, customers, orders, and tax.</p>
         </div>
-        {/* Date Range Selector */}
+        {/* Date Range Selector & Generate Button */}
         <div className="flex items-center gap-2 flex-wrap">
           <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-md px-3 py-2 shadow-sm">
             <Calendar size={16} className="text-gray-400" />
@@ -227,6 +242,13 @@ export default function ReportsHub({ orders = [], products = [] }: ReportsHubPro
                 className="border border-gray-200 rounded-md px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-gray-900 shadow-sm" />
             </>
           )}
+          <button
+            onClick={handleGenerateCurrentReport}
+            className="flex items-center gap-2 bg-gray-900 text-white text-sm font-semibold px-4 py-2 rounded-md hover:bg-gray-800 transition-colors shadow-sm cursor-pointer"
+          >
+            <Download size={16} />
+            Generate Report
+          </button>
         </div>
       </div>
 
