@@ -251,14 +251,16 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                             return (
                               <button 
                                 onClick={() => {
+                                  let mapUrl = '';
                                   if (exactLat !== null && exactLng !== null) {
-                                    setViewMap({ lat: exactLat, lng: exactLng });
+                                    mapUrl = `https://maps.google.com/?q=${exactLat},${exactLng}`;
                                   } else if (externalMapLink) {
-                                    window.open(externalMapLink, '_blank');
+                                    mapUrl = externalMapLink;
                                   } else {
                                     const searchQuery = displayLines.join(', ').replace(/\s+/g, ' ').trim();
-                                    window.open(`https://maps.google.com/?q=${encodeURIComponent(searchQuery)}`, '_blank');
+                                    mapUrl = `https://maps.google.com/?q=${encodeURIComponent(searchQuery)}`;
                                   }
+                                  window.open(mapUrl, '_blank');
                                 }}
                                 className="text-blue-500 hover:underline flex items-center gap-1 font-semibold cursor-pointer text-left whitespace-nowrap"
                               >
