@@ -181,8 +181,8 @@ export default function TransactionsLedger({ orders = [] }: { orders?: Order[] }
                       </div>
                     </td>
                     <td className="px-5 py-4 text-gray-600">
-                      <div>{new Date(order.createdAt).toLocaleDateString('en-IN')}</div>
-                      <div className="text-xs text-gray-400 mt-0.5">{new Date(order.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</div>
+                      <div>{order.createdAt && !isNaN(new Date(order.createdAt).getTime()) ? new Date(order.createdAt).toLocaleDateString('en-IN') : 'N/A'}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{order.createdAt && !isNaN(new Date(order.createdAt).getTime()) ? new Date(order.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</div>
                     </td>
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-1.5 text-gray-700 font-medium capitalize">

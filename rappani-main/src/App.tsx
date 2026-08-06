@@ -725,6 +725,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [showGPayConfirm, setShowGPayConfirm] = useState(false);
+  const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
   const [utrNumber, setUtrNumber] = useState('');
   const [mockOtp, setMockOtp] = useState<string | null>(null);
   const [orderSuccessModal, setOrderSuccessModal] = useState<string | null>(null);
@@ -1163,29 +1164,36 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
         image: "/logo.png",
         order_id: data.razorpayOrderId,
         handler: async function (response: any) {
-          const verifyRes = await fetch(`${API_BASE}/razorpay/verify`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              orderId: data.orderId,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_signature: response.razorpay_signature
-            })
-          });
-          const verifyData = await verifyRes.json();
-          if (verifyData.success) {
-            toast.success("✅ Payment successful! Order placed.");
-            setOrderSuccessModal(data.orderId);
-            setCart([]);
-            localStorage.removeItem('rappani_cart');
-            setAppliedCoupon(null);
-            if (localStorage.getItem('adminToken')) {
-              fetchOrders().then(d => setOrders(Array.isArray(d) ? d : [])).catch(console.error);
+          setIsVerifyingPayment(true);
+          try {
+            const verifyRes = await fetch(`${API_BASE}/razorpay/verify`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                orderId: data.orderId,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_signature: response.razorpay_signature
+              })
+            });
+            const verifyData = await verifyRes.json();
+            if (verifyData.success) {
+              toast.success("✅ Payment successful! Order placed.");
+              setOrderSuccessModal(data.orderId);
+              setCart([]);
+              localStorage.removeItem('rappani_cart');
+              setAppliedCoupon(null);
+              if (localStorage.getItem('adminToken')) {
+                fetchOrders().then(d => setOrders(Array.isArray(d) ? d : [])).catch(console.error);
+              }
+              setIsCartOpen(false);
+            } else {
+              toast.error("Payment verification failed! " + verifyData.error);
             }
-            setIsCartOpen(false);
-          } else {
-            toast.error("Payment verification failed! " + verifyData.error);
+          } catch (verifyErr: any) {
+            toast.error("Verification error: " + verifyErr.message);
+          } finally {
+            setIsVerifyingPayment(false);
           }
         },
         prefill: {
@@ -1320,6 +1328,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   };
 
   const handleGPayConfirm = async () => {
+    if (isCheckoutProcessing) return;
     const utrRegex = /^[0-9]{12}$/;
     if (!utrRegex.test(utrNumber.trim())) {
       setCheckoutError('Please enter a valid 12-digit UTR/Ref No. from your bank app.');
@@ -1328,11 +1337,16 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
     }
 
     setCheckoutError('');
+    setIsCheckoutProcessing(true);
     console.log(`[CHECKOUT] GPay Confirm clicked. This WILL save to DB.`);
-    const success = await processCheckoutAndClearCart(`GPay Order`);
-    if (success) {
-      setShowGPayConfirm(false);
-      setUtrNumber('');
+    try {
+      const success = await processCheckoutAndClearCart(`GPay Order`);
+      if (success) {
+        setShowGPayConfirm(false);
+        setUtrNumber('');
+      }
+    } finally {
+      setIsCheckoutProcessing(false);
     }
   };
 
@@ -2687,6 +2701,14 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                </div>
             </div>
          </div>
+      )}
+
+      {isVerifyingPayment && (
+        <div className="fixed inset-0 z-[300] flex flex-col items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="w-16 h-16 border-4 border-[#D4AF37] border-t-transparent rounded-full animate-spin mb-4"></div>
+          <p className="text-white font-bold text-lg animate-pulse">Verifying Payment...</p>
+          <p className="text-gray-400 text-xs mt-2">Please do not close this tab or refresh the page.</p>
+        </div>
       )}
 
       {/* Order Success Modal */}

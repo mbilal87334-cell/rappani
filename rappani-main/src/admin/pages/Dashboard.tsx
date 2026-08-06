@@ -92,7 +92,9 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
       monthMap.set(monthName, 0);
     }
 
-    const sortedOrders = [...safeOrders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const sortedOrders = [...safeOrders]
+      .filter(order => order.createdAt && !isNaN(new Date(order.createdAt).getTime()))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     sortedOrders.forEach(order => {
       const status = (order.status || '').toLowerCase();
@@ -366,9 +368,9 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {recentOrders.length > 0 ? recentOrders.map((order) => (
-                <tr key={order.id} className="hover:bg-neutral-100/50">
-                  <td className="px-5 py-4 font-medium text-primary">#{order.id.slice(0, 8).toUpperCase()}</td>
+              {recentOrders.length > 0 ? recentOrders.map((order, idx) => (
+                <tr key={order.id || order._id || idx} className="hover:bg-neutral-100/50">
+                  <td className="px-5 py-4 font-medium text-primary">#{order.id ? order.id.slice(0, 8).toUpperCase() : 'N/A'}</td>
                   <td className="px-5 py-4 text-neutral-500">{order.customerDetails?.name || 'Guest'}</td>
                   <td className="px-5 py-4">
                     <span className="text-neutral-500 font-medium">{order.status || 'Processing'}</span>
@@ -424,11 +426,11 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
           <div className="p-6">
             {lowStockProducts.length > 0 ? (
               <div className="space-y-4">
-                {lowStockProducts.slice(0, 5).map(product => (
-                  <div key={product.id} className="flex justify-between items-center border-b border-gray-50 pb-3 last:border-0 last:pb-0">
+                {lowStockProducts.slice(0, 5).map((product, idx) => (
+                  <div key={product.id || product._id || idx} className="flex justify-between items-center border-b border-gray-50 pb-3 last:border-0 last:pb-0">
                     <div>
                       <p className="text-sm font-semibold text-primary truncate max-w-[200px]">{product.name}</p>
-                      <p className="text-xs text-neutral-500">ID: {product.id.slice(0, 8)}</p>
+                      <p className="text-xs text-neutral-500">ID: {product.id ? product.id.slice(0, 8) : 'N/A'}</p>
                     </div>
                     <span className="text-xs font-bold text-red-600 bg-red-50 px-2 py-1 rounded-md">
                       {product.stock} left

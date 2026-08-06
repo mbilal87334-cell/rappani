@@ -348,8 +348,8 @@ const handleBulkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredProducts.map((product) => (
-                <tr key={product.id} className={`hover:bg-gray-50/50 ${product.isVisible === false ? 'opacity-60' : ''}`}>
+              {filteredProducts.map((product, idx) => (
+                <tr key={product.id || product._id || idx} className={`hover:bg-gray-50/50 ${product.isVisible === false ? 'opacity-60' : ''}`}>
                   <td className="px-5 py-4 text-center">
                     <input 
                       type="checkbox" 
@@ -369,7 +369,7 @@ const handleBulkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
                       </div>
                       <div>
                         <p className="font-semibold text-gray-900 line-clamp-2 leading-tight">{product.name}</p>
-                        <p className="text-xs text-gray-500 mt-1">ID: {product.id.slice(0,8)}</p>
+                        <p className="text-xs text-gray-500 mt-1">ID: {product.id ? product.id.slice(0,8) : 'N/A'}</p>
                       </div>
                     </div>
                   </td>

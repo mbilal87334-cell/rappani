@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, MoreHorizontal, User, Mail, Phone, ShoppingBag, ShieldAlert, ShieldCheck } from 'lucide-react';
+import { Search, Filter, MoreHorizontal, User, Mail, Phone, ShoppingBag, ShieldAlert, ShieldCheck, MessageCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { fetchWithAuth } from '../../api';
 
@@ -108,15 +108,38 @@ export default function CustomersList() {
                     </div>
                   </td>
                   <td className="px-5 py-4">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-1.5 text-gray-600">
-                        <Mail size={14} className="text-gray-400" />
-                        <span className="text-xs font-medium">{customer.email}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-gray-600">
-                        <Phone size={14} className="text-gray-400" />
-                        <span className="text-xs font-medium">{customer.phone}</span>
-                      </div>
+                    <div className="flex flex-col gap-1.5">
+                      {customer.email && (
+                        <a 
+                          href={`mailto:${customer.email}`} 
+                          className="flex items-center gap-1.5 text-blue-600 hover:underline text-xs font-medium"
+                          title="Email Customer"
+                        >
+                          <Mail size={14} className="text-blue-400" />
+                          <span>{customer.email}</span>
+                        </a>
+                      )}
+                      {customer.phone && (
+                        <div className="flex items-center gap-2">
+                          <a 
+                            href={`tel:${customer.phone}`} 
+                            className="flex items-center gap-1.5 text-blue-600 hover:underline text-xs font-medium"
+                            title="Call Customer"
+                          >
+                            <Phone size={14} className="text-blue-400" />
+                            <span>{customer.phone}</span>
+                          </a>
+                          <a 
+                            href={`https://wa.me/91${customer.phone.replace(/\D/g, '')}`} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="text-green-600 hover:text-green-700 inline-flex items-center"
+                            title="Message on WhatsApp"
+                          >
+                            <MessageCircle size={14} />
+                          </a>
+                        </div>
+                      )}
                     </div>
                   </td>
                   <td className="px-5 py-4 text-center">

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Download, Trash2, Filter, PackageOpen, X, MapPin, Search } from 'lucide-react';
+import { Download, Trash2, Filter, PackageOpen, X, MapPin, Search, Phone, MessageCircle } from 'lucide-react';
 import { Order } from '../../App';
 import { fetchWithAuth } from '../../api';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
@@ -43,7 +43,7 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
         order.id,
         `"${order.customerName || 'Guest'}"`,
         order.customerPhone || '',
-        new Date(order.createdAt).toLocaleDateString(),
+        order.createdAt && !isNaN(new Date(order.createdAt).getTime()) ? new Date(order.createdAt).toLocaleDateString() : 'N/A',
         order.totalAmount || 0,
         order.paymentMethod || '',
         order.status || 'Processing',
@@ -170,12 +170,31 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {filteredOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50/50">
-                    <td className="px-5 py-4 font-medium text-gray-900">#{order.id.slice(0, 8).toUpperCase()}</td>
+                {filteredOrders.map((order, idx) => (
+                  <tr key={order.id || order._id || idx} className="hover:bg-gray-50/50">
+                    <td className="px-5 py-4 font-medium text-gray-900">#{order.id ? order.id.slice(0, 8).toUpperCase() : 'N/A'}</td>
                     <td className="px-5 py-4 text-gray-600">
-                      <div>{order.customerName || 'Guest'}</div>
-                      <div className="text-xs text-gray-400">{order.customerPhone}</div>
+                      <div className="font-semibold text-gray-900">{order.customerName || 'Guest'}</div>
+                      {order.customerPhone && (
+                        <div className="flex items-center gap-2 mt-1">
+                          <a 
+                            href={`tel:${order.customerPhone}`} 
+                            className="text-xs text-blue-600 hover:underline flex items-center gap-1 font-medium"
+                            title="Call Customer"
+                          >
+                            <Phone size={12} /> {order.customerPhone}
+                          </a>
+                          <a 
+                            href={`https://wa.me/91${order.customerPhone.replace(/\D/g, '')}`} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="text-green-600 hover:text-green-700 inline-flex items-center"
+                            title="Message on WhatsApp"
+                          >
+                            <MessageCircle size={14} />
+                          </a>
+                        </div>
+                      )}
                     </td>
                     <td className="px-5 py-4">
                       {order.deliveryMethod === 'pickup' ? (
@@ -270,7 +289,7 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                         })()
                       ) : <span className="text-xs text-neutral-400">No location</span>}
                     </td>
-                    <td className="px-5 py-4 text-gray-600">{new Date(order.createdAt).toLocaleDateString()}</td>
+                    <td className="px-5 py-4 text-gray-600">{order.createdAt && !isNaN(new Date(order.createdAt).getTime()) ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}</td>
                     <td className="px-5 py-4 font-medium text-gray-900">₹{order.totalAmount?.toLocaleString() || 0}</td>
                     <td className="px-5 py-4 text-gray-600">
                       <div>{order.paymentMethod}</div>
