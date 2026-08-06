@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Download, Trash2, Filter, PackageOpen } from 'lucide-react';
+import { Download, Trash2, Filter, PackageOpen, Phone, MessageCircle } from 'lucide-react';
 import { Order } from '../../App';
 import { fetchWithAuth } from '../../api';
 
@@ -140,8 +140,33 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                   <tr key={order.id} className="hover:bg-gray-50/50">
                     <td className="px-5 py-4 font-medium text-gray-900">#{order.id.slice(0, 8).toUpperCase()}</td>
                     <td className="px-5 py-4 text-gray-600">
-                      <div>{order.customerName || 'Guest'}</div>
-                      <div className="text-xs text-gray-400">{order.customerPhone}</div>
+                      <div className="font-semibold text-gray-900">{order.customerName || 'Guest'}</div>
+                      {order.customerPhone && (
+                        <div className="flex flex-col gap-1 mt-1">
+                          <div className="flex items-center gap-1 text-xs text-gray-500">
+                            <Phone size={11} className="text-gray-400" />
+                            <a 
+                              href={`tel:${order.customerPhone}`} 
+                              title="Call Customer"
+                              className="text-blue-600 hover:text-blue-800 hover:underline"
+                            >
+                              {order.customerPhone}
+                            </a>
+                          </div>
+                          <div className="flex items-center gap-1 text-xs text-gray-500">
+                            <MessageCircle size={11} className="text-gray-400" />
+                            <a 
+                              href={`https://wa.me/91${order.customerPhone}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              title="Chat on WhatsApp"
+                              className="text-green-600 hover:text-green-800 hover:underline"
+                            >
+                              WhatsApp
+                            </a>
+                          </div>
+                        </div>
+                      )}
                     </td>
                     <td className="px-5 py-4 text-gray-600 max-w-[200px] whitespace-normal">
                       <div className="text-xs line-clamp-3" title={order.shippingAddress || 'N/A'}>
