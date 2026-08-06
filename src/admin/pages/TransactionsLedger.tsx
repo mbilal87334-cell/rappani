@@ -51,13 +51,29 @@ export default function TransactionsLedger({ orders = [] }: { orders?: Order[] }
             <tbody className="divide-y divide-gray-100">
               {filteredTransactions.map((order, idx) => {
                 const method = order.paymentMethod === 'cod' ? 'Cash' : 'UPI';
-                const status = order.status === 'completed' || order.status === 'delivered' ? 'Completed' : order.status === 'pending' ? 'Pending' : 'Refunded';
+                
+                const statusLower = (order.status || '').toLowerCase();
+                const isRefunded = ['cancelled', 'returned', 'refunded'].includes(statusLower);
+                
+                const txnType = isRefunded ? 'Debit' : 'Credit';
+                const displayStatus = isRefunded 
+                  ? (statusLower === 'cancelled' ? 'Cancelled' : statusLower === 'returned' ? 'Returned' : 'Refunded')
+                  : (['completed', 'delivered'].includes(statusLower) ? 'Completed' : statusLower === 'pending' ? 'Pending' : 'Confirmed');
+
+                const statusColorClass = 
+                  displayStatus === 'Completed' ? 'bg-green-50 text-green-600' :
+                  displayStatus === 'Pending' ? 'bg-yellow-50 text-yellow-600' :
+                  displayStatus === 'Confirmed' ? 'bg-blue-50 text-blue-600' :
+                  'bg-red-50 text-red-600'; // Cancelled/Refunded/Returned
+
                 return (
                   <tr key={order.id || order._id || idx} className="hover:bg-gray-50/50">
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-green-50 text-green-600">
-                          <ArrowDownRight size={18} />
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+                          txnType === 'Credit' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
+                        }`}>
+                          {txnType === 'Credit' ? <ArrowDownRight size={18} /> : <ArrowUpRight size={18} />}
                         </div>
                         <div>
                           <p className="font-semibold text-gray-900">{order.id ? order.id.slice(0, 8) : 'N/A'}</p>
@@ -77,17 +93,13 @@ export default function TransactionsLedger({ orders = [] }: { orders?: Order[] }
                       </div>
                     </td>
                     <td className="px-5 py-4 text-right font-bold text-gray-900">
-                      <span className="text-green-600">
-                        +₹{(order.totalAmount || 0).toLocaleString()}
+                      <span className={txnType === 'Credit' ? 'text-green-600' : 'text-red-600'}>
+                        {txnType === 'Credit' ? '+' : '-'}₹{(order.totalAmount || 0).toLocaleString()}
                       </span>
                     </td>
                     <td className="px-5 py-4 text-center">
-                      <span className={`px-2 py-1 text-xs font-semibold rounded-md inline-block ${
-                        status === 'Completed' ? 'bg-green-50 text-green-600' :
-                        status === 'Pending' ? 'bg-yellow-50 text-yellow-600' :
-                        'bg-gray-100 text-gray-600'
-                      }`}>
-                        {status}
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-md inline-block ${statusColorClass}`}>
+                        {displayStatus}
                       </span>
                     </td>
                   </tr>
