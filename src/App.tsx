@@ -71,7 +71,7 @@ declare global {
 }
 
 // --- API Service ---
-const API_BASE = '/api';
+export const API_BASE = '/api';
 
 const getPremiumImageUrl = (url: string) => {
   if (!url) return url;
