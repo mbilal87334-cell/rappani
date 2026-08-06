@@ -49,18 +49,18 @@ export default function TransactionsLedger({ orders = [] }: { orders?: Order[] }
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredTransactions.map((order) => {
+              {filteredTransactions.map((order, idx) => {
                 const method = order.paymentMethod === 'cod' ? 'Cash' : 'UPI';
                 const status = order.status === 'completed' || order.status === 'delivered' ? 'Completed' : order.status === 'pending' ? 'Pending' : 'Refunded';
                 return (
-                  <tr key={order.id} className="hover:bg-gray-50/50">
+                  <tr key={order.id || order._id || idx} className="hover:bg-gray-50/50">
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-green-50 text-green-600">
                           <ArrowDownRight size={18} />
                         </div>
                         <div>
-                          <p className="font-semibold text-gray-900">{order.id.slice(0, 8)}</p>
+                          <p className="font-semibold text-gray-900">{order.id ? order.id.slice(0, 8) : 'N/A'}</p>
                           <p className="text-xs text-gray-500 mt-0.5">{order.customerName || 'Guest'}</p>
                         </div>
                       </div>

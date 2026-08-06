@@ -136,9 +136,9 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {filteredOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-gray-50/50">
-                    <td className="px-5 py-4 font-medium text-gray-900">#{order.id.slice(0, 8).toUpperCase()}</td>
+                {filteredOrders.map((order, idx) => (
+                  <tr key={order.id || order._id || idx} className="hover:bg-gray-50/50">
+                    <td className="px-5 py-4 font-medium text-gray-900">#{order.id ? order.id.slice(0, 8).toUpperCase() : 'N/A'}</td>
                     <td className="px-5 py-4 text-gray-600">
                       <div className="font-semibold text-gray-900">{order.customerName || 'Guest'}</div>
                       {order.customerPhone && (
