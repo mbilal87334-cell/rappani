@@ -1,0 +1,10 @@
+{
+  "name": "rappani-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "postinstall": "cd rappani-main && npm install",
+    "build": "cd rappani-main && npm run build",
+    "start": "cd rappani-main && npm run start"
+  }
+}
