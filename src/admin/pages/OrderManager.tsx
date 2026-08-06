@@ -24,7 +24,7 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
         order.id,
         `"${order.customerName || 'Guest'}"`,
         order.customerPhone || '',
-        new Date(order.createdAt).toLocaleDateString(),
+        order.createdAt && !isNaN(new Date(order.createdAt).getTime()) ? new Date(order.createdAt).toLocaleDateString() : 'N/A',
         order.totalAmount || 0,
         order.paymentMethod || '',
         order.status || 'Processing',
@@ -169,8 +169,8 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                       )}
                     </td>
                     <td className="px-5 py-4 text-gray-600 max-w-[200px] whitespace-normal">
-                      <div className="text-xs line-clamp-3" title={order.shippingAddress || 'N/A'}>
-                        {order.shippingAddress ? (
+                      <div className="text-xs line-clamp-3" title={typeof order.shippingAddress === 'string' ? order.shippingAddress : 'N/A'}>
+                        {order.shippingAddress && typeof order.shippingAddress === 'string' ? (
                           order.shippingAddress.split('\n').map((line: string, i: number) => {
                             if (line.includes('https://maps.google.com')) {
                               const urlMatch = line.match(/(https?:\/\/[^\s]+)/g);
@@ -185,12 +185,16 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                             }
                             return <div key={i}>{line}</div>;
                           })
+                        ) : order.shippingAddress ? (
+                          String(order.shippingAddress)
                         ) : (
                           'N/A'
                         )}
                       </div>
                     </td>
-                    <td className="px-5 py-4 text-gray-600">{new Date(order.createdAt).toLocaleDateString()}</td>
+                    <td className="px-5 py-4 text-gray-600">
+                      {order.createdAt && !isNaN(new Date(order.createdAt).getTime()) ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}
+                    </td>
                     <td className="px-5 py-4 font-medium text-gray-900">₹{order.totalAmount?.toLocaleString() || 0}</td>
                     <td className="px-5 py-4 text-gray-600">
                       <div>{order.paymentMethod}</div>

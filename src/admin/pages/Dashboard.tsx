@@ -89,7 +89,9 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
       monthMap.set(monthName, 0);
     }
 
-    const sortedOrders = [...safeOrders].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const sortedOrders = [...safeOrders]
+      .filter(order => order.createdAt && !isNaN(new Date(order.createdAt).getTime()))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
     sortedOrders.forEach(order => {
       const status = (order.status || '').toLowerCase();
