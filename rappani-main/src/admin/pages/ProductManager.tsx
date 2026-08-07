@@ -452,30 +452,36 @@ export default function ProductManager({ products, setProducts, apiCategories = 
       const headerMap: { [key: string]: number } = {};
       
       headerRow.forEach((h, idx) => {
-        const cleanHeader = h.toLowerCase().replace(/[^a-z0-9]/g, '');
-        const validHeaders = ['name', 'productname', 'title', 'itemname', 'product', 'category', 'type', 'group', 'price', 'rate', 'salesprice', 'amount', 'stock', 'quantity', 'qty', 'stockcount', 'image', 'imageurl', 'photo', 'picture', 'filename', 'brand', 'description', 'desc'];
+        const cleanHeader = h.toLowerCase().trim();
+        const validHeaders = [
+          'name', 'productname', 'title', 'itemname', 'product', 'category', 'type', 'group', 
+          'price', 'rate', 'salesprice', 'amount', 'stock', 'quantity', 'qty', 'stockcount', 
+          'image', 'imageurl', 'photo', 'picture', 'filename', 'brand', 'description', 'desc',
+          'பெயர்', 'பெயர்கள்', 'தயாரிப்பு', 'விலை', 'விற்பனை விலை', 'மதிப்பு', 'பிரிவு', 'வகை',
+          'இருப்பு', 'அளவு', 'படம்', 'புகைப்படம்', 'படம் பெயர்', 'விளக்கம்', 'விவரம்'
+        ];
         
-        if (validHeaders.includes(cleanHeader)) {
+        if (validHeaders.some(vh => cleanHeader.includes(vh) || vh.includes(cleanHeader))) {
           isHeaderRow = true;
         }
 
-        if (['name', 'productname', 'title', 'itemname', 'product'].includes(cleanHeader)) {
+        if (['name', 'productname', 'title', 'itemname', 'product', 'பெயர்', 'பெயர்கள்', 'தயாரிப்பு'].some(x => cleanHeader.includes(x))) {
           headerMap['name'] = idx;
-        } else if (['category', 'type', 'group'].includes(cleanHeader)) {
+        } else if (['category', 'type', 'group', 'பிரிவு', 'வகை'].some(x => cleanHeader.includes(x))) {
           headerMap['category'] = idx;
-        } else if (['price', 'rate', 'salesprice', 'amount'].includes(cleanHeader)) {
+        } else if (['price', 'rate', 'salesprice', 'amount', 'விலை', 'விற்பனை விலை', 'மதிப்பு'].some(x => cleanHeader.includes(x))) {
           headerMap['price'] = idx;
-        } else if (['originalprice', 'mrp', 'costprice'].includes(cleanHeader)) {
+        } else if (['originalprice', 'mrp', 'costprice'].some(x => cleanHeader.includes(x))) {
           headerMap['originalPrice'] = idx;
-        } else if (['deliverycharge', 'shippingcharge', 'delivery'].includes(cleanHeader)) {
+        } else if (['deliverycharge', 'shippingcharge', 'delivery'].some(x => cleanHeader.includes(x))) {
           headerMap['deliveryCharge'] = idx;
-        } else if (['stock', 'quantity', 'qty', 'stockcount'].includes(cleanHeader)) {
+        } else if (['stock', 'quantity', 'qty', 'stockcount', 'இருப்பு', 'அளவு'].some(x => cleanHeader.includes(x))) {
           headerMap['stock'] = idx;
-        } else if (['image', 'imageurl', 'photo', 'picture', 'filename'].includes(cleanHeader)) {
+        } else if (['image', 'imageurl', 'photo', 'picture', 'filename', 'படம்', 'புகைப்படம்', 'படம் பெயர்'].some(x => cleanHeader.includes(x))) {
           headerMap['image'] = idx;
-        } else if (['brand'].includes(cleanHeader)) {
+        } else if (['brand'].some(x => cleanHeader.includes(x))) {
           headerMap['brand'] = idx;
-        } else if (['description', 'desc'].includes(cleanHeader)) {
+        } else if (['description', 'desc', 'விளக்கம்', 'விவரம்'].some(x => cleanHeader.includes(x))) {
           headerMap['description'] = idx;
         }
       });
@@ -486,10 +492,29 @@ export default function ProductManager({ products, setProducts, apiCategories = 
       const categoryIdx = headerMap['category'] !== undefined ? headerMap['category'] : 1;
       const originalPriceIdx = headerMap['originalPrice'] !== undefined ? headerMap['originalPrice'] : 3;
       const stockIdx = headerMap['stock'] !== undefined ? headerMap['stock'] : 4;
-      const imageIdx = headerMap['image'] !== undefined ? headerMap['image'] : 5;
+      let imageIdx = headerMap['image'] !== undefined ? headerMap['image'] : -1;
       const brandIdx = headerMap['brand'] !== undefined ? headerMap['brand'] : 6;
       const descIdx = headerMap['description'] !== undefined ? headerMap['description'] : 7;
       const deliveryChargeIdx = headerMap['deliveryCharge'] !== undefined ? headerMap['deliveryCharge'] : -1;
+
+      // Smart Image Column Auto-detection:
+      // If we couldn't find an image column by header, look at the first few rows for cell values ending with image extensions
+      if (imageIdx === -1) {
+        for (let rIdx = 0; rIdx < Math.min(5, dataRows.length); rIdx++) {
+          const row = dataRows[rIdx];
+          if (!row) continue;
+          for (let cIdx = 0; cIdx < row.length; cIdx++) {
+            const val = String(row[cIdx]).toLowerCase().trim();
+            if (/\.(jpg|jpeg|png|webp|gif|bmp)$/i.test(val)) {
+              imageIdx = cIdx;
+              break;
+            }
+          }
+          if (imageIdx !== -1) break;
+        }
+      }
+      // Absolute fallback if still not detected
+      if (imageIdx === -1) imageIdx = 5;
 
       // Pre-parse rows
       const parsedRows: any[] = [];
@@ -506,56 +531,48 @@ export default function ProductManager({ products, setProducts, apiCategories = 
           deliveryCharge: deliveryChargeIdx !== -1 ? (parseFloat(values[deliveryChargeIdx]) || 30) : 30,
           stock: stockIdx !== -1 ? (parseInt(values[stockIdx]) || 50) : 50,
           category: categoryIdx !== -1 ? (values[categoryIdx] || 'Uncategorized') : 'Uncategorized',
-          imageVal: imageIdx !== -1 ? (values[imageIdx] || '') : '',
-          brand: brandIdx !== -1 ? (values[brandIdx] || '') : '',
-          description: descIdx !== -1 ? (values[descIdx] || '') : '',
+          imageVal: imageIdx !== -1 && imageIdx < values.length ? (values[imageIdx] || '') : '',
+          brand: brandIdx !== -1 && brandIdx < values.length ? (values[brandIdx] || '') : '',
+          description: descIdx !== -1 && descIdx < values.length ? (values[descIdx] || '') : '',
         });
       }
 
       if (parsedRows.length === 0) {
-        throw new Error('No valid products found in CSV');
+        throw new Error('No valid products found in Excel/CSV');
       }
 
-      // Step 2: Upload matched local image files to Cloudinary
+      // Step 2: Upload all selected local image files to Cloudinary
       const filenameToUrlMap: { [key: string]: string } = {};
+      const uploadedUrlsInOrder: string[] = []; // Maintain the exact sequential upload order
+
       if (selectedCsvImages && selectedCsvImages.length > 0) {
         const imagesList = Array.from(selectedCsvImages);
-        const matchedImages = imagesList.filter(file => {
-          const nameWithExt = file.name.toLowerCase().trim();
-          const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "").toLowerCase().trim();
-          return parsedRows.some(row => {
-            const csvVal = row.imageVal.toLowerCase().trim();
-            const csvValWithoutExt = csvVal.replace(/\.[^/.]+$/, "");
-            return csvVal === nameWithExt || csvValWithoutExt === nameWithoutExt;
-          });
-        });
-
-        if (matchedImages.length > 0) {
-          const batchSize = 3;
-          for (let k = 0; k < matchedImages.length; k += batchSize) {
-            const batch = matchedImages.slice(k, k + batchSize);
-            const currentBatchEnd = Math.min(k + batchSize, matchedImages.length);
-            setCsvImportProgress(`Uploading images ${k + 1} to ${currentBatchEnd} of ${matchedImages.length}...`);
-            toast.loading(`Uploading images ${k + 1}-${currentBatchEnd}/${matchedImages.length}...`, { id: 'csvImport' });
-            
-            await Promise.all(batch.map(async (imgFile) => {
-              try {
-                const formDataPayload = new FormData();
-                formDataPayload.append('image', imgFile);
-                const res = await fetchWithAuth('/api/upload', { method: 'POST', body: formDataPayload });
-                if (res.ok) {
-                  const data = await res.json();
-                  if (data.imageUrl) {
-                    filenameToUrlMap[imgFile.name.toLowerCase().trim()] = data.imageUrl;
-                  }
-                } else {
-                  console.error(`Failed uploading ${imgFile.name}: Status ${res.status}`);
+        const batchSize = 3;
+        
+        for (let k = 0; k < imagesList.length; k += batchSize) {
+          const batch = imagesList.slice(k, k + batchSize);
+          const currentBatchEnd = Math.min(k + batchSize, imagesList.length);
+          setCsvImportProgress(`Uploading images ${k + 1} to ${currentBatchEnd} of ${imagesList.length}...`);
+          toast.loading(`Uploading images ${k + 1}-${currentBatchEnd}/${imagesList.length}...`, { id: 'csvImport' });
+          
+          await Promise.all(batch.map(async (imgFile) => {
+            try {
+              const formDataPayload = new FormData();
+              formDataPayload.append('image', imgFile);
+              const res = await fetchWithAuth('/api/upload', { method: 'POST', body: formDataPayload });
+              if (res.ok) {
+                const data = await res.json();
+                if (data.imageUrl) {
+                  filenameToUrlMap[imgFile.name.toLowerCase().trim()] = data.imageUrl;
+                  uploadedUrlsInOrder.push(data.imageUrl);
                 }
-              } catch (uploadErr) {
-                console.error(`Error uploading ${imgFile.name}:`, uploadErr);
+              } else {
+                console.error(`Failed uploading ${imgFile.name}: Status ${res.status}`);
               }
-            }));
-          }
+            } catch (uploadErr) {
+              console.error(`Error uploading ${imgFile.name}:`, uploadErr);
+            }
+          }));
         }
       }
 
@@ -565,13 +582,22 @@ export default function ProductManager({ products, setProducts, apiCategories = 
         const imgRef = row.imageVal.trim().toLowerCase();
         const imgRefWithoutExt = imgRef.replace(/\.[^/.]+$/, "");
         
+        // Method 1: Match by filename
         let matchedUrl = '';
-        Object.keys(filenameToUrlMap).forEach(key => {
-          const keyWithoutExt = key.replace(/\.[^/.]+$/, "");
-          if (key === imgRef || keyWithoutExt === imgRefWithoutExt) {
-            matchedUrl = filenameToUrlMap[key];
-          }
-        });
+        if (imgRef) {
+          Object.keys(filenameToUrlMap).forEach(key => {
+            const keyWithoutExt = key.replace(/\.[^/.]+$/, "");
+            if (key === imgRef || keyWithoutExt === imgRefWithoutExt) {
+              matchedUrl = filenameToUrlMap[key];
+            }
+          });
+        }
+
+        // Method 2: Sequential fallback pairing (Product index matches image selection index)
+        if (!matchedUrl && uploadedUrlsInOrder.length > 0) {
+          const fallbackIdx = index % uploadedUrlsInOrder.length;
+          matchedUrl = uploadedUrlsInOrder[fallbackIdx];
+        }
 
         if (matchedUrl) {
           finalImageUrl = matchedUrl;
