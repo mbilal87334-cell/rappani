@@ -289,7 +289,10 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                         })()
                       ) : <span className="text-xs text-neutral-400">No location</span>}
                     </td>
-                    <td className="px-5 py-4 text-gray-600">{order.createdAt && !isNaN(new Date(order.createdAt).getTime()) ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}</td>
+                    <td className="px-5 py-4 text-gray-600">
+                      <div>{order.createdAt && !isNaN(new Date(order.createdAt).getTime()) ? new Date(order.createdAt).toLocaleDateString('en-IN') : 'N/A'}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{order.createdAt && !isNaN(new Date(order.createdAt).getTime()) ? new Date(order.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</div>
+                    </td>
                     <td className="px-5 py-4 font-medium text-gray-900">₹{order.totalAmount?.toLocaleString() || 0}</td>
                     <td className="px-5 py-4 text-gray-600">
                       <div>{order.paymentMethod}</div>
