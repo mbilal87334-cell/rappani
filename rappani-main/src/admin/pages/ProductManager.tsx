@@ -15,7 +15,9 @@ export default function ProductManager({ products, setProducts, apiCategories = 
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const csvFileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   
   const tabs = ['All', ...apiCategories.map(c => c.name)];
@@ -304,7 +306,9 @@ export default function ProductManager({ products, setProducts, apiCategories = 
           const deliveryVal = headerMap['deliveryCharge'] !== undefined ? (parseFloat(values[headerMap['deliveryCharge']]) || 0) : 0;
           const stockVal = headerMap['stock'] !== undefined ? (parseInt(values[headerMap['stock']]) || 0) : 50;
           const categoryVal = headerMap['category'] !== undefined ? (values[headerMap['category']] || 'Uncategorized') : 'Uncategorized';
-          const imageVal = headerMap['image'] !== undefined ? (values[headerMap['image']] || '') : '';
+          const imageVal = (headerMap['image'] !== undefined && values[headerMap['image']]) 
+            ? values[headerMap['image']] 
+            : `https://placehold.co/600x600/f3f4f6/9ca3af?text=${encodeURIComponent(nameVal)}`;
           const brandVal = headerMap['brand'] !== undefined ? (values[headerMap['brand']] || '') : '';
           const descVal = headerMap['description'] !== undefined ? (values[headerMap['description']] || '') : '';
 
@@ -382,7 +386,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
             className="hidden" 
           />
           <button 
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => setIsCsvModalOpen(true)}
             className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-md px-4 py-2 hover:bg-gray-50 transition-colors shadow-sm"
           >
             <Upload size={16} />
@@ -740,6 +744,75 @@ export default function ProductManager({ products, setProducts, apiCategories = 
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {isCsvModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden p-6 relative">
+            <button 
+              onClick={() => setIsCsvModalOpen(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+            >
+              <X size={20} />
+            </button>
+            
+            <h2 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
+              <Upload className="text-gray-900" size={20} />
+              Import Products CSV
+            </h2>
+            
+            <p className="text-xs text-gray-500 mb-4 leading-relaxed">
+              Upload a <strong>.csv</strong> file to bulk add products. Synonyms like "title", "qty", "rate" are mapped automatically.
+            </p>
+
+            <div className="bg-neutral-50 rounded-lg p-3 border border-neutral-200/60 mb-4 text-xs text-gray-600 space-y-1.5">
+              <div className="font-semibold text-neutral-800">Required CSV Columns:</div>
+              <div>• <strong>Name</strong> (or Title, ItemName)</div>
+              <div>• <strong>Price</strong> (or Rate, SalesPrice)</div>
+              <div className="font-semibold text-neutral-800 pt-1">Optional Columns:</div>
+              <div>• <strong>Category</strong>, <strong>Stock</strong> (Qty), <strong>Brand</strong>, <strong>Description</strong>, <strong>Image</strong></div>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  const headers = ["Name", "Category", "Price", "OriginalPrice", "Stock", "Image", "Brand", "Description"];
+                  const sampleRow = ["Premium Notebook", "Stationery", "120", "150", "200", "https://images.unsplash.com/photo-1531346878377-a5be20888e57?w=500", "Rappani", "Hardcover ruled notebook"];
+                  const csvContent = headers.join(',') + '\n' + sampleRow.join(',');
+                  const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement("a");
+                  link.setAttribute("href", url);
+                  link.setAttribute("download", "rappani_products_template.csv");
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }}
+                className="w-full flex items-center justify-center gap-2 py-2 px-4 border border-dashed border-gray-300 hover:border-gray-400 text-gray-600 hover:text-gray-700 rounded-lg text-xs font-semibold bg-gray-50/50 hover:bg-gray-50 transition-colors"
+              >
+                📥 Download Excel/CSV Template
+              </button>
+
+              <input 
+                type="file" 
+                accept=".csv" 
+                ref={csvFileInputRef}
+                onChange={(e) => {
+                  handleBulkUpload(e);
+                  setIsCsvModalOpen(false);
+                }} 
+                className="hidden" 
+              />
+
+              <button
+                onClick={() => csvFileInputRef.current?.click()}
+                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors mt-2"
+              >
+                📁 Select CSV File & Upload
+              </button>
+            </div>
           </div>
         </div>
       )}
