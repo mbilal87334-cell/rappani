@@ -352,7 +352,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
         }
 
         // Refresh products list
-        const prodRes = await fetch('/api/products?page=1&limit=5000');
+        const prodRes = await fetchWithAuth('/api/products/all');
         if (prodRes.ok) {
           const data = await prodRes.json();
           setProducts(data.products || data);
@@ -411,10 +411,17 @@ export default function ProductManager({ products, setProducts, apiCategories = 
       };
 
       const headerRow = parseCSVRow(lines[0]);
+      let isHeaderRow = false;
       const headerMap: { [key: string]: number } = {};
       
       headerRow.forEach((h, idx) => {
         const cleanHeader = h.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const validHeaders = ['name', 'productname', 'title', 'itemname', 'product', 'category', 'type', 'group', 'price', 'rate', 'salesprice', 'amount', 'stock', 'quantity', 'qty', 'stockcount', 'image', 'imageurl', 'photo', 'picture', 'filename', 'brand', 'description', 'desc'];
+        
+        if (validHeaders.includes(cleanHeader)) {
+          isHeaderRow = true;
+        }
+
         if (['name', 'productname', 'title', 'itemname', 'product'].includes(cleanHeader)) {
           headerMap['name'] = idx;
         } else if (['category', 'type', 'group'].includes(cleanHeader)) {
@@ -436,29 +443,35 @@ export default function ProductManager({ products, setProducts, apiCategories = 
         }
       });
 
-      if (headerMap['name'] === undefined) {
-        throw new Error("Could not find 'Name' or 'Product' column in CSV headers");
-      }
-      if (headerMap['price'] === undefined) {
-        throw new Error("Could not find 'Price' or 'Rate' column in CSV headers");
-      }
+      // Default index-based mapping fallbacks if headers don't match or are missing
+      const nameIdx = headerMap['name'] !== undefined ? headerMap['name'] : 0;
+      const priceIdx = headerMap['price'] !== undefined ? headerMap['price'] : 2;
+      const categoryIdx = headerMap['category'] !== undefined ? headerMap['category'] : 1;
+      const originalPriceIdx = headerMap['originalPrice'] !== undefined ? headerMap['originalPrice'] : 3;
+      const stockIdx = headerMap['stock'] !== undefined ? headerMap['stock'] : 4;
+      const imageIdx = headerMap['image'] !== undefined ? headerMap['image'] : 5;
+      const brandIdx = headerMap['brand'] !== undefined ? headerMap['brand'] : 6;
+      const descIdx = headerMap['description'] !== undefined ? headerMap['description'] : 7;
+      const deliveryChargeIdx = headerMap['deliveryCharge'] !== undefined ? headerMap['deliveryCharge'] : -1;
 
       // Pre-parse rows
       const parsedRows: any[] = [];
-      for (let i = 1; i < lines.length; i++) {
+      const startLine = isHeaderRow ? 1 : 0;
+
+      for (let i = startLine; i < lines.length; i++) {
         const values = parseCSVRow(lines[i]);
-        if (values.length === 0 || !values[headerMap['name']]) continue;
+        if (values.length === 0 || !values[nameIdx]) continue;
         
         parsedRows.push({
-          name: values[headerMap['name']],
-          price: parseFloat(values[headerMap['price']]) || 0,
-          originalPrice: headerMap['originalPrice'] !== undefined ? (parseFloat(values[headerMap['originalPrice']]) || undefined) : undefined,
-          deliveryCharge: headerMap['deliveryCharge'] !== undefined ? (parseFloat(values[headerMap['deliveryCharge']]) || 0) : 0,
-          stock: headerMap['stock'] !== undefined ? (parseInt(values[headerMap['stock']]) || 0) : 50,
-          category: headerMap['category'] !== undefined ? (values[headerMap['category']] || 'Uncategorized') : 'Uncategorized',
-          imageVal: headerMap['image'] !== undefined ? (values[headerMap['image']] || '') : '',
-          brand: headerMap['brand'] !== undefined ? (values[headerMap['brand']] || '') : '',
-          description: headerMap['description'] !== undefined ? (values[headerMap['description']] || '') : '',
+          name: values[nameIdx],
+          price: parseFloat(values[priceIdx]) || 0,
+          originalPrice: originalPriceIdx !== -1 ? (parseFloat(values[originalPriceIdx]) || undefined) : undefined,
+          deliveryCharge: deliveryChargeIdx !== -1 ? (parseFloat(values[deliveryChargeIdx]) || 30) : 30,
+          stock: stockIdx !== -1 ? (parseInt(values[stockIdx]) || 50) : 50,
+          category: categoryIdx !== -1 ? (values[categoryIdx] || 'Uncategorized') : 'Uncategorized',
+          imageVal: imageIdx !== -1 ? (values[imageIdx] || '') : '',
+          brand: brandIdx !== -1 ? (values[brandIdx] || '') : '',
+          description: descIdx !== -1 ? (values[descIdx] || '') : '',
         });
       }
 
@@ -471,8 +484,13 @@ export default function ProductManager({ products, setProducts, apiCategories = 
       if (selectedCsvImages && selectedCsvImages.length > 0) {
         const imagesList = Array.from(selectedCsvImages);
         const matchedImages = imagesList.filter(file => {
-          const name = file.name.toLowerCase();
-          return parsedRows.some(row => row.imageVal.toLowerCase() === name);
+          const nameWithExt = file.name.toLowerCase().trim();
+          const nameWithoutExt = file.name.replace(/\.[^/.]+$/, "").toLowerCase().trim();
+          return parsedRows.some(row => {
+            const csvVal = row.imageVal.toLowerCase().trim();
+            const csvValWithoutExt = csvVal.replace(/\.[^/.]+$/, "");
+            return csvVal === nameWithExt || csvValWithoutExt === nameWithoutExt;
+          });
         });
 
         if (matchedImages.length > 0) {
@@ -491,7 +509,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
                 if (res.ok) {
                   const data = await res.json();
                   if (data.imageUrl) {
-                    filenameToUrlMap[imgFile.name.toLowerCase()] = data.imageUrl;
+                    filenameToUrlMap[imgFile.name.toLowerCase().trim()] = data.imageUrl;
                   }
                 } else {
                   console.error(`Failed uploading ${imgFile.name}: Status ${res.status}`);
@@ -508,9 +526,18 @@ export default function ProductManager({ products, setProducts, apiCategories = 
       const finalProducts: Product[] = parsedRows.map((row, index) => {
         let finalImageUrl = '';
         const imgRef = row.imageVal.trim().toLowerCase();
+        const imgRefWithoutExt = imgRef.replace(/\.[^/.]+$/, "");
         
-        if (filenameToUrlMap[imgRef]) {
-          finalImageUrl = filenameToUrlMap[imgRef];
+        let matchedUrl = '';
+        Object.keys(filenameToUrlMap).forEach(key => {
+          const keyWithoutExt = key.replace(/\.[^/.]+$/, "");
+          if (key === imgRef || keyWithoutExt === imgRefWithoutExt) {
+            matchedUrl = filenameToUrlMap[key];
+          }
+        });
+
+        if (matchedUrl) {
+          finalImageUrl = matchedUrl;
         } else if (imgRef.startsWith('http://') || imgRef.startsWith('https://')) {
           finalImageUrl = row.imageVal;
         } else {
@@ -547,8 +574,8 @@ export default function ProductManager({ products, setProducts, apiCategories = 
         throw new Error(errData.error || "Failed to bulk save products");
       }
 
-      // Refresh products list
-      const prodRes = await fetch('/api/products?page=1&limit=5000');
+      // Refresh products list via authenticated admin route
+      const prodRes = await fetchWithAuth('/api/products/all');
       if (prodRes.ok) {
         const data = await prodRes.json();
         setProducts(data.products || data);
