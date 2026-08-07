@@ -581,19 +581,32 @@ export default function ProductManager({ products, setProducts, apiCategories = 
         let finalImageUrl = '';
         const imgRef = row.imageVal.trim().toLowerCase();
         const imgRefWithoutExt = imgRef.replace(/\.[^/.]+$/, "");
+        const cleanRowName = row.name.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
         
-        // Method 1: Match by filename
         let matchedUrl = '';
+        
+        // Method 1: Match by filename listed in the Image column
         if (imgRef) {
           Object.keys(filenameToUrlMap).forEach(key => {
-            const keyWithoutExt = key.replace(/\.[^/.]+$/, "");
+            const keyWithoutExt = key.replace(/\.[^/.]+$/, "").trim();
             if (key === imgRef || keyWithoutExt === imgRefWithoutExt) {
               matchedUrl = filenameToUrlMap[key];
             }
           });
         }
 
-        // Method 2: Sequential fallback pairing (Product index matches image selection index)
+        // Method 2: Match by Product Name (comparing cleaned product name with cleaned image filename)
+        if (!matchedUrl) {
+          Object.keys(filenameToUrlMap).forEach(key => {
+            const keyWithoutExt = key.replace(/\.[^/.]+$/, "").trim();
+            const cleanKeyWithoutExt = keyWithoutExt.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+            if (cleanKeyWithoutExt === cleanRowName) {
+              matchedUrl = filenameToUrlMap[key];
+            }
+          });
+        }
+
+        // Method 3: Sequential fallback pairing (only if no name matches)
         if (!matchedUrl && uploadedUrlsInOrder.length > 0) {
           const fallbackIdx = index % uploadedUrlsInOrder.length;
           matchedUrl = uploadedUrlsInOrder[fallbackIdx];
