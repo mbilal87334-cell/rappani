@@ -548,6 +548,32 @@ async function startServer() {
     }
   });
 
+  app.post("/api/products/bulk", authenticateToken, async (req, res) => {
+    try {
+      const products = req.body;
+      if (!Array.isArray(products)) {
+        return res.status(400).json({ success: false, error: "Invalid data format" });
+      }
+
+      // Insert products into database
+      const inserted = await Product.insertMany(products);
+
+      // Auto-create missing categories
+      const uniqueCategories = [...new Set(products.map(p => p.category).filter(Boolean))];
+      for (const catName of uniqueCategories) {
+        const exists = await Category.findOne({ name: catName });
+        if (!exists) {
+          const catId = `cat_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+          await Category.create({ id: catId, name: catName });
+        }
+      }
+
+      res.json({ success: true, count: inserted.length });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message || "Server error" });
+    }
+  });
+
   app.put("/api/products/:id", authenticateToken, async (req, res) => {
     try {
       const { id } = req.params;

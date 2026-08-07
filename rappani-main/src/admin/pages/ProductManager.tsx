@@ -220,7 +220,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
     }
   };
 
-const handleBulkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleBulkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -228,47 +228,130 @@ const handleBulkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     reader.onload = async (event) => {
       try {
         const text = event.target?.result as string;
-        const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
         if (lines.length < 2) return toast.error('CSV is empty or missing headers');
         
-        // Assume CSV: name,category,price,stock,image
-        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        // Robust CSV parser supporting quotes and inner commas
+        const parseCSVRow = (rowText: string): string[] => {
+          const result: string[] = [];
+          let currentField = '';
+          let inQuotes = false;
+          
+          for (let i = 0; i < rowText.length; i++) {
+            const char = rowText[i];
+            const nextChar = rowText[i+1];
+            
+            if (char === '"') {
+              if (inQuotes && nextChar === '"') {
+                currentField += '"';
+                i++;
+              } else {
+                inQuotes = !inQuotes;
+              }
+            } else if (char === ',' && !inQuotes) {
+              result.push(currentField.trim());
+              currentField = '';
+            } else {
+              currentField += char;
+            }
+          }
+          result.push(currentField.trim());
+          return result;
+        };
+
+        const headerRow = parseCSVRow(lines[0]);
+        const headerMap: { [key: string]: number } = {};
+        
+        headerRow.forEach((h, idx) => {
+          const cleanHeader = h.toLowerCase().replace(/[^a-z0-9]/g, '');
+          if (['name', 'productname', 'title', 'itemname', 'product'].includes(cleanHeader)) {
+            headerMap['name'] = idx;
+          } else if (['category', 'type', 'group'].includes(cleanHeader)) {
+            headerMap['category'] = idx;
+          } else if (['price', 'rate', 'salesprice', 'amount'].includes(cleanHeader)) {
+            headerMap['price'] = idx;
+          } else if (['originalprice', 'mrp', 'costprice'].includes(cleanHeader)) {
+            headerMap['originalPrice'] = idx;
+          } else if (['deliverycharge', 'shippingcharge', 'delivery'].includes(cleanHeader)) {
+            headerMap['deliveryCharge'] = idx;
+          } else if (['stock', 'quantity', 'qty', 'stockcount'].includes(cleanHeader)) {
+            headerMap['stock'] = idx;
+          } else if (['image', 'imageurl', 'photo', 'picture'].includes(cleanHeader)) {
+            headerMap['image'] = idx;
+          } else if (['brand'].includes(cleanHeader)) {
+            headerMap['brand'] = idx;
+          } else if (['description', 'desc'].includes(cleanHeader)) {
+            headerMap['description'] = idx;
+          }
+        });
+
+        if (headerMap['name'] === undefined) {
+          return toast.error("Could not find 'Name' or 'Product' column in CSV headers");
+        }
+        if (headerMap['price'] === undefined) {
+          return toast.error("Could not find 'Price' or 'Rate' column in CSV headers");
+        }
+
         const newProducts: Product[] = [];
         
         for (let i = 1; i < lines.length; i++) {
-          const values = lines[i].split(',').map(v => v.trim());
-          const obj: any = {};
-          headers.forEach((h, idx) => { obj[h] = values[idx] || ''; });
+          const values = parseCSVRow(lines[i]);
+          if (values.length === 0 || !values[headerMap['name']]) continue;
           
-          if (!obj.name || !obj.price) continue;
-          
+          const nameVal = values[headerMap['name']];
+          const priceVal = parseFloat(values[headerMap['price']]) || 0;
+          const originalPriceVal = headerMap['originalPrice'] !== undefined ? (parseFloat(values[headerMap['originalPrice']]) || undefined) : undefined;
+          const deliveryVal = headerMap['deliveryCharge'] !== undefined ? (parseFloat(values[headerMap['deliveryCharge']]) || 0) : 0;
+          const stockVal = headerMap['stock'] !== undefined ? (parseInt(values[headerMap['stock']]) || 0) : 50;
+          const categoryVal = headerMap['category'] !== undefined ? (values[headerMap['category']] || 'Uncategorized') : 'Uncategorized';
+          const imageVal = headerMap['image'] !== undefined ? (values[headerMap['image']] || '') : '';
+          const brandVal = headerMap['brand'] !== undefined ? (values[headerMap['brand']] || '') : '';
+          const descVal = headerMap['description'] !== undefined ? (values[headerMap['description']] || '') : '';
+
           const newProduct: Product = {
-            id: `prod_${Date.now()}_${i}`,
-            name: obj.name,
-            category: obj.category || 'Uncategorized',
-            price: parseFloat(obj.price) || 0,
-            originalPrice: obj.originalprice ? parseFloat(obj.originalprice) : undefined,
-            stock: parseInt(obj.stock) || 50,
-            image: obj.image || '',
+            id: `prod_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 4)}`,
+            name: nameVal,
+            category: categoryVal,
+            price: priceVal,
+            originalPrice: originalPriceVal,
+            deliveryCharge: deliveryVal,
+            stock: stockVal,
+            image: imageVal,
+            brand: brandVal,
+            description: descVal,
             isVisible: true,
             isFeatured: false
           };
           newProducts.push(newProduct);
         }
 
-        if (newProducts.length === 0) return toast.error('No valid products found in CSV');
+        if (newProducts.length === 0) {
+          return toast.error('No valid products found in CSV');
+        }
         
         toast.loading(`Importing ${newProducts.length} products...`, { id: 'bulkUpload' });
         
-        // Process sequentially
-        for (const p of newProducts) {
-          await saveProduct(p, false);
+        const res = await fetchWithAuth(`${API_BASE}/products/bulk`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newProducts),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || "Failed to bulk save products");
         }
-        
-        setProducts((prev: Product[]) => [...newProducts, ...prev]);
+
+        // Refresh products list
+        const prodRes = await fetch(`${API_BASE}/products?page=1&limit=5000`);
+        if (prodRes.ok) {
+          const data = await prodRes.json();
+          setProducts(data.products || data);
+        }
+
         toast.success(`Successfully imported ${newProducts.length} products!`, { id: 'bulkUpload' });
-      } catch (err) {
-        toast.error('Failed to parse CSV', { id: 'bulkUpload' });
+      } catch (err: any) {
+        toast.error(`Failed to parse/import CSV: ${err.message || err}`, { id: 'bulkUpload' });
       }
     };
     reader.readAsText(file);
