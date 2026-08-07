@@ -476,19 +476,30 @@ export default function ProductManager({ products, setProducts, apiCategories = 
         });
 
         if (matchedImages.length > 0) {
-          for (let k = 0; k < matchedImages.length; k++) {
-            const imgFile = matchedImages[k];
-            setCsvImportProgress(`Uploading image ${k + 1} of ${matchedImages.length} (${imgFile.name})...`);
-            toast.loading(`Uploading image ${k + 1}/${matchedImages.length}...`, { id: 'csvImport' });
+          const batchSize = 3;
+          for (let k = 0; k < matchedImages.length; k += batchSize) {
+            const batch = matchedImages.slice(k, k + batchSize);
+            const currentBatchEnd = Math.min(k + batchSize, matchedImages.length);
+            setCsvImportProgress(`Uploading images ${k + 1} to ${currentBatchEnd} of ${matchedImages.length}...`);
+            toast.loading(`Uploading images ${k + 1}-${currentBatchEnd}/${matchedImages.length}...`, { id: 'csvImport' });
             
-            const formDataPayload = new FormData();
-            formDataPayload.append('image', imgFile);
-            const res = await fetchWithAuth('/api/upload', { method: 'POST', body: formDataPayload });
-            const data = await res.json();
-            
-            if (data.imageUrl) {
-              filenameToUrlMap[imgFile.name.toLowerCase()] = data.imageUrl;
-            }
+            await Promise.all(batch.map(async (imgFile) => {
+              try {
+                const formDataPayload = new FormData();
+                formDataPayload.append('image', imgFile);
+                const res = await fetchWithAuth('/api/upload', { method: 'POST', body: formDataPayload });
+                if (res.ok) {
+                  const data = await res.json();
+                  if (data.imageUrl) {
+                    filenameToUrlMap[imgFile.name.toLowerCase()] = data.imageUrl;
+                  }
+                } else {
+                  console.error(`Failed uploading ${imgFile.name}: Status ${res.status}`);
+                }
+              } catch (uploadErr) {
+                console.error(`Error uploading ${imgFile.name}:`, uploadErr);
+              }
+            }));
           }
         }
       }
