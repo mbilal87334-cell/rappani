@@ -340,7 +340,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
         
         toast.loading(`Importing ${newProducts.length} products...`, { id: 'bulkUpload' });
         
-        const res = await fetchWithAuth(`${API_BASE}/products/bulk`, {
+        const res = await fetchWithAuth('/api/products/bulk', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newProducts),
@@ -352,7 +352,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
         }
 
         // Refresh products list
-        const prodRes = await fetch(`${API_BASE}/products?page=1&limit=5000`);
+        const prodRes = await fetch('/api/products?page=1&limit=5000');
         if (prodRes.ok) {
           const data = await prodRes.json();
           setProducts(data.products || data);
@@ -525,7 +525,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
       setCsvImportProgress('Saving products to database...');
       toast.loading('Saving products to database...', { id: 'csvImport' });
       
-      const res = await fetchWithAuth(`${API_BASE}/products/bulk`, {
+      const res = await fetchWithAuth('/api/products/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(finalProducts),
@@ -537,7 +537,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
       }
 
       // Refresh products list
-      const prodRes = await fetch(`${API_BASE}/products?page=1&limit=5000`);
+      const prodRes = await fetch('/api/products?page=1&limit=5000');
       if (prodRes.ok) {
         const data = await prodRes.json();
         setProducts(data.products || data);
