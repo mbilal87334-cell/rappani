@@ -584,32 +584,44 @@ export default function ProductManager({ products, setProducts, apiCategories = 
         const cleanRowName = row.name.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
         
         let matchedUrl = '';
+        let bestScore = 0;
         
-        // Method 1: Match by filename listed in the Image column
+        // 1. Match by filename listed in the Image column (Score: 100)
         if (imgRef) {
           Object.keys(filenameToUrlMap).forEach(key => {
             const keyWithoutExt = key.replace(/\.[^/.]+$/, "").trim();
             if (key === imgRef || keyWithoutExt === imgRefWithoutExt) {
               matchedUrl = filenameToUrlMap[key];
+              bestScore = 100;
             }
           });
         }
 
-        // Method 2: Match by Product Name (comparing cleaned product name with cleaned image filename)
-        if (!matchedUrl) {
+        // 2. Match by Product Name (Fuzzy/Containment matching)
+        if (bestScore < 100) {
           Object.keys(filenameToUrlMap).forEach(key => {
             const keyWithoutExt = key.replace(/\.[^/.]+$/, "").trim();
             const cleanKeyWithoutExt = keyWithoutExt.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
-            if (cleanKeyWithoutExt === cleanRowName) {
-              matchedUrl = filenameToUrlMap[key];
+            
+            if (cleanKeyWithoutExt && cleanRowName) {
+              if (cleanKeyWithoutExt === cleanRowName) {
+                matchedUrl = filenameToUrlMap[key];
+                bestScore = 90;
+              } else if (cleanKeyWithoutExt.length > 2 && cleanRowName.includes(cleanKeyWithoutExt)) {
+                // E.g. image name "pen" matches product "Gel Pen"
+                if (bestScore < 80) {
+                  matchedUrl = filenameToUrlMap[key];
+                  bestScore = 80;
+                }
+              } else if (cleanRowName.length > 2 && cleanKeyWithoutExt.includes(cleanRowName)) {
+                // E.g. image name "Gel Pen Premium" matches product "Gel Pen"
+                if (bestScore < 70) {
+                  matchedUrl = filenameToUrlMap[key];
+                  bestScore = 70;
+                }
+              }
             }
           });
-        }
-
-        // Method 3: Sequential fallback pairing (only if no name matches)
-        if (!matchedUrl && uploadedUrlsInOrder.length > 0) {
-          const fallbackIdx = index % uploadedUrlsInOrder.length;
-          matchedUrl = uploadedUrlsInOrder[fallbackIdx];
         }
 
         if (matchedUrl) {
