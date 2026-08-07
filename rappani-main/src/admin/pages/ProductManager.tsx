@@ -453,7 +453,8 @@ export default function ProductManager({ products, setProducts, apiCategories = 
         const validHeaders = [
           'name', 'productname', 'title', 'itemname', 'product', 'category', 'type', 'group', 
           'price', 'rate', 'salesprice', 'amount', 'sellingprice', 'stock', 'quantity', 'qty', 'stockcount', 
-          'image', 'imageurl', 'photo', 'picture', 'filename', 'brand', 'description', 'desc', 'details',
+          'image', 'imageurl', 'photo', 'picture', 'filename', 'url', 'producturl', 'link', 'imagelink', 'productlink',
+          'brand', 'description', 'desc', 'details',
           'originalprice', 'mrp', 'costprice', 'originalrate', 'strikerate', 'strikebrand',
           'பெயர்', 'பெயர்கள்', 'தயாரிப்பு', 'விலை', 'விற்பனைவிலை', 'மதிப்பு', 'பிரிவு', 'வகை',
           'இருப்பு', 'அளவு', 'படம்', 'புகைப்படம்', 'படம்பெயர்', 'விளக்கம்', 'விவரம்', 'அசல்விலை', 'அசல்'
@@ -475,7 +476,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
           headerMap['deliveryCharge'] = idx;
         } else if (['stock', 'quantity', 'qty', 'stockcount', 'இருப்பு', 'அளவு'].includes(cleanHeader)) {
           headerMap['stock'] = idx;
-        } else if (['image', 'imageurl', 'photo', 'picture', 'filename', 'படம்', 'புகைப்படம்', 'படம்பெயர்'].includes(cleanHeader)) {
+        } else if (['image', 'imageurl', 'photo', 'picture', 'filename', 'url', 'producturl', 'link', 'imagelink', 'productlink', 'படம்', 'புகைப்படம்', 'படம்பெயர்'].includes(cleanHeader)) {
           headerMap['image'] = idx;
         } else if (['brand', 'company'].includes(cleanHeader)) {
           headerMap['brand'] = idx;
@@ -500,7 +501,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
           if (!row) continue;
           for (let cIdx = 0; cIdx < row.length; cIdx++) {
             const val = String(row[cIdx]).toLowerCase().trim();
-            if (/\.(jpg|jpeg|png|webp|gif|bmp)$/i.test(val)) {
+            if (val.startsWith('http://') || val.startsWith('https://') || /\.(jpg|jpeg|png|webp|gif|bmp)$/i.test(val)) {
               imageIdx = cIdx;
               break;
             }
@@ -517,6 +518,9 @@ export default function ProductManager({ products, setProducts, apiCategories = 
         const values = dataRows[i];
         if (values.length === 0 || !values[nameIdx]) continue;
         
+        const imgVal = imageIdx !== -1 && imageIdx < values.length ? String(values[imageIdx]).trim() : '';
+        const isUrl = imgVal.startsWith('http://') || imgVal.startsWith('https://');
+
         parsed.push({
           name: values[nameIdx],
           price: parseFloat(values[priceIdx]) || 0,
@@ -524,11 +528,11 @@ export default function ProductManager({ products, setProducts, apiCategories = 
           deliveryCharge: deliveryChargeIdx !== -1 && deliveryChargeIdx < values.length ? (parseFloat(values[deliveryChargeIdx]) || 30) : 30,
           stock: stockIdx !== -1 && stockIdx < values.length ? (parseInt(values[stockIdx]) || 50) : 50,
           category: categoryIdx !== -1 && categoryIdx < values.length ? (values[categoryIdx] || 'Uncategorized') : 'Uncategorized',
-          imageVal: imageIdx !== -1 && imageIdx < values.length ? (values[imageIdx] || '') : '',
+          imageVal: imgVal,
           brand: brandIdx !== -1 && brandIdx < values.length ? (values[brandIdx] || '') : '',
           description: descIdx !== -1 && descIdx < values.length ? (values[descIdx] || '') : '',
           imageFile: null,
-          previewUrl: ''
+          previewUrl: isUrl ? imgVal : ''
         });
       }
 
