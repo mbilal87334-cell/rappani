@@ -17,7 +17,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
   const [isUploading, setIsUploading] = useState(false);
   const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
   const [selectedCsvFile, setSelectedCsvFile] = useState<File | null>(null);
-  const [selectedCsvImages, setSelectedCsvImages] = useState<FileList | null>(null);
+  const [parsedRows, setParsedRows] = useState<any[]>([]);
   const [isCsvImporting, setIsCsvImporting] = useState(false);
   const [csvImportProgress, setCsvImportProgress] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -367,13 +367,12 @@ export default function ProductManager({ products, setProducts, apiCategories = 
     e.target.value = ''; // Reset
   };
 
-  const handleCsvImportSubmit = async () => {
-    if (!selectedCsvFile) {
-      return toast.error("Please select a CSV file first");
-    }
-    
-    setIsCsvImporting(true);
-    toast.loading('Processing CSV & images...', { id: 'csvImport' });
+  const handleCsvFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSelectedCsvFile(file);
+    setParsedRows([]);
+    setCsvImportProgress('Parsing file...');
     
     try {
       const loadSheetJS = (): Promise<any> => {
@@ -393,11 +392,9 @@ export default function ProductManager({ products, setProducts, apiCategories = 
       let headerRow: string[] = [];
       let dataRows: string[][] = [];
 
-      if (selectedCsvFile.name.endsWith('.xlsx') || selectedCsvFile.name.endsWith('.xls')) {
-        setCsvImportProgress('Loading Excel parser...');
+      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
         const XLSX = await loadSheetJS();
-        setCsvImportProgress('Reading Excel file...');
-        const buffer = await selectedCsvFile.arrayBuffer();
+        const buffer = await file.arrayBuffer();
         const workbook = XLSX.read(new Uint8Array(buffer), { type: 'array' });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
@@ -411,8 +408,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
         headerRow = stringRows[0];
         dataRows = stringRows;
       } else {
-        setCsvImportProgress('Reading CSV file...');
-        const text = await selectedCsvFile.text();
+        const text = await file.text();
         const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
         if (lines.length < 1) {
           throw new Error('CSV is empty');
@@ -448,6 +444,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
         headerRow = parseCSVRow(lines[0]);
         dataRows = lines.map(line => parseCSVRow(line));
       }
+
       let isHeaderRow = false;
       const headerMap: { [key: string]: number } = {};
       
@@ -486,7 +483,6 @@ export default function ProductManager({ products, setProducts, apiCategories = 
         }
       });
 
-      // Default index-based mapping fallbacks if headers don't match or are missing
       const nameIdx = headerMap['name'] !== undefined ? headerMap['name'] : 0;
       const priceIdx = headerMap['price'] !== undefined ? headerMap['price'] : 2;
       const categoryIdx = headerMap['category'] !== undefined ? headerMap['category'] : 1;
@@ -497,8 +493,6 @@ export default function ProductManager({ products, setProducts, apiCategories = 
       const descIdx = headerMap['description'] !== undefined ? headerMap['description'] : 7;
       const deliveryChargeIdx = headerMap['deliveryCharge'] !== undefined ? headerMap['deliveryCharge'] : -1;
 
-      // Smart Image Column Auto-detection:
-      // If we couldn't find an image column by header, look at the first few rows for cell values ending with image extensions
       if (imageIdx === -1) {
         for (let rIdx = 0; rIdx < Math.min(5, dataRows.length); rIdx++) {
           const row = dataRows[rIdx];
@@ -513,148 +507,140 @@ export default function ProductManager({ products, setProducts, apiCategories = 
           if (imageIdx !== -1) break;
         }
       }
-      // Absolute fallback if still not detected
       if (imageIdx === -1) imageIdx = 5;
 
-      // Pre-parse rows
-      const parsedRows: any[] = [];
+      const parsed: any[] = [];
       const startLine = isHeaderRow ? 1 : 0;
 
       for (let i = startLine; i < dataRows.length; i++) {
         const values = dataRows[i];
         if (values.length === 0 || !values[nameIdx]) continue;
         
-        parsedRows.push({
+        parsed.push({
           name: values[nameIdx],
           price: parseFloat(values[priceIdx]) || 0,
-          originalPrice: originalPriceIdx !== -1 ? (parseFloat(values[originalPriceIdx]) || undefined) : undefined,
-          deliveryCharge: deliveryChargeIdx !== -1 ? (parseFloat(values[deliveryChargeIdx]) || 30) : 30,
-          stock: stockIdx !== -1 ? (parseInt(values[stockIdx]) || 50) : 50,
-          category: categoryIdx !== -1 ? (values[categoryIdx] || 'Uncategorized') : 'Uncategorized',
+          originalPrice: originalPriceIdx !== -1 && originalPriceIdx < values.length ? (parseFloat(values[originalPriceIdx]) || undefined) : undefined,
+          deliveryCharge: deliveryChargeIdx !== -1 && deliveryChargeIdx < values.length ? (parseFloat(values[deliveryChargeIdx]) || 30) : 30,
+          stock: stockIdx !== -1 && stockIdx < values.length ? (parseInt(values[stockIdx]) || 50) : 50,
+          category: categoryIdx !== -1 && categoryIdx < values.length ? (values[categoryIdx] || 'Uncategorized') : 'Uncategorized',
           imageVal: imageIdx !== -1 && imageIdx < values.length ? (values[imageIdx] || '') : '',
           brand: brandIdx !== -1 && brandIdx < values.length ? (values[brandIdx] || '') : '',
           description: descIdx !== -1 && descIdx < values.length ? (values[descIdx] || '') : '',
+          imageFile: null,
+          previewUrl: ''
         });
       }
 
-      if (parsedRows.length === 0) {
-        throw new Error('No valid products found in Excel/CSV');
+      setParsedRows(parsed);
+      setCsvImportProgress('');
+    } catch (err: any) {
+      toast.error(`Failed to parse file: ${err.message || err}`);
+      setSelectedCsvFile(null);
+      setCsvImportProgress('');
+    }
+  };
+
+  const handleBulkImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    
+    setParsedRows(prev => prev.map((row, idx) => {
+      if (idx < files.length) {
+        const file = files[idx];
+        return {
+          ...row,
+          imageFile: file,
+          previewUrl: URL.createObjectURL(file)
+        };
       }
+      return row;
+    }));
+    toast.success(`Paired ${Math.min(files.length, parsedRows.length)} photos in the order of selection!`);
+  };
 
-      // Step 2: Upload all selected local image files to Cloudinary
-      const filenameToUrlMap: { [key: string]: string } = {};
-      const uploadedUrlsInOrder: string[] = []; // Maintain the exact sequential upload order
+  const handleSingleImageSelect = (index: number, file: File) => {
+    setParsedRows(prev => prev.map((row, idx) => {
+      if (idx === index) {
+        return {
+          ...row,
+          imageFile: file,
+          previewUrl: URL.createObjectURL(file)
+        };
+      }
+      return row;
+    }));
+  };
 
-      if (selectedCsvImages && selectedCsvImages.length > 0) {
-        const imagesList = Array.from(selectedCsvImages);
-        const batchSize = 3;
+  const handleCsvImportSubmit = async () => {
+    if (parsedRows.length === 0) {
+      return toast.error("Please select a file first");
+    }
+
+    setIsCsvImporting(true);
+    setCsvImportProgress('Uploading photos...');
+    toast.loading('Uploading photos to server...', { id: 'csvImport' });
+
+    try {
+      const finalProducts: Product[] = [];
+      const batchSize = 3;
+      
+      for (let i = 0; i < parsedRows.length; i += batchSize) {
+        const batch = parsedRows.slice(i, i + batchSize);
+        const currentBatchEnd = Math.min(i + batchSize, parsedRows.length);
+        setCsvImportProgress(`Uploading product images ${i + 1} to ${currentBatchEnd} of ${parsedRows.length}...`);
         
-        for (let k = 0; k < imagesList.length; k += batchSize) {
-          const batch = imagesList.slice(k, k + batchSize);
-          const currentBatchEnd = Math.min(k + batchSize, imagesList.length);
-          setCsvImportProgress(`Uploading images ${k + 1} to ${currentBatchEnd} of ${imagesList.length}...`);
-          toast.loading(`Uploading images ${k + 1}-${currentBatchEnd}/${imagesList.length}...`, { id: 'csvImport' });
-          
-          await Promise.all(batch.map(async (imgFile) => {
+        await Promise.all(batch.map(async (row, batchIdx) => {
+          const globalIdx = i + batchIdx;
+          let finalImageUrl = '';
+
+          if (row.imageFile) {
             try {
               const formDataPayload = new FormData();
-              formDataPayload.append('image', imgFile);
+              formDataPayload.append('image', row.imageFile);
               const res = await fetchWithAuth('/api/upload', { method: 'POST', body: formDataPayload });
               if (res.ok) {
                 const data = await res.json();
-                if (data.imageUrl) {
-                  filenameToUrlMap[imgFile.name.toLowerCase().trim()] = data.imageUrl;
-                  uploadedUrlsInOrder.push(data.imageUrl);
+                if (data?.imageUrl) {
+                  finalImageUrl = data.imageUrl;
                 }
-              } else {
-                console.error(`Failed uploading ${imgFile.name}: Status ${res.status}`);
               }
-            } catch (uploadErr) {
-              console.error(`Error uploading ${imgFile.name}:`, uploadErr);
+            } catch (err) {
+              console.error(`Failed to upload image for ${row.name}`, err);
             }
-          }));
-        }
+          }
+
+          if (!finalImageUrl) {
+            if (row.imageVal && (row.imageVal.startsWith('http://') || row.imageVal.startsWith('https://'))) {
+              finalImageUrl = row.imageVal;
+            } else {
+              finalImageUrl = `https://placehold.co/600x600/f3f4f6/9ca3af?text=${encodeURIComponent(row.name)}`;
+            }
+          }
+
+          finalProducts[globalIdx] = {
+            id: `prod_${Date.now()}_${globalIdx}_${Math.random().toString(36).substr(2, 4)}`,
+            name: row.name,
+            category: row.category,
+            price: row.price,
+            originalPrice: row.originalPrice,
+            deliveryCharge: row.deliveryCharge,
+            stock: row.stock,
+            image: finalImageUrl,
+            brand: row.brand,
+            description: row.description,
+            isVisible: true,
+            isFeatured: false
+          };
+        }));
       }
 
-      // Step 3: Map Cloudinary URLs or fallbacks
-      const finalProducts: Product[] = parsedRows.map((row, index) => {
-        let finalImageUrl = '';
-        const imgRef = row.imageVal.trim().toLowerCase();
-        const imgRefWithoutExt = imgRef.replace(/\.[^/.]+$/, "");
-        const cleanRowName = row.name.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
-        
-        let matchedUrl = '';
-        let bestScore = 0;
-        
-        // 1. Match by filename listed in the Image column (Score: 100)
-        if (imgRef) {
-          Object.keys(filenameToUrlMap).forEach(key => {
-            const keyWithoutExt = key.replace(/\.[^/.]+$/, "").trim();
-            if (key === imgRef || keyWithoutExt === imgRefWithoutExt) {
-              matchedUrl = filenameToUrlMap[key];
-              bestScore = 100;
-            }
-          });
-        }
-
-        // 2. Match by Product Name (Fuzzy/Containment matching)
-        if (bestScore < 100) {
-          Object.keys(filenameToUrlMap).forEach(key => {
-            const keyWithoutExt = key.replace(/\.[^/.]+$/, "").trim();
-            const cleanKeyWithoutExt = keyWithoutExt.toLowerCase().replace(/[^a-z0-9]/g, '').trim();
-            
-            if (cleanKeyWithoutExt && cleanRowName) {
-              if (cleanKeyWithoutExt === cleanRowName) {
-                matchedUrl = filenameToUrlMap[key];
-                bestScore = 90;
-              } else if (cleanKeyWithoutExt.length > 2 && cleanRowName.includes(cleanKeyWithoutExt)) {
-                // E.g. image name "pen" matches product "Gel Pen"
-                if (bestScore < 80) {
-                  matchedUrl = filenameToUrlMap[key];
-                  bestScore = 80;
-                }
-              } else if (cleanRowName.length > 2 && cleanKeyWithoutExt.includes(cleanRowName)) {
-                // E.g. image name "Gel Pen Premium" matches product "Gel Pen"
-                if (bestScore < 70) {
-                  matchedUrl = filenameToUrlMap[key];
-                  bestScore = 70;
-                }
-              }
-            }
-          });
-        }
-
-        if (matchedUrl) {
-          finalImageUrl = matchedUrl;
-        } else if (imgRef.startsWith('http://') || imgRef.startsWith('https://')) {
-          finalImageUrl = row.imageVal;
-        } else {
-          finalImageUrl = `https://placehold.co/600x600/f3f4f6/9ca3af?text=${encodeURIComponent(row.name)}`;
-        }
-
-        return {
-          id: `prod_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 4)}`,
-          name: row.name,
-          category: row.category,
-          price: row.price,
-          originalPrice: row.originalPrice,
-          deliveryCharge: row.deliveryCharge,
-          stock: row.stock,
-          image: finalImageUrl,
-          brand: row.brand,
-          description: row.description,
-          isVisible: true,
-          isFeatured: false
-        };
-      });
-
-      setCsvImportProgress('Saving products to database...');
+      setCsvImportProgress('Saving products...');
       toast.loading('Saving products to database...', { id: 'csvImport' });
-      
+
       const res = await fetchWithAuth('/api/products/bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(finalProducts),
+        body: JSON.stringify(finalProducts.filter(Boolean)),
       });
 
       if (!res.ok) {
@@ -662,7 +648,6 @@ export default function ProductManager({ products, setProducts, apiCategories = 
         throw new Error(errData.error || "Failed to bulk save products");
       }
 
-      // Refresh products list via authenticated admin route
       const prodRes = await fetchWithAuth('/api/products/all');
       if (prodRes.ok) {
         const data = await prodRes.json();
@@ -672,7 +657,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
       toast.success(`Successfully imported ${finalProducts.length} products!`, { id: 'csvImport' });
       setIsCsvModalOpen(false);
       setSelectedCsvFile(null);
-      setSelectedCsvImages(null);
+      setParsedRows([]);
     } catch (err: any) {
       console.error(err);
       toast.error(`Import failed: ${err.message || err}`, { id: 'csvImport' });
@@ -1070,13 +1055,13 @@ export default function ProductManager({ products, setProducts, apiCategories = 
 
       {isCsvModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden p-6 relative">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden p-6 relative">
             <button 
               onClick={() => {
                 if (!isCsvImporting) {
                   setIsCsvModalOpen(false);
                   setSelectedCsvFile(null);
-                  setSelectedCsvImages(null);
+                  setParsedRows([]);
                 }
               }}
               disabled={isCsvImporting}
@@ -1091,14 +1076,14 @@ export default function ProductManager({ products, setProducts, apiCategories = 
             </h2>
             
             <p className="text-xs text-gray-500 mb-4 leading-relaxed">
-              Upload a <strong>.xlsx / .xls (Excel)</strong> or <strong>.csv</strong> file and corresponding local photos. Matching is done automatically based on the filename in the <strong>Image</strong> column.
+              Upload a <strong>.xlsx / .xls (Excel)</strong> or <strong>.csv</strong> file. You can then assign images either by bulk selecting photos (they will pair sequentially matching the row order) or by choosing a photo for each product individually.
             </p>
 
             <div className="bg-neutral-50 rounded-lg p-3 border border-neutral-200/60 mb-4 text-xs text-gray-600 space-y-1.5">
               <div className="font-semibold text-neutral-800">Required Columns (in any order):</div>
               <div>• <strong>Name</strong>, <strong>Price</strong></div>
               <div className="font-semibold text-neutral-800 pt-1">Optional Columns:</div>
-              <div>• <strong>Category</strong>, <strong>Stock</strong>, <strong>Brand</strong>, <strong>Description</strong>, <strong>Image</strong> (e.g. <code>pen.jpg</code>)</div>
+              <div>• <strong>Category</strong>, <strong>Stock</strong>, <strong>Brand</strong>, <strong>Description</strong></div>
             </div>
 
             {isCsvImporting ? (
@@ -1112,8 +1097,8 @@ export default function ProductManager({ products, setProducts, apiCategories = 
                 <button
                   type="button"
                   onClick={() => {
-                    const headers = ["Name", "Category", "Price", "OriginalPrice", "Stock", "Image", "Brand", "Description"];
-                    const sampleRow = ["Premium Notebook", "Stationery", "120", "150", "200", "notebook.jpg", "Rappani", "Hardcover ruled notebook"];
+                    const headers = ["Name", "Category", "Price", "OriginalPrice", "Stock", "Brand", "Description"];
+                    const sampleRow = ["Premium Notebook", "Stationery", "120", "150", "200", "Rappani", "Hardcover ruled notebook"];
                     const csvContent = headers.join(',') + '\n' + sampleRow.join(',');
                     const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
                     const url = URL.createObjectURL(blob);
@@ -1134,10 +1119,13 @@ export default function ProductManager({ products, setProducts, apiCategories = 
                   <label className="block text-[11px] font-bold text-gray-700 mb-1 uppercase tracking-wide">Step 1: Select Excel or CSV File</label>
                   {selectedCsvFile ? (
                     <div className="flex items-center justify-between bg-emerald-50/80 border border-emerald-200 rounded-lg p-2.5">
-                      <span className="text-xs font-medium text-emerald-800 truncate pr-2">📄 {selectedCsvFile.name}</span>
+                      <span className="text-xs font-medium text-emerald-800 truncate pr-2">📄 {selectedCsvFile.name} ({parsedRows.length} products found)</span>
                       <button 
                         type="button" 
-                        onClick={() => setSelectedCsvFile(null)}
+                        onClick={() => {
+                          setSelectedCsvFile(null);
+                          setParsedRows([]);
+                        }}
                         className="text-[10px] text-red-500 hover:underline font-bold shrink-0"
                       >
                         Remove
@@ -1149,9 +1137,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
                         type="file" 
                         accept=".csv, .xlsx, .xls" 
                         ref={csvFileInputRef}
-                        onChange={(e) => {
-                          if (e.target.files?.[0]) setSelectedCsvFile(e.target.files[0]);
-                        }} 
+                        onChange={handleCsvFileChange}
                         className="hidden" 
                       />
                       <button
@@ -1166,47 +1152,83 @@ export default function ProductManager({ products, setProducts, apiCategories = 
                 </div>
 
                 {/* Step 2: Select Local Images */}
-                <div>
-                  <label className="block text-[11px] font-bold text-gray-700 mb-1 uppercase tracking-wide">Step 2: Select Product Images (Optional)</label>
-                  {selectedCsvImages && selectedCsvImages.length > 0 ? (
-                    <div className="flex items-center justify-between bg-blue-50/80 border border-blue-200 rounded-lg p-2.5">
-                      <span className="text-xs font-medium text-blue-800 truncate pr-2">🖼️ {selectedCsvImages.length} images selected</span>
-                      <button 
-                        type="button" 
-                        onClick={() => setSelectedCsvImages(null)}
-                        className="text-[10px] text-red-500 hover:underline font-bold shrink-0"
-                      >
-                        Clear
-                      </button>
-                    </div>
-                  ) : (
-                    <>
+                {selectedCsvFile && parsedRows.length > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wide">
+                        Step 2: Assign Photos ({parsedRows.filter(r => r.imageFile).length}/{parsedRows.length} paired)
+                      </label>
+                      
                       <input 
                         type="file" 
                         multiple
                         accept="image/*" 
                         ref={csvImagesInputRef}
-                        onChange={(e) => {
-                          if (e.target.files) setSelectedCsvImages(e.target.files);
-                        }} 
+                        onChange={handleBulkImageSelect}
                         className="hidden" 
                       />
                       <button
                         type="button"
                         onClick={() => csvImagesInputRef.current?.click()}
-                        className="w-full py-3 border border-neutral-300 hover:border-gray-400 rounded-lg text-xs font-semibold text-gray-700 hover:bg-neutral-50 transition-colors flex items-center justify-center gap-1.5"
+                        className="text-[10px] bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-2 py-1 rounded border border-blue-200 transition-colors"
                       >
-                        📷 Select Photos (Multi-select)
+                        📁 Bulk Pair Photos
                       </button>
-                    </>
-                  )}
-                </div>
+                    </div>
+
+                    <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-2.5 bg-gray-50/50 space-y-2">
+                      {parsedRows.map((row, idx) => (
+                        <div key={idx} className="flex items-center justify-between gap-3 p-2 bg-white rounded-lg border border-gray-200/80 shadow-sm">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[11px] font-bold text-gray-800 truncate" title={row.name}>
+                              {idx + 1}. {row.name}
+                            </div>
+                            <div className="text-[10px] text-gray-500 font-medium mt-0.5">
+                              {row.category} • ₹{row.price}
+                            </div>
+                          </div>
+                          
+                          <div className="shrink-0 flex items-center">
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              onChange={(e) => {
+                                if (e.target.files?.[0]) handleSingleImageSelect(idx, e.target.files[0]);
+                              }} 
+                              className="hidden" 
+                              id={`row-file-${idx}`} 
+                            />
+                            {row.previewUrl ? (
+                              <label htmlFor={`row-file-${idx}`} className="cursor-pointer block relative group">
+                                <img 
+                                  src={row.previewUrl} 
+                                  alt="preview" 
+                                  className="w-9 h-9 rounded-md object-cover border border-gray-300 group-hover:brightness-90 transition-all" 
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 rounded-md transition-opacity">
+                                  <Camera size={10} className="text-white" />
+                                </div>
+                              </label>
+                            ) : (
+                              <label 
+                                htmlFor={`row-file-${idx}`} 
+                                className="cursor-pointer w-9 h-9 bg-neutral-100 border border-dashed border-neutral-300 hover:bg-neutral-200/80 rounded-md flex items-center justify-center text-neutral-400 hover:text-neutral-500 transition-colors"
+                              >
+                                <Plus size={16} />
+                              </label>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Submit Import */}
                 <button
                   type="button"
                   onClick={handleCsvImportSubmit}
-                  disabled={!selectedCsvFile}
+                  disabled={!selectedCsvFile || parsedRows.length === 0}
                   className="w-full py-2.5 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-200 text-white disabled:text-gray-400 rounded-lg text-sm font-semibold shadow-sm transition-colors mt-2"
                 >
                   🚀 Start Import Products & Photos
