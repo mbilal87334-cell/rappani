@@ -376,41 +376,78 @@ export default function ProductManager({ products, setProducts, apiCategories = 
     toast.loading('Processing CSV & images...', { id: 'csvImport' });
     
     try {
-      const text = await selectedCsvFile.text();
-      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
-      if (lines.length < 2) {
-        throw new Error('CSV is empty or missing headers');
-      }
-
-      // Robust CSV parser supporting quotes and inner commas
-      const parseCSVRow = (rowText: string): string[] => {
-        const result: string[] = [];
-        let currentField = '';
-        let inQuotes = false;
-        
-        for (let i = 0; i < rowText.length; i++) {
-          const char = rowText[i];
-          const nextChar = rowText[i+1];
-          
-          if (char === '"') {
-            if (inQuotes && nextChar === '"') {
-              currentField += '"';
-              i++;
-            } else {
-              inQuotes = !inQuotes;
-            }
-          } else if (char === ',' && !inQuotes) {
-            result.push(currentField.trim());
-            currentField = '';
-          } else {
-            currentField += char;
+      const loadSheetJS = (): Promise<any> => {
+        return new Promise((resolve, reject) => {
+          if ((window as any).XLSX) {
+            resolve((window as any).XLSX);
+            return;
           }
-        }
-        result.push(currentField.trim());
-        return result;
+          const script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+          script.onload = () => resolve((window as any).XLSX);
+          script.onerror = (err) => reject(err);
+          document.body.appendChild(script);
+        });
       };
 
-      const headerRow = parseCSVRow(lines[0]);
+      let headerRow: string[] = [];
+      let dataRows: string[][] = [];
+
+      if (selectedCsvFile.name.endsWith('.xlsx') || selectedCsvFile.name.endsWith('.xls')) {
+        setCsvImportProgress('Loading Excel parser...');
+        const XLSX = await loadSheetJS();
+        setCsvImportProgress('Reading Excel file...');
+        const buffer = await selectedCsvFile.arrayBuffer();
+        const workbook = XLSX.read(new Uint8Array(buffer), { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+        
+        if (rows.length < 1) {
+          throw new Error('Excel sheet is empty');
+        }
+        
+        const stringRows = rows.map(r => r.map(cell => cell !== undefined && cell !== null ? String(cell).trim() : ''));
+        headerRow = stringRows[0];
+        dataRows = stringRows;
+      } else {
+        setCsvImportProgress('Reading CSV file...');
+        const text = await selectedCsvFile.text();
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+        if (lines.length < 1) {
+          throw new Error('CSV is empty');
+        }
+
+        const parseCSVRow = (rowText: string): string[] => {
+          const result: string[] = [];
+          let currentField = '';
+          let inQuotes = false;
+          
+          for (let i = 0; i < rowText.length; i++) {
+            const char = rowText[i];
+            const nextChar = rowText[i+1];
+            
+            if (char === '"') {
+              if (inQuotes && nextChar === '"') {
+                currentField += '"';
+                i++;
+              } else {
+                inQuotes = !inQuotes;
+              }
+            } else if (char === ',' && !inQuotes) {
+              result.push(currentField.trim());
+              currentField = '';
+            } else {
+              currentField += char;
+            }
+          }
+          result.push(currentField.trim());
+          return result;
+        };
+
+        headerRow = parseCSVRow(lines[0]);
+        dataRows = lines.map(line => parseCSVRow(line));
+      }
       let isHeaderRow = false;
       const headerMap: { [key: string]: number } = {};
       
@@ -458,8 +495,8 @@ export default function ProductManager({ products, setProducts, apiCategories = 
       const parsedRows: any[] = [];
       const startLine = isHeaderRow ? 1 : 0;
 
-      for (let i = startLine; i < lines.length; i++) {
-        const values = parseCSVRow(lines[i]);
+      for (let i = startLine; i < dataRows.length; i++) {
+        const values = dataRows[i];
         if (values.length === 0 || !values[nameIdx]) continue;
         
         parsedRows.push({
@@ -999,15 +1036,15 @@ export default function ProductManager({ products, setProducts, apiCategories = 
             
             <h2 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
               <Upload className="text-gray-900" size={20} />
-              Import Products CSV & Images
+              Import Products Excel / CSV & Images
             </h2>
             
             <p className="text-xs text-gray-500 mb-4 leading-relaxed">
-              Upload a <strong>.csv</strong> file and corresponding local photos. Matching is done automatically based on the filename in the CSV's <strong>Image</strong> column.
+              Upload a <strong>.xlsx / .xls (Excel)</strong> or <strong>.csv</strong> file and corresponding local photos. Matching is done automatically based on the filename in the <strong>Image</strong> column.
             </p>
 
             <div className="bg-neutral-50 rounded-lg p-3 border border-neutral-200/60 mb-4 text-xs text-gray-600 space-y-1.5">
-              <div className="font-semibold text-neutral-800">Required CSV Columns:</div>
+              <div className="font-semibold text-neutral-800">Required Columns (in any order):</div>
               <div>• <strong>Name</strong>, <strong>Price</strong></div>
               <div className="font-semibold text-neutral-800 pt-1">Optional Columns:</div>
               <div>• <strong>Category</strong>, <strong>Stock</strong>, <strong>Brand</strong>, <strong>Description</strong>, <strong>Image</strong> (e.g. <code>pen.jpg</code>)</div>
@@ -1043,7 +1080,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
 
                 {/* Step 1: Select CSV file */}
                 <div>
-                  <label className="block text-[11px] font-bold text-gray-700 mb-1 uppercase tracking-wide">Step 1: Select CSV File</label>
+                  <label className="block text-[11px] font-bold text-gray-700 mb-1 uppercase tracking-wide">Step 1: Select Excel or CSV File</label>
                   {selectedCsvFile ? (
                     <div className="flex items-center justify-between bg-emerald-50/80 border border-emerald-200 rounded-lg p-2.5">
                       <span className="text-xs font-medium text-emerald-800 truncate pr-2">📄 {selectedCsvFile.name}</span>
@@ -1059,7 +1096,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
                     <>
                       <input 
                         type="file" 
-                        accept=".csv" 
+                        accept=".csv, .xlsx, .xls" 
                         ref={csvFileInputRef}
                         onChange={(e) => {
                           if (e.target.files?.[0]) setSelectedCsvFile(e.target.files[0]);
@@ -1071,7 +1108,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
                         onClick={() => csvFileInputRef.current?.click()}
                         className="w-full py-3 border border-neutral-300 hover:border-gray-400 rounded-lg text-xs font-semibold text-gray-700 hover:bg-neutral-50 transition-colors flex items-center justify-center gap-1.5"
                       >
-                        📁 Choose CSV File
+                        📁 Choose Excel / CSV File
                       </button>
                     </>
                   )}
