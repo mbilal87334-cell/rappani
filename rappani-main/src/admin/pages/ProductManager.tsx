@@ -449,36 +449,37 @@ export default function ProductManager({ products, setProducts, apiCategories = 
       const headerMap: { [key: string]: number } = {};
       
       headerRow.forEach((h, idx) => {
-        const cleanHeader = h.toLowerCase().trim();
+        const cleanHeader = h.toLowerCase().trim().replace(/[^a-z0-9\u0B80-\u0BFF]/g, '');
         const validHeaders = [
           'name', 'productname', 'title', 'itemname', 'product', 'category', 'type', 'group', 
-          'price', 'rate', 'salesprice', 'amount', 'stock', 'quantity', 'qty', 'stockcount', 
-          'image', 'imageurl', 'photo', 'picture', 'filename', 'brand', 'description', 'desc',
-          'பெயர்', 'பெயர்கள்', 'தயாரிப்பு', 'விலை', 'விற்பனை விலை', 'மதிப்பு', 'பிரிவு', 'வகை',
-          'இருப்பு', 'அளவு', 'படம்', 'புகைப்படம்', 'படம் பெயர்', 'விளக்கம்', 'விவரம்'
+          'price', 'rate', 'salesprice', 'amount', 'sellingprice', 'stock', 'quantity', 'qty', 'stockcount', 
+          'image', 'imageurl', 'photo', 'picture', 'filename', 'brand', 'description', 'desc', 'details',
+          'originalprice', 'mrp', 'costprice', 'originalrate', 'strikerate', 'strikebrand',
+          'பெயர்', 'பெயர்கள்', 'தயாரிப்பு', 'விலை', 'விற்பனைவிலை', 'மதிப்பு', 'பிரிவு', 'வகை',
+          'இருப்பு', 'அளவு', 'படம்', 'புகைப்படம்', 'படம்பெயர்', 'விளக்கம்', 'விவரம்', 'அசல்விலை', 'அசல்'
         ];
         
-        if (validHeaders.some(vh => cleanHeader.includes(vh) || vh.includes(cleanHeader))) {
+        if (validHeaders.includes(cleanHeader)) {
           isHeaderRow = true;
         }
 
-        if (['name', 'productname', 'title', 'itemname', 'product', 'பெயர்', 'பெயர்கள்', 'தயாரிப்பு'].some(x => cleanHeader.includes(x))) {
-          headerMap['name'] = idx;
-        } else if (['category', 'type', 'group', 'பிரிவு', 'வகை'].some(x => cleanHeader.includes(x))) {
-          headerMap['category'] = idx;
-        } else if (['price', 'rate', 'salesprice', 'amount', 'விலை', 'விற்பனை விலை', 'மதிப்பு'].some(x => cleanHeader.includes(x))) {
-          headerMap['price'] = idx;
-        } else if (['originalprice', 'mrp', 'costprice'].some(x => cleanHeader.includes(x))) {
+        if (['originalprice', 'mrp', 'costprice', 'originalrate', 'strikerate', 'strikebrand', 'அசல்விலை', 'அசல்'].includes(cleanHeader)) {
           headerMap['originalPrice'] = idx;
-        } else if (['deliverycharge', 'shippingcharge', 'delivery'].some(x => cleanHeader.includes(x))) {
+        } else if (['price', 'rate', 'salesprice', 'amount', 'sellingprice', 'விலை', 'விற்பனைவிலை', 'மதிப்பு'].includes(cleanHeader)) {
+          headerMap['price'] = idx;
+        } else if (['name', 'productname', 'title', 'itemname', 'product', 'பெயர்', 'பெயர்கள்', 'தயாரிப்பு'].includes(cleanHeader)) {
+          headerMap['name'] = idx;
+        } else if (['category', 'type', 'group', 'பிரிவு', 'வகை'].includes(cleanHeader)) {
+          headerMap['category'] = idx;
+        } else if (['deliverycharge', 'shippingcharge', 'delivery'].includes(cleanHeader)) {
           headerMap['deliveryCharge'] = idx;
-        } else if (['stock', 'quantity', 'qty', 'stockcount', 'இருப்பு', 'அளவு'].some(x => cleanHeader.includes(x))) {
+        } else if (['stock', 'quantity', 'qty', 'stockcount', 'இருப்பு', 'அளவு'].includes(cleanHeader)) {
           headerMap['stock'] = idx;
-        } else if (['image', 'imageurl', 'photo', 'picture', 'filename', 'படம்', 'புகைப்படம்', 'படம் பெயர்'].some(x => cleanHeader.includes(x))) {
+        } else if (['image', 'imageurl', 'photo', 'picture', 'filename', 'படம்', 'புகைப்படம்', 'படம்பெயர்'].includes(cleanHeader)) {
           headerMap['image'] = idx;
-        } else if (['brand'].some(x => cleanHeader.includes(x))) {
+        } else if (['brand', 'company'].includes(cleanHeader)) {
           headerMap['brand'] = idx;
-        } else if (['description', 'desc', 'விளக்கம்', 'விவரம்'].some(x => cleanHeader.includes(x))) {
+        } else if (['description', 'desc', 'details', 'விளக்கம்', 'விவரம்'].includes(cleanHeader)) {
           headerMap['description'] = idx;
         }
       });
@@ -489,8 +490,8 @@ export default function ProductManager({ products, setProducts, apiCategories = 
       const originalPriceIdx = headerMap['originalPrice'] !== undefined ? headerMap['originalPrice'] : 3;
       const stockIdx = headerMap['stock'] !== undefined ? headerMap['stock'] : 4;
       let imageIdx = headerMap['image'] !== undefined ? headerMap['image'] : -1;
-      const brandIdx = headerMap['brand'] !== undefined ? headerMap['brand'] : 6;
-      const descIdx = headerMap['description'] !== undefined ? headerMap['description'] : 7;
+      const brandIdx = headerMap['brand'] !== undefined ? headerMap['brand'] : 5;
+      const descIdx = headerMap['description'] !== undefined ? headerMap['description'] : 6;
       const deliveryChargeIdx = headerMap['deliveryCharge'] !== undefined ? headerMap['deliveryCharge'] : -1;
 
       if (imageIdx === -1) {
