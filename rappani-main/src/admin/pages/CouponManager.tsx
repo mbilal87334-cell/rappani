@@ -46,24 +46,37 @@ export default function CouponManager() {
   const [extendTargetCoupon, setExtendTargetCoupon] = useState<any | null>(null);
   const [extendMinutes, setExtendMinutes] = useState<string>('15');
 
-  const openPublishModal = (coupon: any) => {
-    setActivateTargetCoupon(coupon);
-    setPublishTitle(coupon.offerTitle || `🎉 Special Discount Offer!`);
-    setPublishMessage(coupon.offerDescription || `Get Flat ${coupon.discountPercent}% OFF on your order today.`);
-    
-    // Set default start time to now in local format YYYY-MM-DDTHH:MM
-    const localNow = new Date();
-    const tzOffset = localNow.getTimezoneOffset() * 60000;
-    const localISOTime = new Date(localNow.getTime() - tzOffset).toISOString().slice(0, 16);
-    setPublishStartTime(localISOTime);
-    setCustomStartTime(localISOTime);
-    
-    // Default custom expiry to now + 1 hour in local format
-    const localExpiry = new Date(localNow.getTime() + 60 * 60000 - tzOffset);
-    setCustomExpiryTime(localExpiry.toISOString().slice(0, 16));
+  const getLocalDateTimeString = (date: Date) => {
+    const pad = (num: number) => num.toString().padStart(2, '0');
+    const year = date.getFullYear();
+    const month = pad(date.getMonth() + 1);
+    const day = pad(date.getDate());
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
 
-    setActivationDuration('60');
-    setShowActivateModal(true);
+  const openPublishModal = (coupon: any) => {
+    try {
+      console.log("[PublishOffer] Opening modal for coupon:", coupon);
+      setActivateTargetCoupon(coupon);
+      setPublishTitle(coupon.offerTitle || `🎉 Special Discount Offer!`);
+      setPublishMessage(coupon.offerDescription || `Get Flat ${coupon.discountPercent}% OFF on your order today.`);
+      
+      const localNow = new Date();
+      const localISOTime = getLocalDateTimeString(localNow);
+      setPublishStartTime(localISOTime);
+      setCustomStartTime(localISOTime);
+      
+      const expiryDate = new Date(localNow.getTime() + 60 * 60 * 1000); // default 1 hour later
+      setCustomExpiryTime(getLocalDateTimeString(expiryDate));
+
+      setActivationDuration('60');
+      setShowActivateModal(true);
+    } catch (err) {
+      console.error("[PublishOffer] Error opening publish modal:", err);
+      toast.error("Failed to open publish modal");
+    }
   };
 
   const [error, setError] = useState('');
@@ -433,6 +446,7 @@ export default function CouponManager() {
 
                   <div className="flex flex-wrap gap-2 pt-2 border-t border-neutral-100">
                     <button
+                      type="button"
                       onClick={() => openPublishModal(coupon)}
                       className="bg-black hover:bg-gold-500 hover:text-black text-gold-500 text-xs px-4 py-2 rounded-lg font-bold transition-all active:scale-95 flex-1 text-center"
                     >
@@ -537,6 +551,7 @@ export default function CouponManager() {
                       </td>
                       <td className="py-4 px-6 text-right whitespace-nowrap flex items-center justify-end gap-2">
                         <button
+                          type="button"
                           onClick={() => openPublishModal(coupon)}
                           className="text-xs bg-black hover:bg-gold-500 hover:text-black text-gold-500 font-bold px-3 py-1.5 rounded-lg transition-all active:scale-95"
                         >
