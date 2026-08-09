@@ -883,6 +883,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   const [utrNumber, setUtrNumber] = useState('');
   const [mockOtp, setMockOtp] = useState<string | null>(null);
   const [orderSuccessModal, setOrderSuccessModal] = useState<string | null>(null);
+  const [homeVisibleCount, setHomeVisibleCount] = useState(20);
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const featuredProducts = products.filter(p => p.isFeatured);
@@ -1010,10 +1011,30 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   useEffect(() => {
     const handleScroll = () => {
       setShowBackToTop(window.scrollY > 400);
+
+      // Auto load more when scrolling close to the bottom of the page
+      if (
+        window.innerHeight + document.documentElement.scrollTop >=
+        document.documentElement.offsetHeight - 250
+      ) {
+        if (currentTab === 'home') {
+          setHomeVisibleCount(prev => {
+            const nextCount = prev + 20;
+            if (nextCount >= products.length && hasMore && !isLoadingMore) {
+              loadMoreProducts();
+            }
+            return nextCount;
+          });
+        } else if (currentTab === 'products') {
+          if (hasMore && !isLoadingMore) {
+            loadMoreProducts();
+          }
+        }
+      }
     };
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [currentTab, products.length, hasMore, isLoadingMore]);
 
   const toggleLanguage = () => {
     setLang(lang === 'en' ? 'ta' : 'en');
@@ -1610,7 +1631,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
       </header>
 
       {/* Real-time Limited Time Promotional Announcement Banner (shown below top header) */}
-      {activeOffers.length > 0 && (
+      {currentTab !== 'home' && activeOffers.length > 0 && (
         <div className="bg-gradient-to-r from-red-600 via-amber-500 to-red-600 text-white py-2.5 px-4 text-xs font-bold text-center flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 shadow-md border-b border-red-700/30 relative z-[45]">
           <span className="flex items-center gap-1 text-sm tracking-wide">
             🎉 LIMITED TIME OFFER: <span className="underline uppercase tracking-wider font-black">{activeOffers[0].offerTitle || activeOffers[0].code}</span>
@@ -1741,66 +1762,58 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
             )}
             
             {/* Featured Products (Home Tab) */}
-            <div>
-               <div className="flex justify-between items-end mb-4">
+            <div className="-mx-2">
+              <div className="flex justify-between items-end mb-4 px-2">
                 <h3 className="text-lg font-bold text-primary">Popular Now</h3>
-                <button className="text-sm text-gold-600 font-bold" onClick={() => setCurrentTab('products')}>See All</button>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {publicProducts.slice(0, 4).map(product => {
+              <div className="grid grid-cols-1 gap-4">
+                {publicProducts.slice(0, homeVisibleCount).map(product => {
                   const cartItem = cart.find(item => item.product.id === product.id);
                   const qty = cartItem ? cartItem.quantity : 0;
                   return (
-                    <div key={product.id} className="bg-white p-2 rounded-sm shadow-sm border border-neutral-300/50 flex flex-col relative">
-                       <button onClick={() => toggleFavorite(product.id)} className="absolute top-2 right-2 z-10 p-1.5 bg-white/80 backdrop-blur-md rounded-full text-neutral-400">
+                    <div key={product.id} className="bg-white p-3.5 rounded-lg shadow-sm border border-neutral-300/50 flex gap-4 relative overflow-hidden transition-all hover:border-gold-500/30">
+                       {/* Favorite Button */}
+                       <button onClick={() => toggleFavorite(product.id)} className="absolute top-2 right-2 z-10 p-2 bg-white/90 backdrop-blur-md rounded-full shadow-sm text-neutral-400 hover:text-rose-500 transition-colors">
                          <Heart className={`w-4 h-4 ${favorites.includes(product.id) ? 'fill-rose-500 text-rose-500' : 'text-neutral-300'}`} />
                        </button>
-                       <div className="cursor-pointer group" onClick={() => setSelectedProduct(product)}>
-                         <div className="w-full aspect-square bg-white mb-2 overflow-hidden flex items-center justify-center relative p-2">
-                           <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400?text=No+Image"} alt={product.name} className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-300" />
-                           {product.originalPrice && product.originalPrice > product.price && (
-                             <span className="absolute bottom-0 left-0 premium-button text-[9px] font-bold px-1.5 py-0.5 rounded-tr-lg z-10">
-                               {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
-                             </span>
-                           )}
-                         </div>
-                         <h4 className="font-medium text-primary-light text-xs mb-1 line-clamp-2 leading-tight h-8 group-hover:text-gold-500 transition-colors">{product.name}</h4>
+
+                       {/* Left: Product Image */}
+                       <div className="w-28 h-28 flex-shrink-0 bg-neutral-50 rounded-lg overflow-hidden flex items-center justify-center cursor-pointer border border-neutral-100" onClick={() => setSelectedProduct(product)}>
+                         <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400?text=No+Image"} alt={product.name} className="h-full object-contain hover:scale-105 transition-transform p-2" />
                        </div>
-                       <div className="flex items-center gap-1 mb-2">
-                         {product.reviews && product.reviews.length > 0 ? (
-                           <>
-                             <span className="premium-button text-[9px] font-bold px-1 py-0.5 rounded flex items-center gap-0.5">
-                               {(product.reviews.reduce((sum, r) => sum + r.rating, 0) / product.reviews.length).toFixed(1)} <Star className="w-2 h-2 fill-white" />
-                             </span>
-                             <span className="text-[9px] text-neutral-400">({product.reviews.length})</span>
-                           </>
-                         ) : (
-                           <span className="text-[9px] text-neutral-400 italic">No Ratings</span>
-                         )}
-                       </div>
-                       <div className="mt-auto">
-                         <div className="flex items-baseline gap-1.5 flex-wrap">
-                           <span className="font-bold text-primary text-sm">₹{product.price}</span>
-                           {product.originalPrice && product.originalPrice > product.price && (
-                             <span className="text-[10px] text-neutral-500 line-through">₹{product.originalPrice}</span>
-                           )}
+
+                       {/* Right: Product Details */}
+                       <div className="flex-1 flex flex-col justify-between py-0.5">
+                         <div>
+                           <span className="text-[10px] bg-gold-500/10 text-gold-700 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">{getCategoryName(product.category)}</span>
+                           <h4 className="text-sm font-bold text-primary mt-1.5 line-clamp-2 cursor-pointer hover:text-gold-600 transition-colors leading-tight" onClick={() => setSelectedProduct(product)}>{product.name}</h4>
                          </div>
-                         <div className="mt-2">
-                         {qty > 0 ? (
-                            <div className="flex items-center justify-between border border-neutral-300 rounded-sm overflow-hidden h-7">
-                              <button onClick={() => updateQuantity(product.id, qty - 1)} className="bg-neutral-100 text-neutral-500 w-8 h-full flex items-center justify-center font-bold">-</button>
-                              <span className="text-xs font-bold text-primary">{qty}</span>
-                              <button onClick={() => updateQuantity(product.id, qty + 1)} className="bg-neutral-100 text-neutral-500 w-8 h-full flex items-center justify-center font-bold">+</button>
-                            </div>
-                         ) : (
-                            <button onClick={() => addToCart(product)} className="w-full bg-white text-gold-500 text-xs font-bold py-1.5 rounded-sm border border-gold-500 hover:bg-gold-500/10 transition-colors uppercase">
-                              Add
-                            </button>
-                         )}
+
+                         <div className="flex items-center justify-between gap-2 mt-2">
+                           <div className="flex items-baseline gap-1.5">
+                             <span className="text-base font-black text-primary">₹{product.price}</span>
+                             {product.originalPrice && product.originalPrice > product.price && (
+                               <span className="text-xs text-neutral-400 line-through">₹{product.originalPrice}</span>
+                             )}
+                           </div>
+                           
+                           <div className="w-28">
+                             {qty > 0 ? (
+                                <div className="flex items-center justify-between border border-neutral-300 rounded-lg overflow-hidden h-8">
+                                  <button onClick={() => updateQuantity(product.id, qty - 1)} className="bg-neutral-100 hover:bg-neutral-200 text-neutral-600 w-8 h-full flex items-center justify-center font-bold transition-colors">-</button>
+                                  <span className="text-xs font-bold text-primary">{qty}</span>
+                                  <button onClick={() => updateQuantity(product.id, qty + 1)} className="bg-neutral-100 hover:bg-neutral-200 text-neutral-600 w-8 h-full flex items-center justify-center font-bold transition-colors">+</button>
+                                </div>
+                             ) : (
+                                <button onClick={() => addToCart(product)} className="w-full bg-black hover:bg-gold-500 hover:text-black text-gold-500 text-xs font-bold py-1.5 rounded-lg border border-black transition-all uppercase tracking-wider active:scale-95">
+                                  Add
+                                </button>
+                             )}
+                           </div>
                          </div>
                        </div>
                     </div>
-                  )
+                  );
                 })}
               </div>
             </div>
