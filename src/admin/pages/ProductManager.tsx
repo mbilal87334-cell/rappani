@@ -555,7 +555,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
         return {
           ...row,
           imageFile: file,
-          previewUrl: URL.createObjectURL(file)
+          previewUrl: URL.createObjectURL(file as Blob)
         };
       }
       return row;

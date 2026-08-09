@@ -122,10 +122,10 @@ export default function ReportsHub({ orders = [], products = [] }: ReportsHubPro
   const inventoryValue = safeProducts.reduce((s, p) => s + (p.price || 0) * (p.stock || 0), 0);
 
   // ===== CUSTOMER METRICS =====
-  const allCustomers = Array.from(new Set(safeOrders.map(o => o.customerPhone).filter(Boolean)));
-  const periodCustomers = Array.from(new Set(filteredOrders.map(o => o.customerPhone).filter(Boolean)));
+  const allCustomers = Array.from(new Set<string>(safeOrders.map(o => o.customerPhone).filter((p): p is string => Boolean(p))));
+  const periodCustomers = Array.from(new Set<string>(filteredOrders.map(o => o.customerPhone).filter((p): p is string => Boolean(p))));
   const prevOrders = safeOrders.filter(o => new Date(o.createdAt) < rangeStart);
-  const prevCustomers = new Set(prevOrders.map(o => o.customerPhone).filter(Boolean));
+  const prevCustomers = new Set<string>(prevOrders.map(o => o.customerPhone).filter((p): p is string => Boolean(p)));
   const newCustomers = periodCustomers.filter(p => !prevCustomers.has(p));
   const returningCustomers = periodCustomers.filter(p => prevCustomers.has(p));
 

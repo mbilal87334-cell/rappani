@@ -11,6 +11,7 @@ import QRCode from 'react-qr-code';
 // --- Types ---
 export interface Product {
   id: string;
+  _id?: string;
   name: string;
   category: string;
   brand?: string;
@@ -24,6 +25,7 @@ export interface Product {
   stock?: number;
   image: string;
   images?: string[];
+  videoUrl?: string;
   isFeatured?: boolean;
   isVisible?: boolean;
   reviews?: Review[];
@@ -46,13 +48,29 @@ interface Setting {
   value: string;
 }
 
+export interface ShippingAddress {
+  fullName?: string;
+  houseNo?: string;
+  street?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  addressText?: string;
+  lat?: number;
+  lng?: number;
+  mapsLink?: string;
+  [key: string]: any;
+}
+
 export interface Order {
   id: string;
+  _id?: string;
   customerName: string;
   customerPhone: string;
   items: CartItem[];
   totalAmount: number;
   paymentMethod: string;
+  deliveryMethod?: 'home' | 'pickup' | string;
   utrNumber?: string;
   trackingStatus?: string;
   status: string;
@@ -61,7 +79,7 @@ export interface Order {
   razorpayPaymentId?: string;
   razorpaySignature?: string;
   paymentStatus?: string;
-  shippingAddress?: string | { addressText?: string, mapsLink?: string } | any;
+  shippingAddress?: string | ShippingAddress | any;
 }
 
 declare global {
@@ -1648,7 +1666,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
               ⏰ Ends In: <span className="font-mono text-yellow-200 font-bold">{getPromoCountdown(activeOffers[0].expiryTime)}</span>
             </span>
             <button 
-              onClick={(e) => handleUsePromoCoupon(activeOffers[0], e)}
+              onClick={() => handleUsePromoCoupon(activeOffers[0])}
               className="bg-white text-red-600 hover:bg-yellow-100 px-3.5 py-1 rounded text-[10px] font-black uppercase transition-all shadow-sm active:scale-95 cursor-pointer"
             >
               Use Coupon
@@ -2912,7 +2930,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
 
               <div className="space-y-2">
                 <button
-                  onClick={(e) => handleUsePromoCoupon(promoPopupOffer, e)}
+                  onClick={() => handleUsePromoCoupon(promoPopupOffer)}
                   className="w-full py-3.5 bg-black hover:bg-gold-500 hover:text-black text-gold-500 font-bold rounded-2xl transition-all shadow-md active:scale-95 text-sm uppercase tracking-wider cursor-pointer"
                 >
                   Shop Now & Apply Code
@@ -2997,7 +3015,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                           Copy Code
                         </button>
                         <button
-                          onClick={(e) => handleUsePromoCoupon(offer, e)}
+                          onClick={() => handleUsePromoCoupon(offer)}
                           className="bg-black hover:bg-gold-500 hover:text-black text-gold-500 font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md"
                         >
                           Use Now
