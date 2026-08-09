@@ -646,6 +646,16 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
     return () => clearInterval(timer);
   }, []);
 
+  const getPromoCountdown = (expiryTime?: string | Date | null) => {
+    if (!expiryTime) return '23h 59m 59s';
+    const diff = new Date(expiryTime).getTime() - Date.now();
+    if (diff <= 0) return '00h 00m 00s';
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+    return `${hours.toString().padStart(2, '0')}h ${minutes.toString().padStart(2, '0')}m ${seconds.toString().padStart(2, '0')}s`;
+  };
+
   // Fetch active promo offers from server
   const fetchActivePromotions = async () => {
     try {
@@ -1585,15 +1595,6 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
     }
   };
 
-  const getPromoCountdown = (expiryTime: string) => {
-    if (!expiryTime) return '';
-    const diff = new Date(expiryTime).getTime() - promoTick;
-    if (diff <= 0) return '00:00:00';
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-  };
 
   return (
     <div className="bg-gold-50 font-sans text-primary pb-20 min-h-screen max-w-md md:max-w-6xl mx-auto shadow-2xl relative overflow-x-hidden border-x border-neutral-300">
@@ -1652,8 +1653,8 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
         </div>
       </header>
 
-      {/* Real-time Limited Time Promotional Announcement Banner (shown below top header) */}
-      {currentTab !== 'home' && activeOffers.length > 0 && (
+      {/* Real-time Limited Time Promotional Announcement Banner (shown on all pages) */}
+      {activeOffers.length > 0 && (
         <div className="bg-gradient-to-r from-red-600 via-amber-500 to-red-600 text-white py-2.5 px-4 text-xs font-bold text-center flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 shadow-md border-b border-red-700/30 relative z-[45]">
           <span className="flex items-center gap-1 text-sm tracking-wide">
             🎉 LIMITED TIME OFFER: <span className="underline uppercase tracking-wider font-black">{activeOffers[0].offerTitle || activeOffers[0].code}</span>
