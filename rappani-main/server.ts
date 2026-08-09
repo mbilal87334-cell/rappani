@@ -961,6 +961,185 @@ async function startServer() {
     }
   });
 
+  // --- Coupon Routes ---
+  app.get("/api/coupons/active-promotions", async (req, res) => {
+    try {
+      const now = new Date();
+      const activeCoupons = await Coupon.find({
+        isActive: true,
+        showToCustomers: true,
+        $or: [
+          { expiryTime: null },
+          { expiryTime: { $gte: now } }
+        ]
+      });
+      res.json({ success: true, offers: activeCoupons });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  app.post("/api/coupons/:id/view", async (req, res) => {
+    try {
+      await Coupon.findByIdAndUpdate(req.params.id, { $inc: { viewsCount: 1 } });
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  app.get("/api/coupons", authenticateToken, async (req, res) => {
+    try {
+      const coupons = await Coupon.find({}).sort({ createdAt: -1 });
+      res.json(coupons);
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  app.post("/api/coupons", authenticateToken, async (req, res) => {
+    try {
+      const { 
+        code, 
+        discountPercent, 
+        maxUses,
+        offerTitle,
+        offerDescription,
+        discountDetails,
+        minOrderValue,
+        maxDiscount,
+        showToCustomers
+      } = req.body;
+      
+      const newCoupon = await Coupon.create({ 
+        code: code.toUpperCase(), 
+        discountPercent, 
+        maxUses: maxUses || 100,
+        offerTitle: offerTitle || '',
+        offerDescription: offerDescription || '',
+        discountDetails: discountDetails || '',
+        minOrderValue: minOrderValue || 0,
+        maxDiscount: maxDiscount || 0,
+        showToCustomers: showToCustomers || false
+      });
+      
+      res.json({ success: true, coupon: newCoupon });
+    } catch (err: any) {
+      console.error(err);
+      res.status(500).json({ success: false, error: err.message || "Server error" });
+    }
+  });
+
+  app.put("/api/coupons/:id", authenticateToken, async (req, res) => {
+    try {
+      const { 
+        isActive,
+        discountPercent,
+        maxUses,
+        offerTitle,
+        offerDescription,
+        discountDetails,
+        minOrderValue,
+        maxDiscount,
+        showToCustomers,
+        action,
+        duration,
+        customStartTime,
+        customExpiryTime,
+        extendMinutes
+      } = req.body;
+
+      const coupon = await Coupon.findById(req.params.id);
+      if (!coupon) return res.status(404).json({ success: false, error: "Coupon not found" });
+
+      const updateData: any = {};
+      if (isActive !== undefined) updateData.isActive = isActive;
+      if (discountPercent !== undefined) updateData.discountPercent = discountPercent;
+      if (maxUses !== undefined) updateData.maxUses = maxUses;
+      if (offerTitle !== undefined) updateData.offerTitle = offerTitle;
+      if (offerDescription !== undefined) updateData.offerDescription = offerDescription;
+      if (discountDetails !== undefined) updateData.discountDetails = discountDetails;
+      if (minOrderValue !== undefined) updateData.minOrderValue = minOrderValue;
+      if (maxDiscount !== undefined) updateData.maxDiscount = maxDiscount;
+      if (showToCustomers !== undefined) updateData.showToCustomers = showToCustomers;
+
+      const now = new Date();
+
+      if (action === 'activate') {
+        updateData.isActive = true;
+        const baseStartTime = customStartTime ? new Date(customStartTime) : now;
+        updateData.startTime = baseStartTime;
+        
+        if (duration === 'custom') {
+          updateData.expiryTime = customExpiryTime ? new Date(customExpiryTime) : null;
+          updateData.offerDuration = 0;
+        } else {
+          const mins = parseInt(duration) || 60;
+          updateData.expiryTime = new Date(baseStartTime.getTime() + mins * 60 * 1000);
+          updateData.offerDuration = mins;
+        }
+      } else if (action === 'deactivate') {
+        updateData.isActive = false;
+        updateData.startTime = null;
+        updateData.expiryTime = null;
+      } else if (action === 'extend') {
+        const mins = parseInt(extendMinutes) || 15;
+        const currentExpiry = coupon.expiryTime ? new Date(coupon.expiryTime) : now;
+        updateData.expiryTime = new Date(currentExpiry.getTime() + mins * 60 * 1000);
+      } else if (action === 'endNow') {
+        updateData.expiryTime = now;
+      }
+
+      const updatedCoupon = await Coupon.findByIdAndUpdate(req.params.id, updateData, { new: true });
+      res.json({ success: true, coupon: updatedCoupon });
+    } catch (err: any) {
+      console.error(err);
+      res.status(500).json({ success: false, error: err.message || "Server error" });
+    }
+  });
+
+  app.delete("/api/coupons/:id", authenticateToken, async (req, res) => {
+    try {
+      await Coupon.findByIdAndDelete(req.params.id);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+  
+  app.post("/api/coupons/validate", async (req, res) => {
+    try {
+      const { code, totalAmount } = req.body;
+      if (!code) return res.status(400).json({ success: false, error: "Coupon code required" });
+      const coupon = await Coupon.findOne({ code: code.toUpperCase() });
+      if (!coupon) return res.status(404).json({ success: false, error: "Invalid coupon code" });
+      if (!coupon.isActive) return res.status(400).json({ success: false, error: "Coupon is not active" });
+      if (coupon.usedCount >= coupon.maxUses) return res.status(400).json({ success: false, error: "Coupon limit reached" });
+      
+      const now = new Date();
+      if (coupon.startTime && now < new Date(coupon.startTime)) {
+        return res.status(400).json({ success: false, error: "This limited-time offer has not started yet" });
+      }
+      if (coupon.expiryTime && now > new Date(coupon.expiryTime)) {
+        return res.status(400).json({ success: false, error: "This limited-time offer has expired" });
+      }
+
+      if (coupon.minOrderValue && totalAmount !== undefined && totalAmount < coupon.minOrderValue) {
+        return res.status(400).json({ success: false, error: `Minimum order value of ₹${coupon.minOrderValue} required for this coupon` });
+      }
+
+      res.json({ 
+        success: true,
+        code: coupon.code,
+        discountPercent: coupon.discountPercent,
+        minOrderValue: coupon.minOrderValue || 0,
+        maxDiscount: coupon.maxDiscount || 0
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
   // --- Admin Review Routes ---
   app.get("/api/admin/reviews", authenticateToken, async (req, res) => {
     try {
