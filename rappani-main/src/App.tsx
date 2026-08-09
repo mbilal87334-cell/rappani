@@ -884,6 +884,10 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   const [mockOtp, setMockOtp] = useState<string | null>(null);
   const [orderSuccessModal, setOrderSuccessModal] = useState<string | null>(null);
   const [homeVisibleCount, setHomeVisibleCount] = useState(20);
+  const [productsVisibleCount, setProductsVisibleCount] = useState(10);
+  useEffect(() => {
+    setProductsVisibleCount(10);
+  }, [selectedCategory]);
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const featuredProducts = products.filter(p => p.isFeatured);
@@ -1843,7 +1847,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                   <p>{t.noProducts}</p>
                 </div>
               ) : (
-                filteredProducts.map(product => {
+                filteredProducts.slice(0, productsVisibleCount).map(product => {
                   const cartItem = cart.find(item => item.product.id === product.id);
                   const qty = cartItem ? cartItem.quantity : 0;
                   return (
