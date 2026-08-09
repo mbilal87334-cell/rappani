@@ -431,32 +431,31 @@ export default function CouponManager() {
                     </button>
                   </div>
 
-                  <div className="flex gap-2">
-                    {(status === 'Active' || status === 'Scheduled') ? (
+                  <div className="flex flex-wrap gap-2 pt-2 border-t border-neutral-100">
+                    <button
+                      onClick={() => openPublishModal(coupon)}
+                      className="bg-black hover:bg-gold-500 hover:text-black text-gold-500 text-xs px-4 py-2 rounded-lg font-bold transition-all active:scale-95 flex-1 text-center"
+                    >
+                      Publish Offer
+                    </button>
+                    {(status === 'Active' || status === 'Scheduled') && (
                       <>
                         <button
                           onClick={() => {
                             setExtendTargetCoupon(coupon);
                             setShowExtendModal(true);
                           }}
-                          className="bg-neutral-100 hover:bg-neutral-200 text-primary text-xs px-2.5 py-1.5 rounded-lg font-bold transition-all"
+                          className="bg-neutral-100 hover:bg-neutral-200 text-primary text-xs px-3 py-2 rounded-lg font-bold transition-all"
                         >
-                          + Extend Time
+                          + Extend
                         </button>
                         <button
                           onClick={() => handleEndNow(coupon)}
-                          className="bg-red-600 hover:bg-red-700 text-white text-xs px-2.5 py-1.5 rounded-lg font-bold transition-all"
+                          className="bg-red-50 hover:bg-red-100 text-red-600 text-xs px-3 py-2 rounded-lg font-bold transition-all"
                         >
                           End Now
                         </button>
                       </>
-                    ) : (
-                      <button
-                        onClick={() => openPublishModal(coupon)}
-                        className="bg-black hover:bg-gold-500 hover:text-black text-gold-500 text-xs px-4 py-1.5 rounded-lg font-bold transition-all"
-                      >
-                        Publish Offer
-                      </button>
                     )}
                   </div>
                 </div>
@@ -536,8 +535,14 @@ export default function CouponManager() {
                           {coupon.usedCount || 0} / {coupon.maxUses}
                         </div>
                       </td>
-                      <td className="py-4 px-6 text-right space-x-2 whitespace-nowrap">
-                        {status === 'Active' || status === 'Scheduled' ? (
+                      <td className="py-4 px-6 text-right whitespace-nowrap flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => openPublishModal(coupon)}
+                          className="text-xs bg-black hover:bg-gold-500 hover:text-black text-gold-500 font-bold px-3 py-1.5 rounded-lg transition-all active:scale-95"
+                        >
+                          Publish Offer
+                        </button>
+                        {(status === 'Active' || status === 'Scheduled') && (
                           <>
                             <button
                               onClick={() => {
@@ -550,18 +555,11 @@ export default function CouponManager() {
                             </button>
                             <button
                               onClick={() => handleEndNow(coupon)}
-                              className="text-xs bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-1.5 rounded-lg transition-all active:scale-95"
+                              className="text-xs bg-red-50 hover:bg-red-100 text-red-600 font-bold px-3 py-1.5 rounded-lg border border-red-200 transition-all active:scale-95"
                             >
                               End Now
                             </button>
                           </>
-                        ) : (
-                          <button
-                            onClick={() => openPublishModal(coupon)}
-                            className="text-xs bg-black hover:bg-gold-500 hover:text-black text-gold-500 font-bold px-3 py-1.5 rounded-lg transition-all active:scale-95"
-                          >
-                            Publish Offer
-                          </button>
                         )}
                       </td>
                     </tr>
