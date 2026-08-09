@@ -1,0 +1,7 @@
+{
+  "name": "Rappani Stationary and Fancy Store",
+  "description": "E-commerce website for Rappani Stationary and Fancy Store with admin panel.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
