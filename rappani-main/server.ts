@@ -1113,14 +1113,15 @@ async function startServer() {
 
       if (action === 'activate') {
         updateData.isActive = true;
+        const baseStartTime = customStartTime ? new Date(customStartTime) : now;
+        updateData.startTime = baseStartTime;
+        
         if (duration === 'custom') {
-          updateData.startTime = customStartTime ? new Date(customStartTime) : now;
           updateData.expiryTime = customExpiryTime ? new Date(customExpiryTime) : null;
           updateData.offerDuration = 0;
         } else {
           const mins = parseInt(duration) || 60;
-          updateData.startTime = now;
-          updateData.expiryTime = new Date(now.getTime() + mins * 60 * 1000);
+          updateData.expiryTime = new Date(baseStartTime.getTime() + mins * 60 * 1000);
           updateData.offerDuration = mins;
         }
       } else if (action === 'deactivate') {

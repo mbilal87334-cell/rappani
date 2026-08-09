@@ -615,6 +615,8 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   const [activeOffers, setActiveOffers] = useState<any[]>([]);
   const [showPromoPopup, setShowPromoPopup] = useState(false);
   const [promoPopupOffer, setPromoPopupOffer] = useState<any | null>(null);
+  const [showPromoToast, setShowPromoToast] = useState(false);
+  const [promoToastOffer, setPromoToastOffer] = useState<any | null>(null);
   const [isSpecialOffersOpen, setIsSpecialOffersOpen] = useState(false);
   const [promoTick, setPromoTick] = useState(Date.now());
 
@@ -663,6 +665,10 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
           // Sync list
           fetchActivePromotions();
 
+          // Show floating notification toast
+          setPromoToastOffer(data.coupon);
+          setShowPromoToast(true);
+
           // Show modal only if not dismissed in current browser session
           const dismissed = sessionStorage.getItem(`dismissed_popup_${data.coupon.code}`) === 'true';
           if (!dismissed) {
@@ -677,6 +683,10 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
           if (promoPopupOffer && promoPopupOffer.code === data.code) {
             setShowPromoPopup(false);
             setPromoPopupOffer(null);
+          }
+          if (promoToastOffer && promoToastOffer.code === data.code) {
+            setShowPromoToast(false);
+            setPromoToastOffer(null);
           }
         } else if (data.type === 'couponUpdate') {
           fetchActivePromotions();
@@ -694,7 +704,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
       console.log("[SSE] Closing notifications stream...");
       eventSource.close();
     };
-  }, [customerToken, promoPopupOffer]);
+  }, [customerToken, promoPopupOffer, promoToastOffer]);
 
   // Clean expired offers reactively when countdown ends
   useEffect(() => {
@@ -712,9 +722,13 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
           setShowPromoPopup(false);
           setPromoPopupOffer(null);
         }
+        if (promoToastOffer && promoToastOffer.code === eo.code) {
+          setShowPromoToast(false);
+          setPromoToastOffer(null);
+        }
       });
     }
-  }, [promoTick, activeOffers, promoPopupOffer]);
+  }, [promoTick, activeOffers, promoPopupOffer, promoToastOffer]);
 
   // Automatically Copy, Redirect, and Apply Coupon
   const handleUsePromoCoupon = async (coupon: any) => {
@@ -2731,6 +2745,60 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
            <span className="text-[10px] font-bold">Account</span>
          </button>
        </nav>
+
+      {/* Real-time Custom Toast Notification */}
+      <AnimatePresence>
+        {showPromoToast && promoToastOffer && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.95 }}
+            className="fixed bottom-24 left-4 right-4 md:left-auto md:right-6 md:w-80 z-[110] bg-stone-900 border border-gold-500/30 text-white rounded-2xl shadow-xl p-4 flex gap-3 overflow-hidden"
+          >
+            <div className="absolute top-0 left-0 h-1 bg-gradient-to-r from-red-500 via-amber-400 to-red-500 w-full animate-pulse" />
+            
+            <div className="w-10 h-10 bg-white/10 text-gold-500 rounded-xl flex items-center justify-center shrink-0">
+              <Gift className="w-5 h-5" />
+            </div>
+
+            <div className="flex-1 space-y-1">
+              <div className="flex justify-between items-start">
+                <span className="text-[10px] uppercase tracking-wider text-gold-400 font-bold">New Offer Available!</span>
+                <button 
+                  onClick={() => setShowPromoToast(false)} 
+                  className="p-0.5 hover:bg-white/10 rounded text-neutral-400 hover:text-white transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <h4 className="text-xs font-black text-white">
+                Use Coupon: <span className="font-mono text-yellow-300 font-bold select-all">{promoToastOffer.code}</span>
+              </h4>
+              <p className="text-[11px] text-neutral-300 leading-snug line-clamp-2">
+                {promoToastOffer.offerTitle || `Get special discounts on your order today!`}
+              </p>
+              
+              <div className="pt-2 flex items-center justify-between gap-2">
+                {promoToastOffer.expiryTime && (
+                  <span className="text-[10px] text-red-400 font-bold font-mono">
+                    ⏰ {getPromoCountdown(promoToastOffer.expiryTime)} remaining
+                  </span>
+                )}
+                <button
+                  onClick={() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    setShowPromoToast(false);
+                    handleUsePromoCoupon(promoToastOffer);
+                  }}
+                  className="bg-gold-500 hover:bg-gold-400 text-black text-[10px] font-black uppercase px-3 py-1 rounded transition-all active:scale-95 cursor-pointer"
+                >
+                  View Offer
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Real-time Campaign Offer Popup Modal */}
       <AnimatePresence>

@@ -31,17 +31,40 @@ export default function CouponManager() {
     showToCustomers: false
   });
 
-  // Offer Activation State
+  // Offer Activation / Publish Offer States
   const [showActivateModal, setShowActivateModal] = useState(false);
   const [activateTargetCoupon, setActivateTargetCoupon] = useState<any | null>(null);
   const [activationDuration, setActivationDuration] = useState<string>('60'); // minutes or 'custom'
   const [customStartTime, setCustomStartTime] = useState<string>('');
   const [customExpiryTime, setCustomExpiryTime] = useState<string>('');
+  const [publishTitle, setPublishTitle] = useState('');
+  const [publishMessage, setPublishMessage] = useState('');
+  const [publishStartTime, setPublishStartTime] = useState('');
 
   // Extension Modal State
   const [showExtendModal, setShowExtendModal] = useState(false);
   const [extendTargetCoupon, setExtendTargetCoupon] = useState<any | null>(null);
   const [extendMinutes, setExtendMinutes] = useState<string>('15');
+
+  const openPublishModal = (coupon: any) => {
+    setActivateTargetCoupon(coupon);
+    setPublishTitle(coupon.offerTitle || `🎉 Special Discount Offer!`);
+    setPublishMessage(coupon.offerDescription || `Get Flat ${coupon.discountPercent}% OFF on your order today.`);
+    
+    // Set default start time to now in local format YYYY-MM-DDTHH:MM
+    const localNow = new Date();
+    const tzOffset = localNow.getTimezoneOffset() * 60000;
+    const localISOTime = new Date(localNow.getTime() - tzOffset).toISOString().slice(0, 16);
+    setPublishStartTime(localISOTime);
+    setCustomStartTime(localISOTime);
+    
+    // Default custom expiry to now + 1 hour in local format
+    const localExpiry = new Date(localNow.getTime() + 60 * 60000 - tzOffset);
+    setCustomExpiryTime(localExpiry.toISOString().slice(0, 16));
+
+    setActivationDuration('60');
+    setShowActivateModal(true);
+  };
 
   const [error, setError] = useState('');
 
@@ -154,7 +177,7 @@ export default function CouponManager() {
     }
   };
 
-  // Offer Activation Submit
+  // Offer Activation Submit (Publish / Send Offer)
   const handleActivateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activateTargetCoupon) return;
@@ -165,19 +188,22 @@ export default function CouponManager() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'activate',
+          offerTitle: publishTitle,
+          offerDescription: publishMessage,
           duration: activationDuration,
-          customStartTime: activationDuration === 'custom' ? customStartTime : undefined,
-          customExpiryTime: activationDuration === 'custom' ? customExpiryTime : undefined
+          customStartTime: publishStartTime,
+          customExpiryTime: activationDuration === 'custom' ? customExpiryTime : undefined,
+          showToCustomers: true
         })
       });
 
       const data = await res.json();
       if (data.success) {
-        toast.success(`Promotional offer activated for ${activateTargetCoupon.code}`);
+        toast.success(`Promotional offer published successfully for ${activateTargetCoupon.code}! 🚀`);
         fetchCoupons();
         setShowActivateModal(false);
       } else {
-        toast.error(data.error || 'Failed to activate offer');
+        toast.error(data.error || 'Failed to publish offer');
       }
     } catch (err) {
       console.error(err);
@@ -426,14 +452,10 @@ export default function CouponManager() {
                       </>
                     ) : (
                       <button
-                        onClick={() => {
-                          setActivateTargetCoupon(coupon);
-                          setActivationDuration('60');
-                          setShowActivateModal(true);
-                        }}
+                        onClick={() => openPublishModal(coupon)}
                         className="bg-black hover:bg-gold-500 hover:text-black text-gold-500 text-xs px-4 py-1.5 rounded-lg font-bold transition-all"
                       >
-                        Activate Offer
+                        Publish Offer
                       </button>
                     )}
                   </div>
@@ -535,14 +557,10 @@ export default function CouponManager() {
                           </>
                         ) : (
                           <button
-                            onClick={() => {
-                              setActivateTargetCoupon(coupon);
-                              setActivationDuration('60');
-                              setShowActivateModal(true);
-                            }}
+                            onClick={() => openPublishModal(coupon)}
                             className="text-xs bg-black hover:bg-gold-500 hover:text-black text-gold-500 font-bold px-3 py-1.5 rounded-lg transition-all active:scale-95"
                           >
-                            Re-Activate
+                            Publish Offer
                           </button>
                         )}
                       </td>
@@ -717,35 +735,69 @@ export default function CouponManager() {
         )}
       </AnimatePresence>
 
-      {/* ACTIVATE OFFER MODAL */}
+      {/* ACTIVATE OFFER MODAL (PUBLISH CAMPAIGN) */}
       <AnimatePresence>
         {showActivateModal && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
             <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-neutral-100"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden border border-neutral-100 mt-10 mb-10 shrink-0"
             >
               <div className="flex items-center justify-between p-4 border-b border-neutral-100 bg-neutral-50">
                 <h3 className="font-bold text-lg text-primary flex items-center gap-2">
                   <Clock className="w-5 h-5 text-gold-600 animate-pulse" />
-                  Activate Campaign: {activateTargetCoupon?.code}
+                  Publish Offer: {activateTargetCoupon?.code}
                 </h3>
                 <button onClick={() => setShowActivateModal(false)} className="p-1 hover:bg-neutral-200 rounded-md transition-colors text-neutral-500">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <form onSubmit={handleActivateSubmit} className="p-6 space-y-4">
+              <form onSubmit={handleActivateSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
                 <div>
-                  <label className="block text-xs font-bold text-neutral-700 uppercase mb-2">Campaign Duration</label>
+                  <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Offer Title</label>
+                  <input 
+                    type="text"
+                    required
+                    value={publishTitle}
+                    onChange={(e) => setPublishTitle(e.target.value)}
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg outline-none focus:ring-2 focus:ring-gold-500 text-sm"
+                    placeholder="e.g. 🎉 Special Welcome Offer!"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Short Offer Message</label>
+                  <textarea 
+                    required
+                    value={publishMessage}
+                    onChange={(e) => setPublishMessage(e.target.value)}
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg outline-none focus:ring-2 focus:ring-gold-500 text-sm h-20 resize-none"
+                    placeholder="e.g. Get ₹100 OFF on your order today."
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Offer Start Time</label>
+                  <input 
+                    type="datetime-local"
+                    required
+                    value={publishStartTime}
+                    onChange={(e) => setPublishStartTime(e.target.value)}
+                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg outline-none focus:ring-2 focus:ring-gold-500 text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-neutral-700 uppercase mb-2">Offer Duration</label>
                   <div className="grid grid-cols-2 gap-2">
                     {[
                       { label: '1 Hour', val: '60' },
                       { label: '1.5 Hours', val: '90' },
                       { label: '2 Hours', val: '120' },
-                      { label: 'Custom Time', val: 'custom' }
+                      { label: 'Custom Duration', val: 'custom' }
                     ].map(opt => (
                       <button
                         key={opt.val}
@@ -764,27 +816,15 @@ export default function CouponManager() {
                 </div>
 
                 {activationDuration === 'custom' && (
-                  <div className="space-y-3 pt-2 bg-neutral-50 p-3 rounded-lg border border-neutral-200">
-                    <div>
-                      <label className="block text-xs font-bold text-neutral-700 mb-1">Start Time</label>
-                      <input 
-                        type="datetime-local" 
-                        required
-                        value={customStartTime}
-                        onChange={(e) => setCustomStartTime(e.target.value)}
-                        className="w-full px-3 py-1.5 text-sm border border-neutral-300 rounded-lg outline-none"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-neutral-700 mb-1">Expiry / End Time</label>
-                      <input 
-                        type="datetime-local" 
-                        required
-                        value={customExpiryTime}
-                        onChange={(e) => setCustomExpiryTime(e.target.value)}
-                        className="w-full px-3 py-1.5 text-sm border border-neutral-300 rounded-lg outline-none"
-                      />
-                    </div>
+                  <div className="pt-2 bg-neutral-50 p-3 rounded-lg border border-neutral-200">
+                    <label className="block text-xs font-bold text-neutral-700 mb-1">Offer Expiry Time</label>
+                    <input 
+                      type="datetime-local" 
+                      required
+                      value={customExpiryTime}
+                      onChange={(e) => setCustomExpiryTime(e.target.value)}
+                      className="w-full px-3 py-1.5 text-sm border border-neutral-300 rounded-lg outline-none focus:ring-2 focus:ring-gold-500"
+                    />
                   </div>
                 )}
 
@@ -793,7 +833,7 @@ export default function CouponManager() {
                     Cancel
                   </button>
                   <button type="submit" className="bg-black text-gold-500 px-5 py-2 rounded-lg font-bold hover:bg-gold-500 hover:text-black text-sm transition-all shadow-md active:scale-95">
-                    Start Campaign 🚀
+                    Publish / Send Offer 🚀
                   </button>
                 </div>
               </form>
