@@ -630,10 +630,6 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
 
   // Fetch active promo offers from server
   const fetchActivePromotions = async () => {
-    if (!customerToken) {
-      setActiveOffers([]);
-      return;
-    }
     try {
       const res = await fetch(`${API_BASE}/coupons/active-promotions`);
       const data = await res.json();
@@ -647,12 +643,10 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
 
   useEffect(() => {
     fetchActivePromotions();
-  }, [customerToken]);
+  }, []);
 
   // Server-Sent Events (SSE) listener for real-time announcements
   useEffect(() => {
-    if (!customerToken) return;
-
     console.log("[SSE] Initializing real-time notifications stream...");
     const eventSource = new EventSource(`${API_BASE}/realtime/events`);
 
@@ -704,7 +698,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
       console.log("[SSE] Closing notifications stream...");
       eventSource.close();
     };
-  }, [customerToken, promoPopupOffer, promoToastOffer]);
+  }, [promoPopupOffer, promoToastOffer]);
 
   // Clean expired offers reactively when countdown ends
   useEffect(() => {
