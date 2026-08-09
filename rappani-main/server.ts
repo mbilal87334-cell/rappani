@@ -1080,6 +1080,8 @@ async function startServer() {
     try {
       const { 
         isActive,
+        discountPercent,
+        maxUses,
         offerTitle,
         offerDescription,
         discountDetails,
@@ -1098,6 +1100,8 @@ async function startServer() {
 
       const updateData: any = {};
       if (isActive !== undefined) updateData.isActive = isActive;
+      if (discountPercent !== undefined) updateData.discountPercent = discountPercent;
+      if (maxUses !== undefined) updateData.maxUses = maxUses;
       if (offerTitle !== undefined) updateData.offerTitle = offerTitle;
       if (offerDescription !== undefined) updateData.offerDescription = offerDescription;
       if (discountDetails !== undefined) updateData.discountDetails = discountDetails;
