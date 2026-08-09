@@ -6,13 +6,14 @@ import fs from "fs-extra";
 import cors from "cors";
 import mongoose from "mongoose";
 import jwt from 'jsonwebtoken';
-import { GoogleGenerativeAI } from '@google/genai';
+
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import Razorpay from "razorpay";
 import crypto from "crypto";
+import { connectToWhatsApp, waQrCode, isWaConnected, sendWhatsAppMessage } from "./whatsappBot";
 
 dotenv.config();
 
@@ -106,7 +107,7 @@ const orderSchema = new mongoose.Schema({
   userId: { type: String, required: false },
   customerName: { type: String, required: true },
   customerPhone: { type: String, required: true },
-  shippingAddress: { type: Object, required: false },
+  shippingAddress: { type: mongoose.Schema.Types.Mixed, required: false },
   items: { type: Array, required: true },
   totalAmount: { type: Number, required: true },
   paymentMethod: { type: String, required: true },
@@ -135,11 +136,22 @@ const userSchema = new mongoose.Schema({
   role: { type: String, default: 'customer' },
   status: { type: String, default: 'Active' },
   addresses: [{
-    label: { type: String, required: true }, // e.g. Home, Office
+    id: { type: String, default: () => Math.random().toString(36).substring(2, 9) },
+    fullName: { type: String, required: true },
+    mobile: { type: String, required: true },
+    altMobile: { type: String, default: '' },
+    houseNo: { type: String, required: true },
     street: { type: String, required: true },
-    city: { type: String, required: true },
+    landmark: { type: String, default: '' },
+    country: { type: String, default: 'India' },
     state: { type: String, required: true },
-    pincode: { type: String, required: true }
+    district: { type: String, required: true },
+    city: { type: String, required: true },
+    pincode: { type: String, required: true },
+    addressType: { type: String, default: 'Home' }, // Home, Work, Other
+    isDefault: { type: Boolean, default: false },
+    lat: { type: Number, required: false },
+    lng: { type: Number, required: false }
   }],
   loyaltyPoints: { type: Number, default: 0 },
   createdAt: { type: Date, default: Date.now }
@@ -152,7 +164,19 @@ const couponSchema = new mongoose.Schema({
   maxUses: { type: Number, default: 100 },
   usedCount: { type: Number, default: 0 },
   isActive: { type: Boolean, default: true },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+
+  // Limited Time Promotional Offer Layer
+  offerTitle: { type: String, default: '' },
+  offerDescription: { type: String, default: '' },
+  discountDetails: { type: String, default: '' },
+  minOrderValue: { type: Number, default: 0 },
+  maxDiscount: { type: Number, default: 0 },
+  startTime: { type: Date, default: null },
+  expiryTime: { type: Date, default: null },
+  offerDuration: { type: Number, default: 0 }, // In minutes
+  showToCustomers: { type: Boolean, default: false },
+  viewsCount: { type: Number, default: 0 }
 });
 const Coupon = mongoose.model("Coupon", couponSchema);
 
@@ -164,6 +188,12 @@ const notificationSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 const Notification = mongoose.model("Notification", notificationSchema);
+
+const whatsAppAuthSchema = new mongoose.Schema({
+  _id: { type: String, required: true },
+  data: { type: String, required: true }
+});
+export const WhatsAppAuth = mongoose.model("WhatsAppAuth", whatsAppAuthSchema);
 
 
 async function startServer() {
@@ -209,6 +239,9 @@ async function startServer() {
     dbConnectionState = "connected";
     console.log("Connected to MongoDB Cloud Database");
     await seedInitialData();
+    
+    // Start WhatsApp Bot
+    connectToWhatsApp().catch(err => console.error("WhatsApp Bot Error:", err));
   } catch (error: any) {
     dbConnectionState = "error";
     dbConnectionError = error?.message || String(error);
@@ -224,6 +257,53 @@ async function startServer() {
       hasMongoUri: !!process.env.MONGODB_URI,
     });
   });
+
+  // --- Server-Sent Events (SSE) Real-time Engine ---
+  let sseClients: any[] = [];
+
+  app.get("/api/realtime/events", (req, res) => {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders();
+
+    const clientId = Date.now().toString();
+    const newClient = { id: clientId, res };
+    sseClients.push(newClient);
+
+    console.log(`[SSE] Client connected: ${clientId}. Total clients: ${sseClients.length}`);
+
+    // Send connection greeting
+    res.write(`data: ${JSON.stringify({ type: 'connected', clientId })}\n\n`);
+
+    req.on("close", () => {
+      sseClients = sseClients.filter(c => c.id !== clientId);
+      console.log(`[SSE] Client disconnected: ${clientId}. Remaining clients: ${sseClients.length}`);
+    });
+  });
+
+  // Heartbeat ping interval to keep connections alive on Render/Heroku
+  setInterval(() => {
+    sseClients.forEach(client => {
+      try {
+        client.res.write(`: heartbeat\n\n`);
+      } catch (err) {
+        // Ignored
+      }
+    });
+  }, 20000);
+
+  // Broadcaster function
+  const broadcastEvent = (data: any) => {
+    console.log(`[SSE] Broadcasting event type: ${data.type} to ${sseClients.length} clients`);
+    sseClients.forEach(client => {
+      try {
+        client.res.write(`data: ${JSON.stringify(data)}\n\n`);
+      } catch (err) {
+        console.error(`[SSE] Error sending to client ${client.id}:`, err);
+      }
+    });
+  };
 
   // Configure Cloudinary
   cloudinary.config({
@@ -394,16 +474,6 @@ async function startServer() {
         { expiresIn: '7d' }
       );
 
-      try {
-        await Notification.create({
-          title: "Customer Login",
-          message: `${loggedInUser.name} (${loggedInUser.phone}) logged in successfully.`,
-          type: "info"
-        });
-      } catch (err) {
-        console.error("Failed to create notification:", err);
-      }
-
       res.json({ success: true, token, user: loggedInUser });
     }).catch(err => {
       console.error(err);
@@ -464,7 +534,7 @@ async function startServer() {
     }
   });
 
-  app.put("/api/customers/:id/status", async (req, res) => {
+  app.put("/api/customers/:id/status", authenticateToken, async (req, res) => {
     try {
       const { status } = req.body;
       const user = await User.findByIdAndUpdate(req.params.id, { status }, { new: true });
@@ -499,6 +569,16 @@ async function startServer() {
     }
   });
 
+  // Admin-only: fetch ALL products without pagination limit
+  app.get("/api/products/all", authenticateToken, async (req, res) => {
+    try {
+      const products = await Product.find({}, '-_id -__v').sort({ createdAt: -1 });
+      res.json({ products, total: products.length });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
   app.get("/api/products", async (req, res) => {
     try {
       const page = parseInt(req.query.page as string) || 1;
@@ -520,10 +600,36 @@ async function startServer() {
     try {
       const { id, name, category, price, originalPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, isVisible, brand, sku, description, specifications, variants } = req.body;
       const visibleFlag = isVisible !== undefined ? isVisible : true;
-      await Product.create({ id, name, category, price, originalPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, isVisible: visibleFlag, brand, sku, description, specifications, variants });
-      res.json({ success: true });
+      const newProduct = await Product.create({ id, name, category, price, originalPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, isVisible: visibleFlag, brand, sku, description, specifications, variants });
+      res.json(newProduct);
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  app.post("/api/products/bulk", authenticateToken, async (req, res) => {
+    try {
+      const products = req.body;
+      if (!Array.isArray(products)) {
+        return res.status(400).json({ success: false, error: "Invalid data format" });
+      }
+
+      // Insert products into database
+      const inserted = await Product.insertMany(products);
+
+      // Auto-create missing categories
+      const uniqueCategories = [...new Set(products.map(p => p.category).filter(Boolean))];
+      for (const catName of uniqueCategories) {
+        const exists = await Category.findOne({ name: catName });
+        if (!exists) {
+          const catId = `cat_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+          await Category.create({ id: catId, name: catName });
+        }
+      }
+
+      res.json({ success: true, count: inserted.length });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message || "Server error" });
     }
   });
 
@@ -535,7 +641,8 @@ async function startServer() {
       if (isVisible !== undefined) updateData.isVisible = isVisible;
       
       await Product.updateOne({ id }, updateData);
-      res.json({ success: true });
+      const updatedProduct = await Product.findOne({ id });
+      res.json(updatedProduct);
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });
     }
@@ -612,6 +719,16 @@ async function startServer() {
     }
   });
 
+  const incrementCouponUse = async (code: string) => {
+    if (!code) return;
+    try {
+      await Coupon.updateOne({ code: code.toUpperCase() }, { $inc: { usedCount: 1 } });
+      console.log(`[COUPON] Incremented usedCount for coupon: ${code}`);
+    } catch (err) {
+      console.error(`[COUPON] Failed to increment usedCount for coupon: ${code}`, err);
+    }
+  };
+
   app.post("/api/checkout", async (req, res) => {
     try {
       console.log(`[SERVER] Checkout hit. Body:`, JSON.stringify(req.body));
@@ -621,11 +738,7 @@ async function startServer() {
         return res.status(400).json({ success: false, error: "Missing required fields" });
       }
 
-      // SERVER-SIDE SAFEGUARD: Ignore WhatsApp orders if they somehow reach here
-      if (paymentMethod && paymentMethod.toLowerCase().includes('whatsapp')) {
-        console.warn(`[SERVER] Ignoring WhatsApp checkout request for ${customerName}. Not saving to DB.`);
-        return res.json({ success: true, message: "WhatsApp inquiry received (not booked as order)" });
-      }
+
 
       const orderId = Date.now().toString();
       
@@ -662,16 +775,6 @@ async function startServer() {
         createdAt: new Date()
       });
 
-      try {
-        await Notification.create({
-          title: "New Order Placed",
-          message: `${customerName} placed an order for ₹${totalAmount} via ${paymentMethod}.`,
-          type: "success"
-        });
-      } catch (err) {
-        console.error("Failed to create notification:", err);
-      }
-
       if (paymentMethod === 'Razorpay') {
         const options = {
           amount: Math.round(totalAmount * 100), // amount in smallest currency unit (paise)
@@ -699,6 +802,16 @@ async function startServer() {
           { $inc: { stock: -item.quantity } }
         );
       }
+      
+      await newOrder.save();
+      if (couponCode) {
+        await incrementCouponUse(couponCode);
+      }
+
+      // SEND WHATSAPP MESSAGE
+      const msg = `Hi ${customerName},\n\nYour order (ID: ${orderId}) has been successfully placed for ₹${totalAmount}.\n\nThank you for shopping with Rappani Store! 🚀`;
+      await sendWhatsAppMessage(customerPhone, msg);
+
       res.json({ success: true, orderId });
     } catch (err: any) {
       console.error("[SERVER] Checkout error:", err);
@@ -730,18 +843,26 @@ async function startServer() {
         // Payment successful
         order.paymentStatus = 'Paid';
         order.status = 'Processing';
+        order.timeline.push({ status: 'Processing', date: new Date() });
         order.razorpayPaymentId = razorpay_payment_id;
         order.razorpaySignature = razorpay_signature;
         order.paymentTime = new Date();
-        await order.save();
-
-        // Reduce stock after successful payment
+        
         for (const item of order.items) {
           await Product.updateOne(
             { id: item.product.id, stock: { $exists: true, $gte: item.quantity } },
             { $inc: { stock: -item.quantity } }
           );
         }
+
+        await order.save();
+        if (order.couponCode) {
+          await incrementCouponUse(order.couponCode);
+        }
+        
+        // SEND WHATSAPP MESSAGE
+        const msg = `Hi ${order.customerName},\n\nYour payment of ₹${order.totalAmount} for order ${order.id} was successful! 🚀\nWe are now processing your order.`;
+        await sendWhatsAppMessage(order.customerPhone, msg);
 
         res.json({ success: true, message: "Payment verified successfully" });
       } else {
@@ -780,7 +901,7 @@ async function startServer() {
     }
   });
 
-  app.get("/api/orders", async (req, res) => {
+  app.get("/api/orders", authenticateToken, async (req, res) => {
     try {
       const orders = await Order.find({}, '-_id -__v').sort({ createdAt: -1 });
       res.json(orders);
@@ -881,8 +1002,39 @@ async function startServer() {
     }
   });
 
+  // --- Admin WhatsApp API ---
+  app.get("/api/admin/whatsapp/status", authenticateToken, (req, res) => {
+    res.json({ connected: isWaConnected, qr: waQrCode });
+  });
+
   // --- Coupon Routes ---
-  app.get("/api/coupons", async (req, res) => {
+  app.get("/api/coupons/active-promotions", async (req, res) => {
+    try {
+      const now = new Date();
+      const activeCoupons = await Coupon.find({
+        isActive: true,
+        showToCustomers: true,
+        $or: [
+          { startTime: null, expiryTime: null },
+          { startTime: { $lte: now }, expiryTime: { $gte: now } }
+        ]
+      });
+      res.json({ success: true, offers: activeCoupons });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  app.post("/api/coupons/:id/view", async (req, res) => {
+    try {
+      await Coupon.findByIdAndUpdate(req.params.id, { $inc: { viewsCount: 1 } });
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  app.get("/api/coupons", authenticateToken, async (req, res) => {
     try {
       const coupons = await Coupon.find({}).sort({ createdAt: -1 });
       res.json(coupons);
@@ -893,26 +1045,120 @@ async function startServer() {
 
   app.post("/api/coupons", authenticateToken, async (req, res) => {
     try {
-      const { code, discountPercent, maxUses } = req.body;
-      await Coupon.create({ code: code.toUpperCase(), discountPercent, maxUses });
-      res.json({ success: true });
+      const { 
+        code, 
+        discountPercent, 
+        maxUses,
+        offerTitle,
+        offerDescription,
+        discountDetails,
+        minOrderValue,
+        maxDiscount,
+        showToCustomers
+      } = req.body;
+      
+      const newCoupon = await Coupon.create({ 
+        code: code.toUpperCase(), 
+        discountPercent, 
+        maxUses,
+        offerTitle: offerTitle || '',
+        offerDescription: offerDescription || '',
+        discountDetails: discountDetails || '',
+        minOrderValue: minOrderValue || 0,
+        maxDiscount: maxDiscount || 0,
+        showToCustomers: showToCustomers || false
+      });
+      
+      res.json({ success: true, coupon: newCoupon });
     } catch (err) {
+      console.error(err);
       res.status(500).json({ success: false, error: "Server error" });
     }
   });
 
   app.put("/api/coupons/:id", authenticateToken, async (req, res) => {
     try {
-      const { isActive } = req.body;
-      await Coupon.findByIdAndUpdate(req.params.id, { isActive });
-      res.json({ success: true });
+      const { 
+        isActive,
+        discountPercent,
+        maxUses,
+        offerTitle,
+        offerDescription,
+        discountDetails,
+        minOrderValue,
+        maxDiscount,
+        showToCustomers,
+        action,
+        duration,
+        customStartTime,
+        customExpiryTime,
+        extendMinutes
+      } = req.body;
+
+      const coupon = await Coupon.findById(req.params.id);
+      if (!coupon) return res.status(404).json({ success: false, error: "Coupon not found" });
+
+      const updateData: any = {};
+      if (isActive !== undefined) updateData.isActive = isActive;
+      if (discountPercent !== undefined) updateData.discountPercent = discountPercent;
+      if (maxUses !== undefined) updateData.maxUses = maxUses;
+      if (offerTitle !== undefined) updateData.offerTitle = offerTitle;
+      if (offerDescription !== undefined) updateData.offerDescription = offerDescription;
+      if (discountDetails !== undefined) updateData.discountDetails = discountDetails;
+      if (minOrderValue !== undefined) updateData.minOrderValue = minOrderValue;
+      if (maxDiscount !== undefined) updateData.maxDiscount = maxDiscount;
+      if (showToCustomers !== undefined) updateData.showToCustomers = showToCustomers;
+
+      const now = new Date();
+
+      if (action === 'activate') {
+        updateData.isActive = true;
+        if (duration === 'custom') {
+          updateData.startTime = customStartTime ? new Date(customStartTime) : now;
+          updateData.expiryTime = customExpiryTime ? new Date(customExpiryTime) : null;
+          updateData.offerDuration = 0;
+        } else {
+          const mins = parseInt(duration) || 60;
+          updateData.startTime = now;
+          updateData.expiryTime = new Date(now.getTime() + mins * 60 * 1000);
+          updateData.offerDuration = mins;
+        }
+      } else if (action === 'deactivate') {
+        updateData.isActive = false;
+        updateData.startTime = null;
+        updateData.expiryTime = null;
+      } else if (action === 'extend') {
+        const mins = parseInt(extendMinutes) || 15;
+        const currentExpiry = coupon.expiryTime ? new Date(coupon.expiryTime) : now;
+        updateData.expiryTime = new Date(currentExpiry.getTime() + mins * 60 * 1000);
+      } else if (action === 'endNow') {
+        updateData.expiryTime = now;
+      }
+
+      const updatedCoupon = await Coupon.findByIdAndUpdate(req.params.id, updateData, { new: true });
+
+      // Broadcast SSE real-time notifications
+      if (action === 'activate' || action === 'extend') {
+        broadcastEvent({ type: 'offerActivated', coupon: updatedCoupon });
+      } else if (action === 'deactivate' || action === 'endNow') {
+        broadcastEvent({ type: 'offerEnded', code: coupon.code });
+      } else {
+        broadcastEvent({ type: 'couponUpdate', coupon: updatedCoupon });
+      }
+
+      res.json({ success: true, coupon: updatedCoupon });
     } catch (err) {
+      console.error(err);
       res.status(500).json({ success: false, error: "Server error" });
     }
   });
 
   app.delete("/api/coupons/:id", authenticateToken, async (req, res) => {
     try {
+      const coupon = await Coupon.findById(req.params.id);
+      if (coupon) {
+        broadcastEvent({ type: 'offerEnded', code: coupon.code });
+      }
       await Coupon.findByIdAndDelete(req.params.id);
       res.json({ success: true });
     } catch (err) {
@@ -922,20 +1168,37 @@ async function startServer() {
   
   app.post("/api/coupons/validate", async (req, res) => {
     try {
-      const { code } = req.body;
+      const { code, totalAmount } = req.body;
       const coupon = await Coupon.findOne({ code: code.toUpperCase() });
       if (!coupon) return res.status(404).json({ success: false, error: "Invalid coupon code" });
       if (!coupon.isActive) return res.status(400).json({ success: false, error: "Coupon is not active" });
       if (coupon.usedCount >= coupon.maxUses) return res.status(400).json({ success: false, error: "Coupon limit reached" });
       
-      res.json({ success: true, discountPercent: coupon.discountPercent });
+      const now = new Date();
+      if (coupon.startTime && now < new Date(coupon.startTime)) {
+        return res.status(400).json({ success: false, error: "This limited-time offer has not started yet" });
+      }
+      if (coupon.expiryTime && now > new Date(coupon.expiryTime)) {
+        return res.status(400).json({ success: false, error: "This limited-time offer has expired" });
+      }
+
+      if (coupon.minOrderValue && totalAmount !== undefined && totalAmount < coupon.minOrderValue) {
+        return res.status(400).json({ success: false, error: `Minimum order value of ₹${coupon.minOrderValue} required for this coupon` });
+      }
+
+      res.json({ 
+        success: true, 
+        discountPercent: coupon.discountPercent,
+        minOrderValue: coupon.minOrderValue,
+        maxDiscount: coupon.maxDiscount
+      });
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });
     }
   });
 
   // --- Notification Routes ---
-  app.get("/api/notifications", async (req, res) => {
+  app.get("/api/notifications", authenticateToken, async (req, res) => {
     try {
       const notifs = await Notification.find({}).sort({ createdAt: -1 }).limit(50);
       res.json(notifs);
@@ -953,7 +1216,7 @@ async function startServer() {
     }
   });
 
-  app.put("/api/notifications/mark-read", async (req, res) => {
+  app.put("/api/notifications/mark-read", authenticateToken, async (req, res) => {
     try {
       await Notification.updateMany({ read: false }, { read: true });
       res.json({ success: true });
@@ -963,7 +1226,7 @@ async function startServer() {
   });
 
   // --- Analytics Route ---
-  app.get("/api/analytics/summary", async (req, res) => {
+  app.get("/api/analytics/summary", authenticateToken, async (req, res) => {
     try {
       const totalOrders = await Order.countDocuments();
       const orders = await Order.find({}, 'totalAmount createdAt items');
@@ -991,7 +1254,13 @@ async function startServer() {
       console.log(`[SERVER] DELETE request for ID: "${id}"`);
 
       // 1. Find the product first to get the image URL
-      const product = await Product.findOne({ id });
+      let product = await Product.findOne({ id });
+      
+      // Fallback to checking by _id if id was not found
+      if (!product && mongoose.Types.ObjectId.isValid(id)) {
+        product = await Product.findById(id);
+      }
+
       if (!product) {
         console.warn(`[SERVER] Product with ID "${id}" not found.`);
         return res.status(404).json({ success: false, error: "Product not found" });
@@ -1015,8 +1284,8 @@ async function startServer() {
         }
       }
 
-      // 3. Delete the product from MongoDB
-      const result = await Product.deleteOne({ id });
+      // 3. Delete the product from MongoDB (using _id to be absolutely sure)
+      const result = await Product.deleteOne({ _id: product._id });
       console.log(`[SERVER] Delete result for "${id}": ${result.deletedCount} items affected`);
 
       res.json({ success: true, changes: result.deletedCount });
@@ -1027,7 +1296,7 @@ async function startServer() {
   });
 
   // Image Upload Route
-  app.post("/api/upload", upload.single("image"), (req, res) => {
+  app.post("/api/upload", authenticateToken, upload.single("image"), (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: "No file uploaded" });
     }

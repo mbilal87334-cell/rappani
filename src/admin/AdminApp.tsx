@@ -20,6 +20,7 @@ import ReviewManager from './pages/ReviewManager';
 import CouponManager from './pages/CouponManager';
 import NotificationHub from './pages/NotificationHub';
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
+import WhatsAppManager from './pages/WhatsAppManager';
 
 export default function AdminApp({ 
   orders, products, setProducts, settings, setSettings, apiCategories, setApiCategories 
@@ -40,24 +41,6 @@ export default function AdminApp({
     localStorage.setItem('rappani_admin_auth', isAuthenticated.toString());
   }, [isAuthenticated]);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      // Fetch all products for admin to manage (bypassing the 50 pagination limit)
-      const loadAllProducts = async () => {
-        try {
-          const res = await fetch('/api/products?page=1&limit=5000');
-          if (res.ok) {
-            const data = await res.json();
-            setProducts(data.products || data);
-          }
-        } catch (err) {
-          console.error("Failed to load all products for admin:", err);
-        }
-      };
-      loadAllProducts();
-    }
-  }, [isAuthenticated, setProducts]);
-
   if (!isAuthenticated) {
     const actualPassword = settings.admin_password || 'rappani123';
     const actualPhone = settings.admin_phone || '9876543210';
@@ -76,6 +59,7 @@ export default function AdminApp({
         <Route path="/customers" element={<CustomersList orders={orders} />} />
         <Route path="/revenue" element={<RevenueDashboard orders={orders} />} />
         <Route path="/transactions" element={<TransactionsLedger orders={orders} />} />
+        <Route path="/whatsapp" element={<WhatsAppManager />} />
         <Route path="/settings" element={<WebsiteSettings settings={settings} setSettings={setSettings} />} />
         <Route path="/reports" element={<ReportsHub orders={orders} products={products} />} />
         
@@ -83,7 +67,7 @@ export default function AdminApp({
         <Route path="/coupons" element={<CouponManager />} />
         <Route path="/reviews" element={<ReviewManager />} />
         <Route path="/notifications" element={<NotificationHub />} />
-        <Route path="/analytics" element={<AnalyticsDashboard />} />
+        <Route path="/analytics" element={<AnalyticsDashboard orders={orders} products={products} />} />
         
         <Route path="/profile" element={<SettingsPage settings={settings} setSettings={setSettings} />} />
         
@@ -110,7 +94,8 @@ function AdminLogin({ onLogin, actualPassword, actualPhone }: { onLogin: () => v
       const data = await res.json();
       if (data.success) {
         localStorage.setItem('adminToken', data.token);
-        onLogin();
+        localStorage.setItem('rappani_admin_auth', 'true');
+        window.location.reload();
       } else {
         setError(data.error || 'Invalid credentials');
       }

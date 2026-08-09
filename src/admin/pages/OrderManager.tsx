@@ -1,15 +1,34 @@
 import React, { useState } from 'react';
-import { Download, Trash2, Filter, PackageOpen, Phone, MessageCircle } from 'lucide-react';
+import { Download, Trash2, Filter, PackageOpen, X, MapPin, Search, Phone, MessageCircle } from 'lucide-react';
 import { Order } from '../../App';
 import { fetchWithAuth } from '../../api';
+import { MapContainer, TileLayer, Marker } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix for default marker icon in react-leaflet
+const customIcon = new L.Icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41]
+});
 
 export default function OrderManager({ orders }: { orders: Order[] }) {
   const [statusFilter, setStatusFilter] = useState('All Status');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [viewMap, setViewMap] = useState<{lat: number, lng: number} | null>(null);
 
-  const filteredOrders = orders.filter(order => 
-    statusFilter === 'All Status' || 
-    (order.status && order.status.toLowerCase() === statusFilter.toLowerCase())
-  );
+  const filteredOrders = orders.filter(order => {
+    const matchesStatus = statusFilter === 'All Status' ||
+      (order.status && order.status.toLowerCase() === statusFilter.toLowerCase());
+    const q = searchTerm.toLowerCase().trim();
+    const matchesSearch = !q || 
+      (order.id || '').toLowerCase().includes(q) ||
+      (order.customerName || '').toLowerCase().includes(q) ||
+      (order.customerPhone || '').includes(q);
+    return matchesStatus && matchesSearch;
+  });
 
   const handleExportCSV = () => {
     if (filteredOrders.length === 0) {
@@ -61,14 +80,14 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
   };
 
   const getStatusBadge = (status: string) => {
-    switch(status) {
-      case 'Completed':
-        return <span className="px-3 py-1 bg-green-50 text-green-600 font-medium text-xs rounded-full">Completed</span>;
-      case 'Cancelled':
-        return <span className="px-3 py-1 bg-red-50 text-red-600 font-medium text-xs rounded-full">Cancelled</span>;
-      default:
-        return <span className="px-3 py-1 bg-yellow-50 text-yellow-600 font-medium text-xs rounded-full">Processing</span>;
-    }
+    const s = (status || '').toLowerCase();
+    if (s === 'delivered' || s === 'completed') return <span className="px-3 py-1 bg-green-50 text-green-700 font-semibold text-xs rounded-full">✅ {status}</span>;
+    if (s === 'shipped' || s === 'out for delivery') return <span className="px-3 py-1 bg-blue-50 text-blue-700 font-semibold text-xs rounded-full">🚚 {status}</span>;
+    if (s === 'packed') return <span className="px-3 py-1 bg-indigo-50 text-indigo-700 font-semibold text-xs rounded-full">📦 {status}</span>;
+    if (s === 'confirmed') return <span className="px-3 py-1 bg-teal-50 text-teal-700 font-semibold text-xs rounded-full">✔ {status}</span>;
+    if (s === 'cancelled') return <span className="px-3 py-1 bg-red-50 text-red-700 font-semibold text-xs rounded-full">❌ {status}</span>;
+    if (s === 'returned' || s === 'refunded') return <span className="px-3 py-1 bg-orange-50 text-orange-700 font-semibold text-xs rounded-full">↩ {status}</span>;
+    return <span className="px-3 py-1 bg-yellow-50 text-yellow-700 font-semibold text-xs rounded-full">⏳ {status || 'Processing'}</span>;
   };
 
   return (
@@ -88,25 +107,38 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
         </div>
       </div>
 
-      <div className="mb-6 flex items-center gap-2 bg-white border border-gray-200 rounded-md px-3 py-2 w-max shadow-sm">
-        <Filter size={16} className="text-gray-400" />
-        <select 
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="bg-transparent text-gray-700 text-sm font-medium outline-none border-none focus:ring-0"
-        >
-          <option>All Status</option>
-          <option>Pending</option>
-          <option>Confirmed</option>
-          <option>Processing</option>
-          <option>Packed</option>
-          <option>Shipped</option>
-          <option>Out For Delivery</option>
-          <option>Delivered</option>
-          <option>Cancelled</option>
-          <option>Returned</option>
-          <option>Refunded</option>
-        </select>
+      <div className="mb-6 flex flex-col sm:flex-row gap-3">
+        <div className="relative">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search Order ID, Customer, Phone..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-md text-sm font-medium w-72 focus:ring-2 focus:ring-gray-900 outline-none shadow-sm transition-all"
+          />
+        </div>
+        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-md px-3 py-2 w-max shadow-sm">
+          <Filter size={16} className="text-gray-400" />
+          <select 
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="bg-transparent text-gray-700 text-sm font-medium outline-none border-none focus:ring-0"
+          >
+            <option>All Status</option>
+            <option>Pending</option>
+            <option>Confirmed</option>
+            <option>Processing</option>
+            <option>Packed</option>
+            <option>Shipped</option>
+            <option>Out For Delivery</option>
+            <option>Delivered</option>
+            <option>Cancelled</option>
+            <option>Returned</option>
+            <option>Refunded</option>
+          </select>
+        </div>
+        <span className="text-sm text-gray-400 self-center">{filteredOrders.length} order{filteredOrders.length !== 1 ? 's' : ''}</span>
       </div>
 
       {/* Orders List / Empty State */}
@@ -126,7 +158,9 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                 <tr>
                   <th className="px-5 py-3">ORDER ID</th>
                   <th className="px-5 py-3">CUSTOMER</th>
+                  <th className="px-5 py-3">METHOD</th>
                   <th className="px-5 py-3">DELIVERY ADDRESS</th>
+                  <th className="px-5 py-3">LOCATION</th>
                   <th className="px-5 py-3">DATE</th>
                   <th className="px-5 py-3">TOTAL</th>
                   <th className="px-5 py-3">PAYMENT / UTR</th>
@@ -142,58 +176,122 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                     <td className="px-5 py-4 text-gray-600">
                       <div className="font-semibold text-gray-900">{order.customerName || 'Guest'}</div>
                       {order.customerPhone && (
-                        <div className="flex flex-col gap-1 mt-1">
-                          <div className="flex items-center gap-1 text-xs text-gray-500">
-                            <Phone size={11} className="text-gray-400" />
-                            <a 
-                              href={`tel:${order.customerPhone}`} 
-                              title="Call Customer"
-                              className="text-blue-600 hover:text-blue-800 hover:underline"
-                            >
-                              {order.customerPhone}
-                            </a>
-                          </div>
-                          <div className="flex items-center gap-1 text-xs text-gray-500">
-                            <MessageCircle size={11} className="text-gray-400" />
-                            <a 
-                              href={`https://wa.me/91${order.customerPhone}`} 
-                              target="_blank" 
-                              rel="noopener noreferrer" 
-                              title="Chat on WhatsApp"
-                              className="text-green-600 hover:text-green-800 hover:underline"
-                            >
-                              WhatsApp
-                            </a>
-                          </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <a 
+                            href={`tel:${order.customerPhone}`} 
+                            className="text-xs text-blue-600 hover:underline flex items-center gap-1 font-medium"
+                            title="Call Customer"
+                          >
+                            <Phone size={12} /> {order.customerPhone}
+                          </a>
+                          <a 
+                            href={`https://wa.me/91${order.customerPhone.replace(/\D/g, '')}`} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="text-green-600 hover:text-green-700 inline-flex items-center"
+                            title="Message on WhatsApp"
+                          >
+                            <MessageCircle size={14} />
+                          </a>
                         </div>
                       )}
                     </td>
+                    <td className="px-5 py-4">
+                      {order.deliveryMethod === 'pickup' ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 border border-amber-200">
+                          🏪 Store Pickup
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200">
+                          🚚 Home Delivery
+                        </span>
+                      )}
+                    </td>
                     <td className="px-5 py-4 text-gray-600 max-w-[200px] whitespace-normal">
-                      <div className="text-xs line-clamp-3" title={typeof order.shippingAddress === 'string' ? order.shippingAddress : 'N/A'}>
-                        {order.shippingAddress && typeof order.shippingAddress === 'string' ? (
-                          order.shippingAddress.split('\n').map((line: string, i: number) => {
-                            if (line.includes('https://maps.google.com')) {
-                              const urlMatch = line.match(/(https?:\/\/[^\s]+)/g);
-                              const url = urlMatch ? urlMatch[0] : '';
-                              return (
-                                <div key={i} className="mt-1">
-                                  <a href={url} target="_blank" rel="noreferrer" className="text-blue-500 hover:underline flex items-center gap-1 font-semibold">
-                                    📍 View on Map
-                                  </a>
-                                </div>
-                              );
-                            }
-                            return <div key={i}>{line}</div>;
-                          })
-                        ) : order.shippingAddress ? (
-                          String(order.shippingAddress)
+                      <div className="text-xs" title={typeof order.shippingAddress === 'string' ? order.shippingAddress : order.shippingAddress?.addressText || 'N/A'}>
+                        {order.shippingAddress ? (
+                          (() => {
+                            const isString = typeof order.shippingAddress === 'string';
+                            const addressString = isString ? order.shippingAddress : (
+                              order.shippingAddress.addressText 
+                                ? order.shippingAddress.addressText 
+                                : `${order.shippingAddress.fullName || ''}\n${order.shippingAddress.houseNo || ''}, ${order.shippingAddress.street || ''}\n${order.shippingAddress.city || ''}, ${order.shippingAddress.state || ''} - ${order.shippingAddress.pincode || ''}`.trim()
+                            );
+                            const displayLines = addressString.split('\n').filter((line: string) => !line.includes('https://maps.google.com'));
+
+                            return (
+                              <div>
+                                {displayLines.map((line: string, i: number) => <div key={i}>{line}</div>)}
+                              </div>
+                            );
+                          })()
                         ) : (
                           'N/A'
                         )}
                       </div>
                     </td>
+                    <td className="px-5 py-4">
+                      {order.shippingAddress ? (
+                        (() => {
+                            const isString = typeof order.shippingAddress === 'string';
+                            const addressString = isString ? order.shippingAddress : (
+                              order.shippingAddress.addressText 
+                                ? order.shippingAddress.addressText 
+                                : `${order.shippingAddress.fullName || ''}\n${order.shippingAddress.houseNo || ''}, ${order.shippingAddress.street || ''}\n${order.shippingAddress.city || ''}, ${order.shippingAddress.state || ''} - ${order.shippingAddress.pincode || ''}`.trim()
+                            );
+                            
+                            let exactLat: number | null = null;
+                            let exactLng: number | null = null;
+                            let externalMapLink = '';
+
+                            if (isString) {
+                              const coordsMatch = addressString.match(/https:\/\/maps\.google\.com\/\?q=([\d.-]+),([\d.-]+)/);
+                              if (coordsMatch) {
+                                  exactLat = parseFloat(coordsMatch[1]);
+                                  exactLng = parseFloat(coordsMatch[2]);
+                              }
+                            } else {
+                              if (order.shippingAddress.lat && order.shippingAddress.lng) {
+                                  exactLat = order.shippingAddress.lat;
+                                  exactLng = order.shippingAddress.lng;
+                              } else if (order.shippingAddress.mapsLink) {
+                                  const coordsMatch = order.shippingAddress.mapsLink.match(/q=([\d.-]+),([\d.-]+)/);
+                                  if (coordsMatch) {
+                                    exactLat = parseFloat(coordsMatch[1]);
+                                    exactLng = parseFloat(coordsMatch[2]);
+                                  } else {
+                                    externalMapLink = order.shippingAddress.mapsLink;
+                                  }
+                              }
+                            }
+                            
+                            const displayLines = addressString.split('\n').filter((line: string) => !line.includes('https://maps.google.com'));
+
+                            return (
+                              <button 
+                                onClick={() => {
+                                  let mapUrl = '';
+                                  if (exactLat !== null && exactLng !== null) {
+                                    mapUrl = `https://maps.google.com/?q=${exactLat},${exactLng}`;
+                                  } else if (externalMapLink) {
+                                    mapUrl = externalMapLink;
+                                  } else {
+                                    const searchQuery = displayLines.join(', ').replace(/\s+/g, ' ').trim();
+                                    mapUrl = `https://maps.google.com/?q=${encodeURIComponent(searchQuery)}`;
+                                  }
+                                  window.open(mapUrl, '_blank');
+                                }}
+                                className="text-blue-500 hover:underline flex items-center gap-1 font-semibold cursor-pointer text-left whitespace-nowrap"
+                              >
+                                🗺️ View on Map
+                              </button>
+                            );
+                        })()
+                      ) : <span className="text-xs text-neutral-400">No location</span>}
+                    </td>
                     <td className="px-5 py-4 text-gray-600">
-                      {order.createdAt && !isNaN(new Date(order.createdAt).getTime()) ? new Date(order.createdAt).toLocaleDateString() : 'N/A'}
+                      <div>{order.createdAt && !isNaN(new Date(order.createdAt).getTime()) ? new Date(order.createdAt).toLocaleDateString('en-IN') : 'N/A'}</div>
+                      <div className="text-xs text-gray-400 mt-0.5">{order.createdAt && !isNaN(new Date(order.createdAt).getTime()) ? new Date(order.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</div>
                     </td>
                     <td className="px-5 py-4 font-medium text-gray-900">₹{order.totalAmount?.toLocaleString() || 0}</td>
                     <td className="px-5 py-4 text-gray-600">
@@ -287,6 +385,22 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
           </div>
         )}
       </div>
+      {viewMap && (
+        <div className="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h3 className="font-bold text-lg flex items-center gap-2"><MapPin className="w-5 h-5 text-gold-500"/> Order Location</h3>
+              <button onClick={() => setViewMap(null)} className="p-2 hover:bg-neutral-100 rounded-full transition"><X className="w-5 h-5"/></button>
+            </div>
+            <div className="h-[500px] w-full bg-neutral-100 relative">
+              <MapContainer center={[viewMap.lat, viewMap.lng]} zoom={15} style={{ height: '100%', width: '100%', zIndex: 10 }}>
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                <Marker position={[viewMap.lat, viewMap.lng]} icon={customIcon} />
+              </MapContainer>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

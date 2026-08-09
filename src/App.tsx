@@ -587,6 +587,17 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountPercent: number } | null>(null);
   const [couponError, setCouponError] = useState('');
 
+  // ── Limited Time Campaign States ──────────────
+  const [activeOffers, setActiveOffers] = useState<any[]>([]);
+  const [showPromoPopup, setShowPromoPopup] = useState(false);
+  const [promoPopupOffer, setPromoPopupOffer] = useState<any | null>(null);
+  const [showPromoToast, setShowPromoToast] = useState(false);
+  const [promoToastOffer, setPromoToastOffer] = useState<any | null>(null);
+  const [isSpecialOffersOpen, setIsSpecialOffersOpen] = useState(false);
+  const [promoTick, setPromoTick] = useState(Date.now());
+  const [productsVisibleCount, setProductsVisibleCount] = useState(20);
+  const [homeVisibleCount, setHomeVisibleCount] = useState(20);
+
   
   const [isFetchingLocationCheckout, setIsFetchingLocationCheckout] = useState(false);
   const fetchLocationForCheckout = () => {
@@ -861,6 +872,106 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
 
     return matchesSearch && matchesCategory;
   });
+
+  // ── Promo Countdown Helper ────────────────────
+  const getPromoCountdown = (expiryTime: string) => {
+    const diff = new Date(expiryTime).getTime() - promoTick;
+    if (diff <= 0) return '00:00:00';
+    const h = Math.floor(diff / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    const s = Math.floor((diff % 60000) / 1000);
+    return [h, m, s].map(v => String(v).padStart(2, '0')).join(':');
+  };
+
+  // ── Real-time tick for countdown timers ───────
+  useEffect(() => {
+    const timer = setInterval(() => setPromoTick(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // ── Fetch active promotions ───────────────────
+  const fetchActivePromotions = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/coupons/active-promotions`);
+      const data = await res.json();
+      if (data.success) setActiveOffers(data.offers || []);
+    } catch (err) {
+      console.error('[COUPON] Error fetching active promotions:', err);
+    }
+  };
+
+  useEffect(() => { fetchActivePromotions(); }, []);
+
+  // ── SSE: Real-time offer events ───────────────
+  useEffect(() => {
+    const es = new EventSource(`${API_BASE}/realtime/events`);
+    es.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'offerActivated') {
+          fetchActivePromotions();
+          setPromoToastOffer(data.coupon);
+          setShowPromoToast(true);
+          const dismissed = sessionStorage.getItem(`dismissed_popup_${data.coupon.code}`) === 'true';
+          if (!dismissed) {
+            setPromoPopupOffer(data.coupon);
+            setShowPromoPopup(true);
+            fetch(`${API_BASE}/coupons/${data.coupon._id}/view`, { method: 'POST' }).catch(console.error);
+          }
+        } else if (data.type === 'offerEnded') {
+          setActiveOffers(prev => prev.filter(o => o.code !== data.code));
+          setShowPromoPopup(prev2 => { if (promoPopupOffer?.code === data.code) { setPromoPopupOffer(null); return false; } return prev2; });
+          setShowPromoToast(prev3 => { if (promoToastOffer?.code === data.code) { setPromoToastOffer(null); return false; } return prev3; });
+        } else if (data.type === 'couponUpdate') {
+          fetchActivePromotions();
+        }
+      } catch (err) {
+        console.error('[SSE] Failed to parse event payload:', err);
+      }
+    };
+    es.onerror = () => console.error('[SSE] Stream error. Auto-reconnecting...');
+    return () => es.close();
+  }, [promoPopupOffer, promoToastOffer]);
+
+  // ── Clean expired offers reactively ──────────
+  useEffect(() => {
+    if (activeOffers.length === 0) return;
+    const expired = activeOffers.filter(o => o.expiryTime && Date.now() > new Date(o.expiryTime).getTime());
+    if (expired.length > 0) {
+      setActiveOffers(prev => prev.filter(o => !expired.find(e => e.code === o.code)));
+      expired.forEach(eo => {
+        if (promoPopupOffer?.code === eo.code) { setShowPromoPopup(false); setPromoPopupOffer(null); }
+        if (promoToastOffer?.code === eo.code) { setShowPromoToast(false); setPromoToastOffer(null); }
+      });
+    }
+  }, [promoTick, activeOffers, promoPopupOffer, promoToastOffer]);
+
+  // ── Handle promo coupon use ───────────────────
+  const handleUsePromoCoupon = async (coupon: any, e?: any) => {
+    if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    if (!coupon?.code) return;
+    setShowPromoPopup(false);
+    setIsSpecialOffersOpen(false);
+    setCurrentTab('cart');
+    setCouponError('');
+    try {
+      const res = await fetch(`${API_BASE}/coupons/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: coupon.code })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAppliedCoupon({ code: coupon.code.toUpperCase(), discountPercent: data.discountPercent });
+        toast.success(`Coupon "${coupon.code}" applied!`, { id: `apply-${coupon.code}` });
+      } else {
+        setCouponError(data.error || 'Invalid coupon');
+      }
+    } catch {
+      setCouponError('Failed to validate coupon');
+    }
+  };
 
   const addToCart = (product: Product) => {
     // If tracking stock and stock is less than 1, do not add
@@ -1443,6 +1554,45 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
               </div>
             </div>
             
+            {/* Real-time Limited Time Offers Widget on Home Page */}
+            {activeOffers.length > 0 && (
+              <div className="bg-gradient-to-br from-stone-900 to-primary text-white rounded-2xl shadow-lg p-5 border border-gold-500/20 relative overflow-hidden">
+                <div className="flex justify-between items-center mb-3">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-gold-400 text-lg">✨</span>
+                    <h3 className="text-sm font-black tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-gold-100 to-gold-400 uppercase">Limited Time Deals</h3>
+                  </div>
+                  <button
+                    onClick={() => setIsSpecialOffersOpen(true)}
+                    className="text-xs text-gold-400 hover:text-gold-300 font-black tracking-wider uppercase cursor-pointer"
+                  >View All ({activeOffers.length})</button>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div className="flex-1 space-y-1">
+                    <div className="text-xs font-bold text-red-400 uppercase tracking-widest flex items-center gap-1">
+                      🕐 Ends In: <span className="font-mono text-yellow-300 font-bold">{getPromoCountdown(activeOffers[0].expiryTime)}</span>
+                    </div>
+                    <h4 className="font-black text-sm tracking-tight text-white leading-snug">
+                      {activeOffers[0].offerTitle || `Coupon "${activeOffers[0].code}" Active`}
+                    </h4>
+                    <p className="text-[11px] text-neutral-400 font-medium line-clamp-1">
+                      {activeOffers[0].offerDescription || 'Grab the deal before the countdown hits zero.'}
+                    </p>
+                  </div>
+                  <div className="w-full md:w-auto flex items-center justify-between sm:justify-start gap-4 self-stretch md:self-auto bg-black/25 px-3 py-2 rounded-lg border border-white/5">
+                    <div>
+                      <div className="text-[9px] uppercase tracking-wider text-neutral-400">Coupon Code</div>
+                      <div className="font-mono text-sm font-black uppercase text-gold-400 select-all">{activeOffers[0].code}</div>
+                    </div>
+                    <button
+                      onClick={(e) => handleUsePromoCoupon(activeOffers[0], e)}
+                      className="bg-gold-500 hover:bg-gold-400 text-black px-4 py-2 rounded-lg font-black text-xs uppercase tracking-wide transition-all shadow-md active:scale-95 cursor-pointer"
+                    >Use Now</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Featured Products (Home Tab) */}
             <div>
                <div className="flex justify-between items-end mb-4">
@@ -1450,7 +1600,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                 <button className="text-sm text-gold-600 font-bold" onClick={() => setCurrentTab('products')}>See All</button>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                {publicProducts.slice(0, 4).map(product => {
+                {publicProducts.slice(0, homeVisibleCount).map(product => {
                   const cartItem = cart.find(item => item.product.id === product.id);
                   const qty = cartItem ? cartItem.quantity : 0;
                   return (
@@ -1506,6 +1656,27 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                   )
                 })}
               </div>
+
+              {(hasMore || publicProducts.length > homeVisibleCount) && (
+                <div className="flex justify-center mt-4">
+                  <button
+                    onClick={() => {
+                      setHomeVisibleCount(prev => prev + 20);
+                      if (homeVisibleCount + 20 >= publicProducts.length && hasMore && !isLoadingMore) {
+                        loadMoreProducts();
+                      }
+                    }}
+                    disabled={isLoadingMore}
+                    className="bg-white border-2 border-gold-500 text-gold-500 font-bold py-2 px-6 rounded-full shadow-sm hover:bg-gold-500/10 transition-colors disabled:opacity-50 flex items-center gap-2 text-xs"
+                  >
+                    {isLoadingMore ? (
+                      <><div className="w-3.5 h-3.5 border-2 border-gold-500 border-t-transparent rounded-full animate-spin"></div> Loading...</>
+                    ) : (
+                      'Load More'
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1533,7 +1704,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                   <p>{t.noProducts}</p>
                 </div>
               ) : (
-                filteredProducts.map(product => {
+                filteredProducts.slice(0, productsVisibleCount).map(product => {
                   const cartItem = cart.find(item => item.product.id === product.id);
                   const qty = cartItem ? cartItem.quantity : 0;
                   return (
@@ -1591,10 +1762,15 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
               )}
             </div>
             
-            {hasMore && (
+            {(hasMore || filteredProducts.length > productsVisibleCount) && (
               <div className="flex justify-center mt-6 mb-8">
                 <button 
-                  onClick={loadMoreProducts} 
+                  onClick={() => {
+                    setProductsVisibleCount(prev => prev + 20);
+                    if (productsVisibleCount + 20 >= filteredProducts.length && hasMore && !isLoadingMore) {
+                      loadMoreProducts();
+                    }
+                  }} 
                   disabled={isLoadingMore}
                   className="bg-white border-2 border-gold-500 text-gold-500 font-bold py-2.5 px-8 rounded-full shadow-sm hover:bg-gold-500/10 transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
@@ -2308,6 +2484,175 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
               onClick={(e) => e.stopPropagation()}
             />
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Promo Popup Modal ──────────────────────── */}
+      <AnimatePresence>
+        {showPromoPopup && promoPopupOffer && (
+          <div className="fixed inset-0 z-[150] flex items-end justify-center bg-black/60 backdrop-blur-sm p-4 pb-10">
+            <motion.div
+              initial={{ opacity: 0, y: 60 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 60 }}
+              transition={{ type: 'spring', damping: 25 }}
+              className="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl"
+            >
+              <div className="text-center mb-5">
+                <div className="w-12 h-12 bg-gold-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <span className="text-2xl">🎁</span>
+                </div>
+                <h2 className="text-lg font-black text-primary">{promoPopupOffer.offerTitle || '🎉 Limited Time Offer!'}</h2>
+                <p className="text-neutral-500 text-xs mt-1 font-medium">{promoPopupOffer.offerDescription || 'Apply coupon at checkout to save big!'}</p>
+              </div>
+
+              <div className="bg-neutral-50 rounded-2xl p-4 border-2 border-dashed border-gold-300 text-center mb-4">
+                <div className="text-[10px] text-neutral-400 uppercase tracking-wider font-bold mb-1">Coupon Code</div>
+                <div className="font-mono text-2xl font-black text-primary tracking-widest select-all mb-2">{promoPopupOffer.code}</div>
+                <div className="bg-green-50 text-green-700 text-xs font-black px-3 py-1 rounded-full border border-green-200 inline-block mb-3">{promoPopupOffer.discountPercent}% OFF</div>
+                <button
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(promoPopupOffer.code);
+                      toast.success('Coupon code copied!', { id: `copy-${promoPopupOffer.code}` });
+                    } catch(e) {}
+                  }}
+                  className="w-full py-2.5 bg-neutral-100 hover:bg-neutral-200 text-primary border border-neutral-300 font-bold rounded-2xl transition-all text-sm"
+                >
+                  Copy Code
+                </button>
+              </div>
+
+              {promoPopupOffer.expiryTime && (
+                <div className="mb-5 flex flex-col items-center">
+                  <span className="text-neutral-400 text-[10px] uppercase font-bold tracking-wider mb-1">Offer Ends In</span>
+                  <div className="font-mono text-xl font-bold bg-red-50 text-red-600 px-4 py-1 rounded-lg border border-red-100 tracking-wider">
+                    {getPromoCountdown(promoPopupOffer.expiryTime)}
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <button
+                  onClick={(e) => handleUsePromoCoupon(promoPopupOffer, e)}
+                  className="w-full py-3.5 bg-black hover:bg-gold-500 hover:text-black text-gold-500 font-bold rounded-2xl transition-all shadow-md active:scale-95 text-sm uppercase tracking-wider cursor-pointer"
+                >
+                  Shop Now &amp; Apply Code
+                </button>
+                <button
+                  onClick={() => {
+                    sessionStorage.setItem(`dismissed_popup_${promoPopupOffer.code}`, 'true');
+                    setShowPromoPopup(false);
+                    setPromoPopupOffer(null);
+                  }}
+                  className="w-full py-2.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold rounded-2xl text-xs transition-all cursor-pointer"
+                >
+                  Maybe Later
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Promo Toast Notification ─────────────── */}
+      <AnimatePresence>
+        {showPromoToast && promoToastOffer && (
+          <motion.div
+            initial={{ opacity: 0, y: 80 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 80 }}
+            transition={{ type: 'spring', damping: 20 }}
+            className="fixed bottom-24 left-4 right-4 z-[140] max-w-sm mx-auto"
+          >
+            <div className="bg-black text-white rounded-2xl p-4 shadow-2xl border border-gold-500/20 flex items-center gap-4">
+              <div className="text-2xl">🎉</div>
+              <div className="flex-1 min-w-0">
+                <p className="font-black text-xs text-gold-400 uppercase tracking-wider">Flash Offer Live!</p>
+                <p className="font-bold text-sm truncate">{promoToastOffer.offerTitle || promoToastOffer.code}</p>
+                <p className="font-mono text-xs text-gold-300">{promoToastOffer.discountPercent}% OFF · Code: {promoToastOffer.code}</p>
+              </div>
+              <div className="flex flex-col gap-1 shrink-0">
+                <button
+                  onClick={(e) => handleUsePromoCoupon(promoToastOffer, e)}
+                  className="bg-gold-500 text-black text-[10px] font-black px-3 py-1.5 rounded-lg uppercase tracking-wide"
+                >Use Now</button>
+                <button
+                  onClick={() => { setShowPromoToast(false); setPromoToastOffer(null); }}
+                  className="text-[10px] text-neutral-400 font-bold text-center"
+                >Dismiss</button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Customer Special Offers Sheet Modal ─── */}
+      <AnimatePresence>
+        {isSpecialOffersOpen && (
+          <div className="fixed inset-0 z-[120] flex flex-col bg-black text-white">
+            <div className="bg-neutral-900 border-b border-neutral-800 px-4 py-3 flex items-center gap-3 shadow-sm pt-safe">
+              <button onClick={() => setIsSpecialOffersOpen(false)} className="p-2 -ml-2 rounded-full hover:bg-neutral-800 text-white">
+                <ChevronRight className="w-6 h-6 rotate-180" />
+              </button>
+              <h2 className="font-black text-xl text-transparent bg-clip-text bg-gradient-to-r from-gold-100 to-gold-400 flex items-center gap-2 uppercase tracking-wide">
+                <span>🎁</span> Limited Time Deals
+              </h2>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-neutral-950">
+              {activeOffers.length === 0 ? (
+                <div className="bg-neutral-900 p-8 rounded-2xl border border-neutral-800 text-center flex flex-col items-center justify-center h-64">
+                  <span className="text-4xl mb-3">🎁</span>
+                  <h3 className="font-bold text-neutral-300">No active offers right now</h3>
+                  <p className="text-neutral-500 text-xs mt-1">Check back later for exclusive flash sales!</p>
+                </div>
+              ) : (
+                activeOffers.map(offer => (
+                  <div key={offer._id} className="bg-neutral-900 rounded-2xl border border-gold-500/20 p-5 shadow-sm space-y-4 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 bg-gold-500 text-black font-mono text-[10px] font-black px-3 py-1 rounded-bl-xl tracking-wider uppercase">Flash Deal</div>
+                    <div>
+                      <h3 className="font-black text-lg text-gold-400">{offer.offerTitle || 'Promo Code Available!'}</h3>
+                      <p className="text-neutral-300 text-xs mt-1 font-medium leading-relaxed">{offer.offerDescription || 'Apply coupon on checkout to save.'}</p>
+                    </div>
+                    <div className="flex items-center justify-between bg-black/50 rounded-xl p-3 border border-neutral-800">
+                      <div>
+                        <span className="text-[10px] text-neutral-500 uppercase font-bold tracking-wider">Coupon Code</span>
+                        <div className="font-mono text-lg font-black uppercase text-yellow-400 select-all">{offer.code}</div>
+                      </div>
+                      <div className="bg-gold-500/10 text-gold-400 px-3 py-1 rounded-full text-xs font-black border border-gold-500/20">
+                        {offer.discountPercent}% OFF
+                      </div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+                      {offer.expiryTime && (
+                        <div className="flex items-center gap-1.5 text-xs text-red-400 font-bold bg-red-950/20 px-3 py-1.5 rounded-lg border border-red-900/30">
+                          🕐 Ends In: <span className="font-mono">{getPromoCountdown(offer.expiryTime)}</span>
+                        </div>
+                      )}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            try {
+                              await navigator.clipboard.writeText(offer.code);
+                              toast.success('Coupon code copied!', { id: `copy-${offer.code}` });
+                            } catch(e2) {}
+                          }}
+                          className="bg-neutral-800 hover:bg-neutral-700 text-white border border-neutral-700 font-bold text-xs px-4 py-2.5 rounded-xl shadow-sm transition-all"
+                        >Copy Code</button>
+                        <button
+                          onClick={(e) => handleUsePromoCoupon(offer, e)}
+                          className="bg-gold-500 hover:bg-gold-400 text-black font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md active:scale-95"
+                        >Use Now</button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
         )}
       </AnimatePresence>
 

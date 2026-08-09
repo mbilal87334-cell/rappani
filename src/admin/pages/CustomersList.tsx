@@ -110,42 +110,35 @@ export default function CustomersList() {
                   <td className="px-5 py-4">
                     <div className="flex flex-col gap-1.5">
                       {customer.email && (
-                        <div className="flex items-center gap-1.5 text-gray-600">
-                          <Mail size={14} className="text-gray-400" />
-                          <a 
-                            href={`mailto:${customer.email}`} 
-                            title="Email Customer"
-                            className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline"
-                          >
-                            {customer.email}
-                          </a>
-                        </div>
+                        <a 
+                          href={`mailto:${customer.email}`} 
+                          className="flex items-center gap-1.5 text-blue-600 hover:underline text-xs font-medium"
+                          title="Email Customer"
+                        >
+                          <Mail size={14} className="text-blue-400" />
+                          <span>{customer.email}</span>
+                        </a>
                       )}
                       {customer.phone && (
-                        <>
-                          <div className="flex items-center gap-1.5 text-gray-600">
-                            <Phone size={14} className="text-gray-400" />
-                            <a 
-                              href={`tel:${customer.phone}`} 
-                              title="Call Customer"
-                              className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline"
-                            >
-                              {customer.phone}
-                            </a>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-gray-600">
-                            <MessageCircle size={14} className="text-gray-400" />
-                            <a 
-                              href={`https://wa.me/91${customer.phone}`} 
-                              target="_blank" 
-                              rel="noopener noreferrer" 
-                              title="Chat on WhatsApp"
-                              className="text-xs font-medium text-green-600 hover:text-green-800 hover:underline"
-                            >
-                              WhatsApp Chat
-                            </a>
-                          </div>
-                        </>
+                        <div className="flex items-center gap-2">
+                          <a 
+                            href={`tel:${customer.phone}`} 
+                            className="flex items-center gap-1.5 text-blue-600 hover:underline text-xs font-medium"
+                            title="Call Customer"
+                          >
+                            <Phone size={14} className="text-blue-400" />
+                            <span>{customer.phone}</span>
+                          </a>
+                          <a 
+                            href={`https://wa.me/91${customer.phone.replace(/\D/g, '')}`} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="text-green-600 hover:text-green-700 inline-flex items-center"
+                            title="Message on WhatsApp"
+                          >
+                            <MessageCircle size={14} />
+                          </a>
+                        </div>
                       )}
                     </div>
                   </td>

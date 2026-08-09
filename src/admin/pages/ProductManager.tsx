@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Search, Plus, Eye, EyeOff, Edit2, Trash2, Copy, Image as ImageIcon, X, Upload, Camera, Loader } from 'lucide-react';
+import { Search, Plus, Eye, EyeOff, Edit2, Trash2, Copy, Image as ImageIcon, X, Upload, Download, Camera, Loader } from 'lucide-react';
 import { Product, saveProduct, deleteProduct } from '../../App';
 import toast from 'react-hot-toast';
 import { fetchWithAuth } from '../../api';
@@ -15,7 +15,14 @@ export default function ProductManager({ products, setProducts, apiCategories = 
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isCsvModalOpen, setIsCsvModalOpen] = useState(false);
+  const [selectedCsvFile, setSelectedCsvFile] = useState<File | null>(null);
+  const [parsedRows, setParsedRows] = useState<any[]>([]);
+  const [isCsvImporting, setIsCsvImporting] = useState(false);
+  const [csvImportProgress, setCsvImportProgress] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const csvFileInputRef = useRef<HTMLInputElement>(null);
+  const csvImagesInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   
   const tabs = ['All', ...apiCategories.map(c => c.name)];
@@ -58,11 +65,16 @@ export default function ProductManager({ products, setProducts, apiCategories = 
       if (editingProduct) {
         setProducts(products.map(p => p.id === saved.id ? saved : p));
         toast.success("Product updated successfully");
+        // Keep modal open so they can continue editing
       } else {
         setProducts([saved, ...products]);
         toast.success("Product created successfully");
+        // Reset form for the next product to be added
+        setFormData({ 
+          id: `prod_${Date.now()}`, name: '', category: formData.category || apiCategories[0]?.name || 'Stationery', brand: '', sku: '', description: '',
+          price: 0, deliveryCharge: 30, stock: 50, image: '', images: [], isVisible: true, isFeatured: false 
+        });
       }
-      closeModal();
     } catch (err) {
       console.error(err);
       toast.error("Failed to save product");
@@ -137,11 +149,12 @@ export default function ProductManager({ products, setProducts, apiCategories = 
     setFormData({ ...formData, images: newImages, image: newPrimary });
   };
 
-  const handleDelete = async (product: Product) => {
+  const handleDelete = async (product: any) => {
     if (!window.confirm(`Are you sure you want to delete ${product.name}?`)) return;
     try {
-      await deleteProduct(product.id);
-      setProducts((prev: Product[]) => prev.filter(p => p.id !== product.id));
+      const targetId = product.id || product._id;
+      await deleteProduct(targetId);
+      setProducts((prev: Product[]) => prev.filter((p: any) => (p.id || p._id) !== targetId));
       toast.success("Product deleted");
     } catch (err) {
       toast.error("Failed to delete product");
@@ -170,6 +183,50 @@ export default function ProductManager({ products, setProducts, apiCategories = 
     }
   };
 
+  
+  const handleExportCSV = () => {
+    try {
+      const headers = ['id', 'name', 'category', 'price', 'originalPrice', 'deliveryCharge', 'stock', 'isVisible', 'isFeatured', 'image', 'images', 'videoUrl', 'brand', 'sku', 'description'];
+      
+      const rows = products.map(p => {
+        return [
+          p.id || '',
+          `"${(p.name || '').replace(/"/g, '""')}"`,
+          `"${(p.category || '').replace(/"/g, '""')}"`,
+          p.price || 0,
+          p.originalPrice || '',
+          p.deliveryCharge || 30,
+          p.stock || 0,
+          p.isVisible !== false ? 'true' : 'false',
+          p.isFeatured ? 'true' : 'false',
+          `"${(p.image || '').replace(/"/g, '""')}"`,
+          `"${(p.images?.join(';') || '').replace(/"/g, '""')}"`,
+          `"${(p.videoUrl || '').replace(/"/g, '""')}"`,
+          `"${(p.brand || '').replace(/"/g, '""')}"`,
+          `"${(p.sku || '').replace(/"/g, '""')}"`,
+          `"${(p.description || '').replace(/"/g, '""')}"`
+        ].join(',');
+      });
+
+      const csvContent = headers.join(',') + '\n' + rows.join('\n');
+      
+      // UTF-8 BOM for Excel to read Unicode characters properly (like Tamil)
+      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `products_export_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast.success('Products exported successfully!');
+    } catch (error) {
+      console.error(error);
+      toast.error('Failed to export CSV');
+    }
+  };
+
   const handleBulkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -178,51 +235,441 @@ export default function ProductManager({ products, setProducts, apiCategories = 
     reader.onload = async (event) => {
       try {
         const text = event.target?.result as string;
-        const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
         if (lines.length < 2) return toast.error('CSV is empty or missing headers');
         
-        // Assume CSV: name,category,price,stock,image
-        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        // Robust CSV parser supporting quotes and inner commas
+        const parseCSVRow = (rowText: string): string[] => {
+          const result: string[] = [];
+          let currentField = '';
+          let inQuotes = false;
+          
+          for (let i = 0; i < rowText.length; i++) {
+            const char = rowText[i];
+            const nextChar = rowText[i+1];
+            
+            if (char === '"') {
+              if (inQuotes && nextChar === '"') {
+                currentField += '"';
+                i++;
+              } else {
+                inQuotes = !inQuotes;
+              }
+            } else if (char === ',' && !inQuotes) {
+              result.push(currentField.trim());
+              currentField = '';
+            } else {
+              currentField += char;
+            }
+          }
+          result.push(currentField.trim());
+          return result;
+        };
+
+        const headerRow = parseCSVRow(lines[0]);
+        const headerMap: { [key: string]: number } = {};
+        
+        headerRow.forEach((h, idx) => {
+          const cleanHeader = h.toLowerCase().replace(/[^a-z0-9]/g, '');
+          if (['name', 'productname', 'title', 'itemname', 'product'].includes(cleanHeader)) {
+            headerMap['name'] = idx;
+          } else if (['category', 'type', 'group'].includes(cleanHeader)) {
+            headerMap['category'] = idx;
+          } else if (['price', 'rate', 'salesprice', 'amount'].includes(cleanHeader)) {
+            headerMap['price'] = idx;
+          } else if (['originalprice', 'mrp', 'costprice'].includes(cleanHeader)) {
+            headerMap['originalPrice'] = idx;
+          } else if (['deliverycharge', 'shippingcharge', 'delivery'].includes(cleanHeader)) {
+            headerMap['deliveryCharge'] = idx;
+          } else if (['stock', 'quantity', 'qty', 'stockcount'].includes(cleanHeader)) {
+            headerMap['stock'] = idx;
+          } else if (['image', 'imageurl', 'photo', 'picture'].includes(cleanHeader)) {
+            headerMap['image'] = idx;
+          } else if (['brand'].includes(cleanHeader)) {
+            headerMap['brand'] = idx;
+          } else if (['description', 'desc'].includes(cleanHeader)) {
+            headerMap['description'] = idx;
+          }
+        });
+
+        if (headerMap['name'] === undefined) {
+          return toast.error("Could not find 'Name' or 'Product' column in CSV headers");
+        }
+        if (headerMap['price'] === undefined) {
+          return toast.error("Could not find 'Price' or 'Rate' column in CSV headers");
+        }
+
         const newProducts: Product[] = [];
         
         for (let i = 1; i < lines.length; i++) {
-          const values = lines[i].split(',').map(v => v.trim());
-          const obj: any = {};
-          headers.forEach((h, idx) => { obj[h] = values[idx] || ''; });
+          const values = parseCSVRow(lines[i]);
+          if (values.length === 0 || !values[headerMap['name']]) continue;
           
-          if (!obj.name || !obj.price) continue;
-          
+          const nameVal = values[headerMap['name']];
+          const priceVal = parseFloat(values[headerMap['price']]) || 0;
+          const originalPriceVal = headerMap['originalPrice'] !== undefined ? (parseFloat(values[headerMap['originalPrice']]) || undefined) : undefined;
+          const deliveryVal = headerMap['deliveryCharge'] !== undefined ? (parseFloat(values[headerMap['deliveryCharge']]) || 0) : 0;
+          const stockVal = headerMap['stock'] !== undefined ? (parseInt(values[headerMap['stock']]) || 0) : 50;
+          const categoryVal = headerMap['category'] !== undefined ? (values[headerMap['category']] || 'Uncategorized') : 'Uncategorized';
+          const imageVal = (headerMap['image'] !== undefined && values[headerMap['image']]) 
+            ? values[headerMap['image']] 
+            : `https://placehold.co/600x600/f3f4f6/9ca3af?text=${encodeURIComponent(nameVal)}`;
+          const brandVal = headerMap['brand'] !== undefined ? (values[headerMap['brand']] || '') : '';
+          const descVal = headerMap['description'] !== undefined ? (values[headerMap['description']] || '') : '';
+
           const newProduct: Product = {
-            id: `prod_${Date.now()}_${i}`,
-            name: obj.name,
-            category: obj.category || 'Uncategorized',
-            price: parseFloat(obj.price) || 0,
-            originalPrice: obj.originalprice ? parseFloat(obj.originalprice) : undefined,
-            stock: parseInt(obj.stock) || 50,
-            image: obj.image || '',
+            id: `prod_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 4)}`,
+            name: nameVal,
+            category: categoryVal,
+            price: priceVal,
+            originalPrice: originalPriceVal,
+            deliveryCharge: deliveryVal,
+            stock: stockVal,
+            image: imageVal,
+            brand: brandVal,
+            description: descVal,
             isVisible: true,
             isFeatured: false
           };
           newProducts.push(newProduct);
         }
 
-        if (newProducts.length === 0) return toast.error('No valid products found in CSV');
+        if (newProducts.length === 0) {
+          return toast.error('No valid products found in CSV');
+        }
         
         toast.loading(`Importing ${newProducts.length} products...`, { id: 'bulkUpload' });
         
-        // Process sequentially
-        for (const p of newProducts) {
-          await saveProduct(p, false);
+        const res = await fetchWithAuth('/api/products/bulk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newProducts),
+        });
+
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || "Failed to bulk save products");
         }
-        
-        setProducts((prev: Product[]) => [...newProducts, ...prev]);
+
+        // Refresh products list
+        const prodRes = await fetchWithAuth('/api/products/all');
+        if (prodRes.ok) {
+          const data = await prodRes.json();
+          setProducts(data.products || data);
+        }
+
         toast.success(`Successfully imported ${newProducts.length} products!`, { id: 'bulkUpload' });
-      } catch (err) {
-        toast.error('Failed to parse CSV', { id: 'bulkUpload' });
+      } catch (err: any) {
+        toast.error(`Failed to parse/import CSV: ${err.message || err}`, { id: 'bulkUpload' });
       }
     };
     reader.readAsText(file);
     e.target.value = ''; // Reset
+  };
+
+  const handleCsvFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setSelectedCsvFile(file);
+    setParsedRows([]);
+    setCsvImportProgress('Parsing file...');
+    
+    try {
+      const loadSheetJS = (): Promise<any> => {
+        return new Promise((resolve, reject) => {
+          if ((window as any).XLSX) {
+            resolve((window as any).XLSX);
+            return;
+          }
+          const script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+          script.onload = () => resolve((window as any).XLSX);
+          script.onerror = (err) => reject(err);
+          document.body.appendChild(script);
+        });
+      };
+
+      let headerRow: string[] = [];
+      let dataRows: string[][] = [];
+
+      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        const XLSX = await loadSheetJS();
+        const buffer = await file.arrayBuffer();
+        const workbook = XLSX.read(new Uint8Array(buffer), { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+        
+        if (rows.length < 1) {
+          throw new Error('Excel sheet is empty');
+        }
+        
+        const stringRows = rows.map(r => r.map(cell => cell !== undefined && cell !== null ? String(cell).trim() : ''));
+        headerRow = stringRows[0];
+        dataRows = stringRows;
+      } else {
+        const text = await file.text();
+        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+        if (lines.length < 1) {
+          throw new Error('CSV is empty');
+        }
+
+        const parseCSVRow = (rowText: string): string[] => {
+          const result: string[] = [];
+          let currentField = '';
+          let inQuotes = false;
+          
+          for (let i = 0; i < rowText.length; i++) {
+            const char = rowText[i];
+            const nextChar = rowText[i+1];
+            
+            if (char === '"') {
+              if (inQuotes && nextChar === '"') {
+                currentField += '"';
+                i++;
+              } else {
+                inQuotes = !inQuotes;
+              }
+            } else if (char === ',' && !inQuotes) {
+              result.push(currentField.trim());
+              currentField = '';
+            } else {
+              currentField += char;
+            }
+          }
+          result.push(currentField.trim());
+          return result;
+        };
+
+        headerRow = parseCSVRow(lines[0]);
+        dataRows = lines.map(line => parseCSVRow(line));
+      }
+
+      let isHeaderRow = false;
+      const headerMap: { [key: string]: number } = {};
+      
+      headerRow.forEach((h, idx) => {
+        const cleanHeader = h.toLowerCase().trim().replace(/[^a-z0-9\u0B80-\u0BFF]/g, '');
+        const validHeaders = [
+          'name', 'productname', 'title', 'itemname', 'product', 'category', 'type', 'group', 
+          'price', 'rate', 'salesprice', 'amount', 'sellingprice', 'stock', 'quantity', 'qty', 'stockcount', 
+          'image', 'imageurl', 'photo', 'picture', 'filename', 'url', 'producturl', 'link', 'imagelink', 'productlink',
+          'brand', 'description', 'desc', 'details',
+          'originalprice', 'mrp', 'costprice', 'originalrate', 'strikerate', 'strikebrand',
+          'பெயர்', 'பெயர்கள்', 'தயாரிப்பு', 'விலை', 'விற்பனைவிலை', 'மதிப்பு', 'பிரிவு', 'வகை',
+          'இருப்பு', 'அளவு', 'படம்', 'புகைப்படம்', 'படம்பெயர்', 'விளக்கம்', 'விவரம்', 'அசல்விலை', 'அசல்'
+        ];
+        
+        if (validHeaders.includes(cleanHeader)) {
+          isHeaderRow = true;
+        }
+
+        if (['originalprice', 'mrp', 'costprice', 'originalrate', 'strikerate', 'strikebrand', 'அசல்விலை', 'அசல்'].includes(cleanHeader)) {
+          headerMap['originalPrice'] = idx;
+        } else if (['price', 'rate', 'salesprice', 'amount', 'sellingprice', 'விலை', 'விற்பனைவிலை', 'மதிப்பு'].includes(cleanHeader)) {
+          headerMap['price'] = idx;
+        } else if (['name', 'productname', 'title', 'itemname', 'product', 'பெயர்', 'பெயர்கள்', 'தயாரிப்பு'].includes(cleanHeader)) {
+          headerMap['name'] = idx;
+        } else if (['category', 'type', 'group', 'பிரிவு', 'வகை'].includes(cleanHeader)) {
+          headerMap['category'] = idx;
+        } else if (['deliverycharge', 'shippingcharge', 'delivery'].includes(cleanHeader)) {
+          headerMap['deliveryCharge'] = idx;
+        } else if (['stock', 'quantity', 'qty', 'stockcount', 'இருப்பு', 'அளவு'].includes(cleanHeader)) {
+          headerMap['stock'] = idx;
+        } else if (['image', 'imageurl', 'photo', 'picture', 'filename', 'url', 'producturl', 'link', 'imagelink', 'productlink', 'படம்', 'புகைப்படம்', 'படம்பெயர்'].includes(cleanHeader)) {
+          headerMap['image'] = idx;
+        } else if (['brand', 'company'].includes(cleanHeader)) {
+          headerMap['brand'] = idx;
+        } else if (['description', 'desc', 'details', 'விளக்கம்', 'விவரம்'].includes(cleanHeader)) {
+          headerMap['description'] = idx;
+        }
+      });
+
+      const nameIdx = headerMap['name'] !== undefined ? headerMap['name'] : 0;
+      const priceIdx = headerMap['price'] !== undefined ? headerMap['price'] : 2;
+      const categoryIdx = headerMap['category'] !== undefined ? headerMap['category'] : 1;
+      const originalPriceIdx = headerMap['originalPrice'] !== undefined ? headerMap['originalPrice'] : 3;
+      const stockIdx = headerMap['stock'] !== undefined ? headerMap['stock'] : 4;
+      let imageIdx = headerMap['image'] !== undefined ? headerMap['image'] : -1;
+      const brandIdx = headerMap['brand'] !== undefined ? headerMap['brand'] : 5;
+      const descIdx = headerMap['description'] !== undefined ? headerMap['description'] : 6;
+      const deliveryChargeIdx = headerMap['deliveryCharge'] !== undefined ? headerMap['deliveryCharge'] : -1;
+
+      if (imageIdx === -1) {
+        for (let rIdx = 0; rIdx < Math.min(5, dataRows.length); rIdx++) {
+          const row = dataRows[rIdx];
+          if (!row) continue;
+          for (let cIdx = 0; cIdx < row.length; cIdx++) {
+            const val = String(row[cIdx]).toLowerCase().trim();
+            if (val.startsWith('http://') || val.startsWith('https://') || /\.(jpg|jpeg|png|webp|gif|bmp)$/i.test(val)) {
+              imageIdx = cIdx;
+              break;
+            }
+          }
+          if (imageIdx !== -1) break;
+        }
+      }
+      if (imageIdx === -1) imageIdx = 5;
+
+      const parsed: any[] = [];
+      const startLine = isHeaderRow ? 1 : 0;
+
+      for (let i = startLine; i < dataRows.length; i++) {
+        const values = dataRows[i];
+        if (values.length === 0 || !values[nameIdx]) continue;
+        
+        const imgVal = imageIdx !== -1 && imageIdx < values.length ? String(values[imageIdx]).trim() : '';
+        const isUrl = imgVal.startsWith('http://') || imgVal.startsWith('https://');
+
+        parsed.push({
+          name: values[nameIdx],
+          price: parseFloat(values[priceIdx]) || 0,
+          originalPrice: originalPriceIdx !== -1 && originalPriceIdx < values.length ? (parseFloat(values[originalPriceIdx]) || undefined) : undefined,
+          deliveryCharge: deliveryChargeIdx !== -1 && deliveryChargeIdx < values.length ? (parseFloat(values[deliveryChargeIdx]) || 30) : 30,
+          stock: stockIdx !== -1 && stockIdx < values.length ? (parseInt(values[stockIdx]) || 50) : 50,
+          category: categoryIdx !== -1 && categoryIdx < values.length ? (values[categoryIdx] || 'Uncategorized') : 'Uncategorized',
+          imageVal: imgVal,
+          brand: brandIdx !== -1 && brandIdx < values.length ? (values[brandIdx] || '') : '',
+          description: descIdx !== -1 && descIdx < values.length ? (values[descIdx] || '') : '',
+          imageFile: null,
+          previewUrl: isUrl ? imgVal : ''
+        });
+      }
+
+      setParsedRows(parsed);
+      setCsvImportProgress('');
+    } catch (err: any) {
+      toast.error(`Failed to parse file: ${err.message || err}`);
+      setSelectedCsvFile(null);
+      setCsvImportProgress('');
+    }
+  };
+
+  const handleBulkImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    
+    setParsedRows(prev => prev.map((row, idx) => {
+      if (idx < files.length) {
+        const file = files[idx];
+        return {
+          ...row,
+          imageFile: file,
+          previewUrl: URL.createObjectURL(file)
+        };
+      }
+      return row;
+    }));
+    toast.success(`Paired ${Math.min(files.length, parsedRows.length)} photos in the order of selection!`);
+  };
+
+  const handleSingleImageSelect = (index: number, file: File) => {
+    setParsedRows(prev => prev.map((row, idx) => {
+      if (idx === index) {
+        return {
+          ...row,
+          imageFile: file,
+          previewUrl: URL.createObjectURL(file)
+        };
+      }
+      return row;
+    }));
+  };
+
+  const handleCsvImportSubmit = async () => {
+    if (parsedRows.length === 0) {
+      return toast.error("Please select a file first");
+    }
+
+    setIsCsvImporting(true);
+    setCsvImportProgress('Uploading photos...');
+    toast.loading('Uploading photos to server...', { id: 'csvImport' });
+
+    try {
+      const finalProducts: Product[] = [];
+      const batchSize = 3;
+      
+      for (let i = 0; i < parsedRows.length; i += batchSize) {
+        const batch = parsedRows.slice(i, i + batchSize);
+        const currentBatchEnd = Math.min(i + batchSize, parsedRows.length);
+        setCsvImportProgress(`Uploading product images ${i + 1} to ${currentBatchEnd} of ${parsedRows.length}...`);
+        
+        await Promise.all(batch.map(async (row, batchIdx) => {
+          const globalIdx = i + batchIdx;
+          let finalImageUrl = '';
+
+          if (row.imageFile) {
+            try {
+              const formDataPayload = new FormData();
+              formDataPayload.append('image', row.imageFile);
+              const res = await fetchWithAuth('/api/upload', { method: 'POST', body: formDataPayload });
+              if (res.ok) {
+                const data = await res.json();
+                if (data?.imageUrl) {
+                  finalImageUrl = data.imageUrl;
+                }
+              }
+            } catch (err) {
+              console.error(`Failed to upload image for ${row.name}`, err);
+            }
+          }
+
+          if (!finalImageUrl) {
+            if (row.imageVal && (row.imageVal.startsWith('http://') || row.imageVal.startsWith('https://'))) {
+              finalImageUrl = row.imageVal;
+            } else {
+              finalImageUrl = `https://placehold.co/600x600/f3f4f6/9ca3af?text=${encodeURIComponent(row.name)}`;
+            }
+          }
+
+          finalProducts[globalIdx] = {
+            id: `prod_${Date.now()}_${globalIdx}_${Math.random().toString(36).substr(2, 4)}`,
+            name: row.name,
+            category: row.category,
+            price: row.price,
+            originalPrice: row.originalPrice,
+            deliveryCharge: row.deliveryCharge,
+            stock: row.stock,
+            image: finalImageUrl,
+            brand: row.brand,
+            description: row.description,
+            isVisible: true,
+            isFeatured: false
+          };
+        }));
+      }
+
+      setCsvImportProgress('Saving products...');
+      toast.loading('Saving products to database...', { id: 'csvImport' });
+
+      const res = await fetchWithAuth('/api/products/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(finalProducts.filter(Boolean)),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || "Failed to bulk save products");
+      }
+
+      const prodRes = await fetchWithAuth('/api/products/all');
+      if (prodRes.ok) {
+        const data = await prodRes.json();
+        setProducts(data.products || data);
+      }
+
+      toast.success(`Successfully imported ${finalProducts.length} products!`, { id: 'csvImport' });
+      setIsCsvModalOpen(false);
+      setSelectedCsvFile(null);
+      setParsedRows([]);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(`Import failed: ${err.message || err}`, { id: 'csvImport' });
+    } finally {
+      setIsCsvImporting(false);
+      setCsvImportProgress('');
+    }
   };
 
   return (
@@ -249,7 +696,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
             className="hidden" 
           />
           <button 
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => setIsCsvModalOpen(true)}
             className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-white border border-gray-200 text-gray-700 text-sm font-medium rounded-md px-4 py-2 hover:bg-gray-50 transition-colors shadow-sm"
           >
             <Upload size={16} />
@@ -329,7 +776,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
                     </div>
                   </td>
                   <td className="px-5 py-4 font-semibold text-gray-900">
-                    ₹{product.price}
+                    â‚¹{product.price}
                   </td>
                   <td className="px-5 py-4">
                     <div className="flex justify-center">
@@ -607,6 +1054,192 @@ export default function ProductManager({ products, setProducts, apiCategories = 
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {isCsvModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden p-6 relative">
+            <button 
+              onClick={() => {
+                if (!isCsvImporting) {
+                  setIsCsvModalOpen(false);
+                  setSelectedCsvFile(null);
+                  setParsedRows([]);
+                }
+              }}
+              disabled={isCsvImporting}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 disabled:opacity-30"
+            >
+              <X size={20} />
+            </button>
+            
+            <h2 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
+              <Upload className="text-gray-900" size={20} />
+              Import Products Excel / CSV & Images
+            </h2>
+            
+            <p className="text-xs text-gray-500 mb-4 leading-relaxed">
+              Upload a <strong>.xlsx / .xls (Excel)</strong> or <strong>.csv</strong> file. You can then assign images either by bulk selecting photos (they will pair sequentially matching the row order) or by choosing a photo for each product individually.
+            </p>
+
+            <div className="bg-neutral-50 rounded-lg p-3 border border-neutral-200/60 mb-4 text-xs text-gray-600 space-y-1.5">
+              <div className="font-semibold text-neutral-800">Required Columns (in any order):</div>
+              <div>• <strong>Name</strong>, <strong>Price</strong></div>
+              <div className="font-semibold text-neutral-800 pt-1">Optional Columns:</div>
+              <div>• <strong>Category</strong>, <strong>Stock</strong>, <strong>Brand</strong>, <strong>Description</strong></div>
+            </div>
+
+            {isCsvImporting ? (
+              <div className="py-8 flex flex-col items-center justify-center gap-3">
+                <div className="w-10 h-10 border-4 border-gray-900 border-t-transparent rounded-full animate-spin"></div>
+                <div className="text-sm font-semibold text-gray-800">Importing Products...</div>
+                <div className="text-xs text-gray-500 text-center px-4 font-medium">{csvImportProgress}</div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const headers = ["Name", "Category", "Price", "OriginalPrice", "Stock", "Brand", "Description"];
+                    const sampleRow = ["Premium Notebook", "Stationery", "120", "150", "200", "Rappani", "Hardcover ruled notebook"];
+                    const csvContent = headers.join(',') + '\n' + sampleRow.join(',');
+                    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement("a");
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", "rappani_products_template.csv");
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-2 px-4 border border-dashed border-gray-300 hover:border-gray-400 text-gray-600 hover:text-gray-700 rounded-lg text-xs font-semibold bg-gray-50/50 hover:bg-gray-50 transition-colors"
+                >
+                  📥 Download Excel/CSV Template
+                </button>
+
+                {/* Step 1: Select CSV file */}
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-700 mb-1 uppercase tracking-wide">Step 1: Select Excel or CSV File</label>
+                  {selectedCsvFile ? (
+                    <div className="flex items-center justify-between bg-emerald-50/80 border border-emerald-200 rounded-lg p-2.5">
+                      <span className="text-xs font-medium text-emerald-800 truncate pr-2">📄 {selectedCsvFile.name} ({parsedRows.length} products found)</span>
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          setSelectedCsvFile(null);
+                          setParsedRows([]);
+                        }}
+                        className="text-[10px] text-red-500 hover:underline font-bold shrink-0"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <input 
+                        type="file" 
+                        accept=".csv, .xlsx, .xls" 
+                        ref={csvFileInputRef}
+                        onChange={handleCsvFileChange}
+                        className="hidden" 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => csvFileInputRef.current?.click()}
+                        className="w-full py-3 border border-neutral-300 hover:border-gray-400 rounded-lg text-xs font-semibold text-gray-700 hover:bg-neutral-50 transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        📁 Choose Excel / CSV File
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                {/* Step 2: Select Local Images */}
+                {selectedCsvFile && parsedRows.length > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-[11px] font-bold text-gray-700 uppercase tracking-wide">
+                        Step 2: Assign Photos ({parsedRows.filter(r => r.imageFile).length}/{parsedRows.length} paired)
+                      </label>
+                      
+                      <input 
+                        type="file" 
+                        multiple
+                        accept="image/*" 
+                        ref={csvImagesInputRef}
+                        onChange={handleBulkImageSelect}
+                        className="hidden" 
+                      />
+                      <button
+                        type="button"
+                        onClick={() => csvImagesInputRef.current?.click()}
+                        className="text-[10px] bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-2 py-1 rounded border border-blue-200 transition-colors"
+                      >
+                        📁 Bulk Pair Photos
+                      </button>
+                    </div>
+
+                    <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-lg p-2.5 bg-gray-50/50 space-y-2">
+                      {parsedRows.map((row, idx) => (
+                        <div key={idx} className="flex items-center justify-between gap-3 p-2 bg-white rounded-lg border border-gray-200/80 shadow-sm">
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[11px] font-bold text-gray-800 truncate" title={row.name}>
+                              {idx + 1}. {row.name}
+                            </div>
+                            <div className="text-[10px] text-gray-500 font-medium mt-0.5">
+                              {row.category} • ₹{row.price}
+                            </div>
+                          </div>
+                          
+                          <div className="shrink-0 flex items-center">
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              onChange={(e) => {
+                                if (e.target.files?.[0]) handleSingleImageSelect(idx, e.target.files[0]);
+                              }} 
+                              className="hidden" 
+                              id={`row-file-${idx}`} 
+                            />
+                            {row.previewUrl ? (
+                              <label htmlFor={`row-file-${idx}`} className="cursor-pointer block relative group">
+                                <img 
+                                  src={row.previewUrl} 
+                                  alt="preview" 
+                                  className="w-9 h-9 rounded-md object-cover border border-gray-300 group-hover:brightness-90 transition-all" 
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 rounded-md transition-opacity">
+                                  <Camera size={10} className="text-white" />
+                                </div>
+                              </label>
+                            ) : (
+                              <label 
+                                htmlFor={`row-file-${idx}`} 
+                                className="cursor-pointer w-9 h-9 bg-neutral-100 border border-dashed border-neutral-300 hover:bg-neutral-200/80 rounded-md flex items-center justify-center text-neutral-400 hover:text-neutral-500 transition-colors"
+                              >
+                                <Plus size={16} />
+                              </label>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Submit Import */}
+                <button
+                  type="button"
+                  onClick={handleCsvImportSubmit}
+                  disabled={!selectedCsvFile || parsedRows.length === 0}
+                  className="w-full py-2.5 bg-gray-900 hover:bg-gray-800 disabled:bg-gray-200 text-white disabled:text-gray-400 rounded-lg text-sm font-semibold shadow-sm transition-colors mt-2"
+                >
+                  🚀 Start Import Products & Photos
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

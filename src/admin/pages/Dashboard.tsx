@@ -12,8 +12,11 @@ import {
   CheckCircle,
   Truck,
   Box,
-  AlertTriangle
+  AlertTriangle,
+  Download
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { 
   AreaChart, 
   Area, 
@@ -181,13 +184,61 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
 
   const totalProducts = safeProducts.length;
   const lowStockProducts = safeProducts.filter(p => (p.stock || 0) <= 5);
+  const navigate = useNavigate();
+
+  const handleGenerateReport = () => {
+    try {
+      const headers = ["Metric", "Value"];
+      const rows: (string | number)[][] = [
+        ["Report Title", "Rappani Store Executive Summary Report"],
+        ["Generated At", new Date().toLocaleString('en-IN')],
+        ["Today's Revenue", `₹${todayRevenue.toLocaleString('en-IN')}`],
+        ["Today's Orders Count", todayOrdersCount],
+        ["Pending Orders Count", pendingOrdersCount],
+        ["Processing Orders Count", processingOrdersCount],
+        ["Packed Orders Count", packedOrdersCount],
+        ["Shipped Orders Count", shippedOrdersCount],
+        ["Delivered Orders Count", deliveredOrdersCount],
+        ["Completed Orders Count", completedOrdersCount],
+        ["Cancelled Orders Count", cancelledOrdersCount],
+        ["Weekly Revenue", `₹${weeklyRevenue.toLocaleString('en-IN')}`],
+        ["Monthly Revenue", `₹${monthlyRevenue.toLocaleString('en-IN')}`],
+        ["Overall Lifetime Revenue", `₹${overallRevenue.toLocaleString('en-IN')}`],
+        ["Total Orders Count", safeOrders.length],
+        ["Total Active Products", totalProducts],
+        ["Low Stock Products Count (<=5)", lowStockProducts.length],
+        ["Total Unique Customers", totalCustomers],
+      ];
+
+      const csvContent = [headers.join(','), ...rows.map(r => `"${r[0]}","${r[1]}"`)].join('\n');
+      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `executive_summary_report_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success("Executive summary report downloaded!");
+      navigate('/admin/reports');
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to generate report");
+    }
+  };
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-10">
       {/* Header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-primary tracking-tight">Dashboard</h1>
-        <button className="premium-button text-sm font-medium px-4 py-2 rounded-md hover:bg-gray-800 transition-colors">
+        <button 
+          onClick={handleGenerateReport}
+          className="flex items-center gap-2 bg-gray-900 text-white text-sm font-semibold px-4 py-2 rounded-md hover:bg-gray-800 transition-colors shadow-sm cursor-pointer"
+        >
+          <Download size={16} />
           Generate Report
         </button>
       </div>
