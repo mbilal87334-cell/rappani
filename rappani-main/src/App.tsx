@@ -1,7 +1,7 @@
 import React, {  useState, useEffect, useRef, lazy, Suspense  } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
-import { Phone, Mail, Instagram, MessageCircle, MapPin, Map, Lock, LogOut, Plus, Edit, Trash2, Store, ShoppingBag, Menu, X, Camera, Aperture, Globe, Database, Search, ArrowUp, Package, LayoutGrid, ShoppingCart, Minus, Image, ShieldCheck, Gift, Sparkles, Sticker, Rocket, Coffee, Eye, Star, TrendingUp, CheckCircle2, Info , Home, Heart, User, ChevronRight, CreditCard, Briefcase, Ticket, Navigation, Smartphone } from 'lucide-react';
+import { Phone, Mail, Instagram, MessageCircle, MapPin, Map, Lock, LogOut, Plus, Edit, Trash2, Store, ShoppingBag, Menu, X, Camera, Aperture, Globe, Database, Search, ArrowUp, Package, LayoutGrid, ShoppingCart, Minus, Image, ShieldCheck, Gift, Sparkles, Sticker, Rocket, Coffee, Eye, Star, TrendingUp, CheckCircle2, Info , Home, Heart, User, ChevronRight, CreditCard, Briefcase, Ticket, Navigation, Smartphone, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 const AdminApp = lazy(() => import('./admin/AdminApp'));
 import LocationMap from './LocationMap';
@@ -1556,33 +1556,17 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
     <div className="bg-gold-50 font-sans text-primary pb-20 min-h-screen max-w-md md:max-w-6xl mx-auto shadow-2xl relative overflow-x-hidden border-x border-neutral-300">
       <Toaster position="top-center" />
 
-      {/* Real-time Limited Time Promotional Banner */}
-      {customerToken && activeOffers.length > 0 && (
-        <div className="bg-gradient-to-r from-red-600 via-amber-500 to-red-600 text-white py-2.5 px-4 text-xs font-bold text-center flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 shadow-md border-b border-red-700/30 relative z-[60]">
-          <span className="flex items-center gap-1 text-sm tracking-wide">
-            🎉 LIMITED TIME OFFER: <span className="underline uppercase tracking-wider font-black">{activeOffers[0].offerTitle || activeOffers[0].code}</span>
-          </span>
-          <div className="flex items-center gap-4">
-            <span className="bg-black/30 px-2 py-0.5 rounded text-[11px] font-bold">
-              Use Coupon: <span className="font-mono text-yellow-300 font-black select-all">{activeOffers[0].code}</span>
-            </span>
-            <span className="flex items-center gap-1 font-bold">
-              ⏰ Ends In: <span className="font-mono text-yellow-200 font-bold">{getPromoCountdown(activeOffers[0].expiryTime)}</span>
-            </span>
-            <button 
-              onClick={() => handleUsePromoCoupon(activeOffers[0])}
-              className="bg-white text-red-600 hover:bg-yellow-100 px-3.5 py-1 rounded text-[10px] font-black uppercase transition-all shadow-sm active:scale-95 cursor-pointer"
-            >
-              Use Coupon
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Top Header */}
       <header className="sticky top-0 z-50 glass-dark shadow-md border-b border-gold-500/20">
         <div className="px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div 
+            onClick={() => {
+              setCurrentTab('home');
+              setSelectedCategory('All');
+              setSearchQuery('');
+            }}
+            className="flex items-center gap-3 cursor-pointer select-none active:scale-95 transition-all"
+          >
             <div className="w-10 h-10 bg-gradient-to-br from-gold-500 to-gold-600 rounded-xl flex items-center justify-center text-white font-black text-2xl italic shadow-lg shadow-gold-500/20">
               R
             </div>
@@ -1624,6 +1608,29 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
           </div>
         </div>
       </header>
+
+      {/* Real-time Limited Time Promotional Announcement Banner (shown below top header) */}
+      {activeOffers.length > 0 && (
+        <div className="bg-gradient-to-r from-red-600 via-amber-500 to-red-600 text-white py-2.5 px-4 text-xs font-bold text-center flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 shadow-md border-b border-red-700/30 relative z-[45]">
+          <span className="flex items-center gap-1 text-sm tracking-wide">
+            🎉 LIMITED TIME OFFER: <span className="underline uppercase tracking-wider font-black">{activeOffers[0].offerTitle || activeOffers[0].code}</span>
+          </span>
+          <div className="flex items-center gap-4">
+            <span className="bg-black/30 px-2 py-0.5 rounded text-[11px] font-bold">
+              Use Coupon: <span className="font-mono text-yellow-300 font-black select-all">{activeOffers[0].code}</span>
+            </span>
+            <span className="flex items-center gap-1 font-bold">
+              ⏰ Ends In: <span className="font-mono text-yellow-200 font-bold">{getPromoCountdown(activeOffers[0].expiryTime)}</span>
+            </span>
+            <button 
+              onClick={() => handleUsePromoCoupon(activeOffers[0])}
+              className="bg-white text-red-600 hover:bg-yellow-100 px-3.5 py-1 rounded text-[10px] font-black uppercase transition-all shadow-sm active:scale-95 cursor-pointer"
+            >
+              Use Coupon
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Main Content Area based on Tab */}
       <main className="px-4 py-4 space-y-6 overflow-hidden pb-24">
@@ -1685,7 +1692,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
             </div>
 
             {/* Real-time Limited Time Offers Widget on Home Page */}
-            {customerToken && activeOffers.length > 0 && (
+            {activeOffers.length > 0 && (
               <div className="bg-gradient-to-br from-stone-900 to-primary text-white rounded-2xl shadow-lg p-5 border border-gold-500/20 relative overflow-hidden -mx-2">
                 <div className="absolute -top-12 -right-12 w-28 h-28 bg-gold-500/10 rounded-full blur-xl" />
                 <div className="absolute -bottom-12 -left-12 w-28 h-28 bg-red-600/10 rounded-full blur-xl" />
