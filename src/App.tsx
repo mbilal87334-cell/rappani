@@ -1653,25 +1653,47 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
         </div>
       </header>
 
-      {/* Real-time Limited Time Promotional Announcement Banner (shown on all pages) */}
+      {/* Classic Premium Limited Time Offer Banner */}
       {activeOffers.length > 0 && (
-        <div className="bg-gradient-to-r from-red-600 via-amber-500 to-red-600 text-white py-2.5 px-4 text-xs font-bold text-center flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 shadow-md border-b border-red-700/30 relative z-[45]">
-          <span className="flex items-center gap-1 text-sm tracking-wide">
-            🎉 LIMITED TIME OFFER: <span className="underline uppercase tracking-wider font-black">{activeOffers[0].offerTitle || activeOffers[0].code}</span>
-          </span>
-          <div className="flex items-center gap-4">
-            <span className="bg-black/30 px-2 py-0.5 rounded text-[11px] font-bold">
-              Use Coupon: <span className="font-mono text-yellow-300 font-black select-all">{activeOffers[0].code}</span>
-            </span>
-            <span className="flex items-center gap-1 font-bold">
-              ⏰ Ends In: <span className="font-mono text-yellow-200 font-bold">{getPromoCountdown(activeOffers[0].expiryTime)}</span>
-            </span>
-            <button 
-              onClick={() => handleUsePromoCoupon(activeOffers[0])}
-              className="bg-white text-red-600 hover:bg-yellow-100 px-3.5 py-1 rounded text-[10px] font-black uppercase transition-all shadow-sm active:scale-95 cursor-pointer"
-            >
-              Use Coupon
-            </button>
+        <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 text-slate-100 py-2.5 px-4 sm:px-6 border-y border-amber-500/30 shadow-lg relative z-[45] transition-all">
+          <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4 text-xs">
+            {/* Left Section: Title & Badge */}
+            <div className="flex items-center gap-2.5 flex-wrap justify-center sm:justify-start">
+              <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 px-2.5 py-0.5 rounded-full font-semibold text-[10px] tracking-wider uppercase">
+                <Sparkles size={12} className="text-amber-400 shrink-0" />
+                LIMITED TIME OFFER
+              </div>
+              <span className="hidden md:inline text-amber-500/40 font-light">|</span>
+              <span className="font-semibold text-slate-100 tracking-wide text-xs sm:text-sm">
+                {activeOffers[0].offerTitle || 'SPECIAL OFFER IN RAPPANI STORE'}
+              </span>
+            </div>
+
+            {/* Right Section: Code, Timer & Action Button */}
+            <div className="flex items-center gap-2.5 sm:gap-4 flex-wrap justify-center">
+              {/* Coupon Code Pill */}
+              <div className="bg-slate-900/90 border border-amber-500/30 rounded-full px-3 py-1 text-[11px] font-medium text-amber-300/90 flex items-center gap-1.5 shadow-inner">
+                <span className="text-slate-400">Code:</span>
+                <span className="font-mono font-bold text-amber-300 tracking-wider select-all">{activeOffers[0].code}</span>
+              </div>
+
+              {/* Countdown Timer */}
+              <div className="flex items-center gap-1.5 text-[11px] text-slate-300 font-medium">
+                <Clock size={13} className="text-amber-400/90 shrink-0" />
+                <span className="text-slate-400">Ends In:</span>
+                <span className="font-mono font-bold text-amber-300 bg-slate-950 border border-amber-500/25 px-2 py-0.5 rounded text-xs tracking-wider shadow-sm">
+                  {getPromoCountdown(activeOffers[0].expiryTime)}
+                </span>
+              </div>
+
+              {/* Action Button */}
+              <button 
+                onClick={() => handleUsePromoCoupon(activeOffers[0])}
+                className="bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-bold px-4 py-1.5 rounded-full text-xs transition-all shadow-md active:scale-95 cursor-pointer border border-amber-300/40 tracking-wider uppercase ml-1"
+              >
+                USE COUPON
+              </button>
+            </div>
           </div>
         </div>
       )}
