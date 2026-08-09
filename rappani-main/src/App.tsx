@@ -1648,7 +1648,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
               ⏰ Ends In: <span className="font-mono text-yellow-200 font-bold">{getPromoCountdown(activeOffers[0].expiryTime)}</span>
             </span>
             <button 
-              onClick={() => handleUsePromoCoupon(activeOffers[0])}
+              onClick={(e) => handleUsePromoCoupon(activeOffers[0], e)}
               className="bg-white text-red-600 hover:bg-yellow-100 px-3.5 py-1 rounded text-[10px] font-black uppercase transition-all shadow-sm active:scale-95 cursor-pointer"
             >
               Use Coupon
@@ -1820,6 +1820,27 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                   );
                 })}
               </div>
+              
+              {(hasMore || publicProducts.length > homeVisibleCount) && (
+                <div className="flex justify-center mt-4">
+                  <button 
+                    onClick={() => {
+                      setHomeVisibleCount(prev => prev + 20);
+                      if (homeVisibleCount + 20 >= publicProducts.length && hasMore && !isLoadingMore) {
+                        loadMoreProducts();
+                      }
+                    }} 
+                    disabled={isLoadingMore}
+                    className="bg-white border-2 border-gold-500 text-gold-500 font-bold py-2 px-6 rounded-full shadow-sm hover:bg-gold-500/10 transition-colors disabled:opacity-50 flex items-center gap-2 text-xs"
+                  >
+                    {isLoadingMore ? (
+                      <><div className="w-3.5 h-3.5 border-2 border-gold-500 border-t-transparent rounded-full animate-spin"></div> Loading...</>
+                    ) : (
+                      "Load More"
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -2891,7 +2912,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
 
               <div className="space-y-2">
                 <button
-                  onClick={() => handleUsePromoCoupon(promoPopupOffer)}
+                  onClick={(e) => handleUsePromoCoupon(promoPopupOffer, e)}
                   className="w-full py-3.5 bg-black hover:bg-gold-500 hover:text-black text-gold-500 font-bold rounded-2xl transition-all shadow-md active:scale-95 text-sm uppercase tracking-wider cursor-pointer"
                 >
                   Shop Now & Apply Code
@@ -2976,7 +2997,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                           Copy Code
                         </button>
                         <button
-                          onClick={() => handleUsePromoCoupon(offer)}
+                          onClick={(e) => handleUsePromoCoupon(offer, e)}
                           className="bg-black hover:bg-gold-500 hover:text-black text-gold-500 font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-md"
                         >
                           Use Now
