@@ -756,7 +756,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   const handleUsePromoCoupon = async (coupon: any) => {
     try {
       await navigator.clipboard.writeText(coupon.code);
-      toast.success(`Coupon "${coupon.code}" copied to clipboard!`);
+      // Removed duplicate toast to prevent "copied twice" confusion
     } catch (err) {
       console.error("[COUPON] Failed to copy coupon:", err);
     }
