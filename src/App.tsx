@@ -1622,9 +1622,6 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={toggleLanguage} className="text-xs font-bold text-white premium-button-outline border-white/20 px-3 py-1.5 rounded-full hover:bg-white/10">
-               {lang === 'en' ? 'தமிழ்' : 'EN'}
-            </button>
             <div onClick={() => setCurrentTab('account')} className="flex items-center gap-1 cursor-pointer font-medium text-sm">
               Login
             </div>
