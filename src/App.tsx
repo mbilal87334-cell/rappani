@@ -3379,16 +3379,7 @@ export default function App() {
     loadData();
   }, []);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-zinc-800/50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-rose-500 mx-auto mb-4"></div>
-          <p className="text-zinc-400 font-medium">Loading Store Memory...</p>
-        </div>
-      </div>
-    );
-  }
+  // Removed full screen loader to allow immediate rendering
 
   return (
     <BrowserRouter>
