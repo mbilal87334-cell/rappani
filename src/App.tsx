@@ -1639,18 +1639,20 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
           </div>
         </div>
         {/* Search Bar - Sticky below top bar */}
-        <div className="px-4 pb-3">
-          <div className="relative">
-            <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-            <input 
-              type="text" 
-              placeholder="Search for Products, Brands and More" 
-              className="w-full bg-white text-primary border-0 rounded-sm py-2.5 pl-10 pr-4 focus:outline-none shadow-inner text-sm"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+        {currentTab === 'products' && (
+          <div className="px-4 pb-3">
+            <div className="relative">
+              <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+              <input 
+                type="text" 
+                placeholder="Search for Products, Brands and More" 
+                className="w-full bg-white text-primary border-0 rounded-sm py-2.5 pl-10 pr-4 focus:outline-none shadow-inner text-sm"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
           </div>
-        </div>
+        )}
       </header>
 
       {/* Classic Premium Limited Time Offer Banner */}
