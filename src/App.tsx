@@ -1967,10 +1967,16 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
               )}
             </div>
             
-            {hasMore && (
+            { (filteredProducts.length > productsVisibleCount || hasMore) && (
               <div className="flex justify-center mt-6 mb-8">
                 <button 
-                  onClick={loadMoreProducts} 
+                  onClick={() => {
+                    if (filteredProducts.length > productsVisibleCount) {
+                      setProductsVisibleCount(prev => prev + 10);
+                    } else if (loadMoreProducts) {
+                      loadMoreProducts();
+                    }
+                  }} 
                   disabled={isLoadingMore}
                   className="bg-white border-2 border-gold-500 text-gold-500 font-bold py-2.5 px-8 rounded-full shadow-sm hover:bg-gold-500/10 transition-colors disabled:opacity-50 flex items-center gap-2"
                 >

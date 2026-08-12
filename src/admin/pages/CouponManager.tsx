@@ -204,8 +204,8 @@ export default function CouponManager() {
           offerTitle: publishTitle,
           offerDescription: publishMessage,
           duration: activationDuration,
-          customStartTime: publishStartTime,
-          customExpiryTime: activationDuration === 'custom' ? customExpiryTime : undefined,
+          customStartTime: publishStartTime ? new Date(publishStartTime).toISOString() : undefined,
+          customExpiryTime: activationDuration === 'custom' && customExpiryTime ? new Date(customExpiryTime).toISOString() : undefined,
           showToCustomers: true
         })
       });
