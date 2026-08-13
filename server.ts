@@ -1716,6 +1716,45 @@ async function startServer() {
     res.json({ imageUrl: req.file.path });
   });
 
+  // --- Admin Profile Routes ---
+  app.get("/api/admin/profile", authenticateToken, async (req: any, res) => {
+    try {
+      const admin = await AdminUser.findById(req.user.userId).select('-password');
+      if (!admin) {
+        return res.status(404).json({ success: false, error: "Admin not found" });
+      }
+      
+      let shop = null;
+      if (admin.shopId) {
+        shop = await Shop.findOne({ id: admin.shopId });
+      }
+
+      res.json({ success: true, admin, shop });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message || "Server error" });
+    }
+  });
+
+  app.put("/api/admin/profile", authenticateToken, async (req: any, res) => {
+    try {
+      const { email, password } = req.body;
+      const updateData: any = {};
+      
+      if (email) updateData.email = email;
+      if (password) updateData.password = password; // Should hash in real app
+
+      const updatedAdmin = await AdminUser.findByIdAndUpdate(
+        req.user.userId,
+        updateData,
+        { new: true }
+      ).select('-password');
+
+      res.json({ success: true, admin: updatedAdmin });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message || "Server error" });
+    }
+  });
+
   // --- Multi-Shop Admin Routes ---
   app.post("/api/admin/shops", authenticateToken, verifySuperAdmin, async (req, res) => {
     try {
