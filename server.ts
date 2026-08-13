@@ -782,7 +782,7 @@ async function startServer() {
 
       // Extract search or category filters if needed, but for now we just return all paginated
       const total = await Product.countDocuments();
-      const products = await Product.find({}, '-_id -__v').skip(skip).limit(limit);
+      const products = await Product.find({}, '-_id -__v').sort({ createdAt: -1 }).skip(skip).limit(limit);
       
       // We wrap the response in a paginated object if page/limit are provided
       res.json({ products, total, page, totalPages: Math.ceil(total / limit) });
