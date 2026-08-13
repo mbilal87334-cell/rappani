@@ -361,6 +361,7 @@ async function startServer() {
     expiresAt: number;
     attempts: number;
     phone: string;
+    username: string;
   }
   const adminOtpStore = new Map<string, AdminOtpData>();
 
@@ -392,7 +393,7 @@ async function startServer() {
           expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes expiry
           attempts: 0,
           phone: adminUser.phone,
-          adminId: adminUser._id.toString()
+          username: adminUser.username
         });
 
         // Send OTP via WhatsApp
@@ -451,7 +452,7 @@ async function startServer() {
       adminOtpStore.delete(otpToken);
 
       // Fetch the admin user to get their role and shopId
-      const adminUser = await AdminUser.findById(otpData.adminId);
+      const adminUser = await AdminUser.findOne({ username: otpData.username });
       if (!adminUser) {
         return res.status(404).json({ error: "Admin user not found" });
       }
@@ -784,10 +785,10 @@ async function startServer() {
 
   app.post("/api/products", verifyShopAdmin, async (req: any, res) => {
     try {
-      const { id, name, category, price, originalPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, isVisible, brand, sku, description, specifications, variants } = req.body;
+      const { id, name, category, price, discountPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, isVisible, brand, sku, description } = req.body;
       const visibleFlag = isVisible !== undefined ? isVisible : true;
       const shopId = req.user.role === 'shopadmin' ? req.user.shopId : (req.body.shopId || 'main-shop');
-      const newProduct = await Product.create({ id, shopId, name, category, price, originalPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, isVisible: visibleFlag, brand, sku, description, specifications, variants });
+      const newProduct = await Product.create({ id, shopId, name, category, price, discountPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, isVisible: visibleFlag, brand, sku, description });
       res.json(newProduct);
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });
@@ -834,8 +835,8 @@ async function startServer() {
         }
       }
 
-      const { name, category, price, originalPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, isVisible, brand, sku, description, specifications, variants } = req.body;
-      const updateData: any = { name, category, price, originalPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, brand, sku, description, specifications, variants };
+      const { name, category, price, discountPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, isVisible, brand, sku, description } = req.body;
+      const updateData: any = { name, category, price, discountPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, brand, sku, description };
       if (isVisible !== undefined) updateData.isVisible = isVisible;
       
       await Product.updateOne({ id }, updateData);
