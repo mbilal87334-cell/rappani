@@ -1638,10 +1638,25 @@ async function startServer() {
   });
 
   // --- Analytics Route ---
-  app.get("/api/analytics/summary", authenticateToken, async (req, res) => {
+  app.get("/api/analytics/summary", authenticateToken, async (req: any, res) => {
     try {
-      const totalOrders = await Order.countDocuments();
-      const orders = await Order.find({}, 'totalAmount createdAt items');
+      let query = {};
+      if (req.user.role === 'shopadmin') {
+        query = { shopIds: req.user.shopId };
+      }
+
+      let orders = await Order.find(query, 'totalAmount createdAt items').lean();
+      
+      if (req.user.role === 'shopadmin') {
+        // Filter items within orders to calculate accurate revenue for this shop
+        orders = orders.map((order: any) => {
+          const shopItems = order.items.filter((item: any) => item.shopId === req.user.shopId || (!item.shopId && req.user.shopId === 'main-shop'));
+          const shopTotal = shopItems.reduce((acc: number, item: any) => acc + (item.price * item.quantity), 0);
+          return { ...order, totalAmount: shopTotal };
+        });
+      }
+
+      const totalOrders = orders.length;
       const totalRevenue = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
       
       const today = new Date();
