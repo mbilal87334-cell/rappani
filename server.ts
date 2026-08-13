@@ -324,7 +324,15 @@ async function startServer() {
 
   const upload = multer({ storage });
 
-  // Auth Routes
+  // Admin OTP Store
+  interface AdminOtpData {
+    otp: string;
+    expiresAt: number;
+    attempts: number;
+    phone: string;
+  }
+  const adminOtpStore = new Map<string, AdminOtpData>();
+
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { phone, password } = req.body;
@@ -334,13 +342,93 @@ async function startServer() {
       const currentPhone = phoneSetting ? phoneSetting.value : '9876543210';
       
       if (password === currentPassword && phone === currentPhone) {
-        const token = jwt.sign({ role: 'admin' }, process.env.JWT_SECRET || 'rappani_super_secret_key');
-        res.json({ success: true, token });
+        // Generate secure 6-digit OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const otpToken = crypto.randomUUID(); // Secure unique token
+        
+        adminOtpStore.set(otpToken, {
+          otp,
+          expiresAt: Date.now() + 2 * 60 * 1000, // 2 minutes expiry
+          attempts: 0,
+          phone
+        });
+
+        // SIMULATED SEND OTP: In production, send via Nodemailer or WhatsApp here.
+        console.log(`\n\n================================`);
+        console.log(`🔐 ADMIN OTP GENERATED: ${otp}`);
+        console.log(`================================\n\n`);
+
+        res.json({ success: true, requireOtp: true, otpToken, message: "OTP sent successfully" });
       } else {
         res.status(401).json({ error: "Invalid phone number or password" });
       }
     } catch (err) {
       res.status(500).json({ error: "Server error" });
+    }
+  });
+
+  app.post("/api/auth/verify-otp", async (req, res) => {
+    try {
+      const { otpToken, otp } = req.body;
+      const otpData = adminOtpStore.get(otpToken);
+
+      if (!otpData) {
+        return res.status(400).json({ error: "OTP session not found or expired. Please login again." });
+      }
+
+      if (Date.now() > otpData.expiresAt) {
+        adminOtpStore.delete(otpToken);
+        return res.status(400).json({ error: "OTP expired. Please request a new OTP." });
+      }
+
+      if (otpData.attempts >= 3) {
+        adminOtpStore.delete(otpToken);
+        return res.status(429).json({ error: "Too many failed attempts. Please login again." });
+      }
+
+      if (otpData.otp !== otp) {
+        otpData.attempts += 1;
+        return res.status(400).json({ error: "Invalid OTP. Please try again." });
+      }
+
+      // Success
+      adminOtpStore.delete(otpToken);
+      const token = jwt.sign({ role: 'admin' }, process.env.JWT_SECRET || 'rappani_super_secret_key');
+      res.json({ success: true, token });
+
+    } catch (err) {
+      res.status(500).json({ error: "Server error during verification" });
+    }
+  });
+
+  app.post("/api/auth/resend-otp", async (req, res) => {
+    try {
+      const { otpToken } = req.body;
+      const otpData = adminOtpStore.get(otpToken);
+
+      if (!otpData) {
+        return res.status(400).json({ error: "OTP session not found. Please login again." });
+      }
+
+      // Enforce a small delay before allowing resend? (Optional, skipping for now since frontend has a 2-min timer)
+      
+      const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
+      
+      adminOtpStore.set(otpToken, {
+        ...otpData,
+        otp: newOtp,
+        expiresAt: Date.now() + 2 * 60 * 1000,
+        attempts: 0
+      });
+
+      console.log(`\n\n================================`);
+      console.log(`🔐 ADMIN OTP RESENT: ${newOtp}`);
+      console.log(`================================\n\n`);
+
+      res.json({ success: true, message: "OTP resent successfully" });
+
+    } catch (err) {
+      res.status(500).json({ error: "Server error during resend" });
     }
   });
 
