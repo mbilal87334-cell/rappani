@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Users, Store, Plus, Search, MapPin, Phone, Mail, ShieldAlert, Edit2, Trash2, Power, PowerOff, X, Map as MapIcon, Loader2, FileText, User } from 'lucide-react';
 import { toast } from 'react-hot-toast';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
@@ -23,6 +23,16 @@ function LocationPicker({ position, setPosition }: { position: [number, number] 
   return position ? <Marker position={position} /> : null;
 }
 
+function MapCenterUpdater({ position }: { position: [number, number] | null }) {
+  const map = useMap();
+  useEffect(() => {
+    if (position) {
+      map.setView(position, 15);
+    }
+  }, [position, map]);
+  return null;
+}
+
 export default function ShopsManager() {
   const [shops, setShops] = useState<any[]>([]);
   const [admins, setAdmins] = useState<any[]>([]);
@@ -35,6 +45,30 @@ export default function ShopsManager() {
   
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
+
+  const locateAddressOnMap = async () => {
+    if (!formData.shopAddress.trim()) {
+      toast.error("Please enter an address first");
+      return;
+    }
+    setIsLocating(true);
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(formData.shopAddress)}`);
+      const data = await res.json();
+      if (data && data.length > 0) {
+        const { lat, lon } = data[0];
+        setMapPosition([parseFloat(lat), parseFloat(lon)]);
+        toast.success("Location found on map!");
+      } else {
+        toast.error("Could not find location for this address on map");
+      }
+    } catch (err) {
+      toast.error("Error searching location");
+    } finally {
+      setIsLocating(false);
+    }
+  };
 
   const defaultLocation: [number, number] = [13.0827, 80.2707]; // Chennai default
 
@@ -379,7 +413,12 @@ export default function ShopsManager() {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-stone-700 mb-1">Shop Address</label>
-                        <input type="text" className="w-full px-4 py-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-black focus:border-transparent" placeholder="Full street address" value={formData.shopAddress} onChange={e => setFormData({...formData, shopAddress: e.target.value})} />
+                        <div className="flex gap-2">
+                          <input type="text" className="w-full px-4 py-2.5 border rounded-xl outline-none focus:ring-2 focus:ring-black focus:border-transparent" placeholder="Full street address" value={formData.shopAddress} onChange={e => setFormData({...formData, shopAddress: e.target.value})} />
+                          <button type="button" onClick={locateAddressOnMap} disabled={isLocating} className="px-4 py-2 bg-stone-100 border border-stone-200 text-stone-700 rounded-xl hover:bg-stone-200 transition-colors flex items-center justify-center disabled:opacity-50 min-w-[120px]">
+                            {isLocating ? <Loader2 size={18} className="animate-spin" /> : <span className="flex items-center gap-1.5"><Search size={16}/> Search</span>}
+                          </button>
+                        </div>
                       </div>
                       
                       <div className="pt-2">
@@ -388,6 +427,7 @@ export default function ShopsManager() {
                           <MapContainer center={mapPosition || defaultLocation} zoom={mapPosition ? 15 : 11} style={{ height: '100%', width: '100%' }}>
                             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                             <LocationPicker position={mapPosition} setPosition={setMapPosition} />
+                            <MapCenterUpdater position={mapPosition} />
                           </MapContainer>
                         </div>
                         <p className="text-xs text-stone-500 mt-2">Tap on the map to drop a pin for the shop location.</p>
