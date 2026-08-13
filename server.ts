@@ -729,13 +729,32 @@ async function startServer() {
   });
 
   // Admin Customer Management Routes
-  app.get("/api/customers", authenticateToken, async (req, res) => {
+  app.get("/api/customers", authenticateToken, async (req: any, res: any) => {
     try {
-      const customers = await User.find({}, '-__v').sort({ createdAt: -1 });
+      let query = {};
+      if (req.user.role === 'shopadmin') {
+         const distinctCustomerPhones = await Order.distinct('customerPhone', { shopIds: req.user.shopId });
+         query = { phone: { $in: distinctCustomerPhones } };
+      }
+      const customers = await User.find(query, '-__v').sort({ createdAt: -1 });
       // Calculate total spent for each customer
       const customersWithStats = await Promise.all(customers.map(async (customer) => {
-        const orders = await Order.find({ customerPhone: customer.phone });
-        const totalSpent = orders.reduce((sum, order) => sum + (order.totalAmount || 0), 0);
+        let orderQuery: any = { customerPhone: customer.phone };
+        if (req.user.role === 'shopadmin') {
+           orderQuery.shopIds = req.user.shopId;
+        }
+        const orders = await Order.find(orderQuery);
+        
+        const totalSpent = orders.reduce((sum, order) => {
+           let amount = 0;
+           if (req.user.role === 'shopadmin') {
+              const shopItems = order.items.filter((i:any) => i.shopId === req.user.shopId || (!i.shopId && req.user.shopId === 'main-shop'));
+              amount = shopItems.reduce((acc: number, item: any) => acc + (item.price * item.quantity), 0);
+           } else {
+              amount = order.totalAmount || 0;
+           }
+           return sum + amount;
+        }, 0);
         return {
           ...customer.toObject(),
           totalOrders: orders.length,
@@ -1093,12 +1112,15 @@ async function startServer() {
         { upsert: true }
       );
 
+      const shopIds = [...new Set(items.map((i: any) => i.product?.shopId || i.product?.storeId || 'main-shop'))];
+
       const newOrder = await Order.create({
         id: orderId,
         userId: userId || null,
         shippingAddress: shippingAddress || null,
         customerName,
         customerPhone,
+        shopIds,
         items,
         totalAmount,
         paymentMethod,
@@ -1240,18 +1262,23 @@ async function startServer() {
 
   app.get("/api/orders", authenticateToken, verifyShopAdmin, async (req: any, res) => {
     try {
-      let query = {};
-      if (req.user.role === 'shopadmin') {
-        query = { shopIds: req.user.shopId };
+      let query: any = {};
+      const targetShopId = req.user.role === 'shopadmin' ? req.user.shopId : (req.query.shopId && req.query.shopId !== 'all' ? req.query.shopId : null);
+      
+      if (targetShopId) {
+        query.shopIds = targetShopId;
       }
 
       let orders = await Order.find(query, '-_id -__v').sort({ createdAt: -1 }).lean();
 
-      if (req.user.role === 'shopadmin') {
-        // Filter the items within the orders so the shop admin only sees their products
+      if (targetShopId) {
+        // Filter the items within the orders so we only see products belonging to the target shop
         orders = orders.map(order => {
-          const shopItems = order.items.filter((item: any) => item.shopId === req.user.shopId || (!item.shopId && req.user.shopId === 'main-shop'));
-          const shopTotal = shopItems.reduce((acc: number, item: any) => acc + (item.price * item.quantity), 0);
+          const shopItems = order.items.filter((item: any) => {
+            const id = item.product?.shopId || item.product?.storeId || 'main-shop';
+            return id === targetShopId || (!id && targetShopId === 'main-shop');
+          });
+          const shopTotal = shopItems.reduce((acc: number, item: any) => acc + ((item.product?.price || 0) * item.quantity), 0);
           return {
             ...order,
             items: shopItems,
@@ -1352,16 +1379,17 @@ async function startServer() {
     }
   });
 
-  app.get("/api/coupons", authenticateToken, async (req, res) => {
+  app.get("/api/coupons", authenticateToken, async (req: any, res: any) => {
     try {
-      const coupons = await Coupon.find({}).sort({ createdAt: -1 });
+      const query = req.user.role === 'shopadmin' ? { shopId: req.user.shopId } : {};
+      const coupons = await Coupon.find(query).sort({ createdAt: -1 });
       res.json(coupons);
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });
     }
   });
 
-  app.post("/api/coupons", authenticateToken, async (req, res) => {
+  app.post("/api/coupons", authenticateToken, async (req: any, res: any) => {
     try {
       const { 
         code, 
@@ -1375,8 +1403,11 @@ async function startServer() {
         showToCustomers
       } = req.body;
       
+      const shopId = req.user.role === 'shopadmin' ? req.user.shopId : (req.body.shopId || null);
+      
       const newCoupon = await Coupon.create({ 
         code: code.toUpperCase(), 
+        shopId,
         discountPercent, 
         maxUses: maxUses || 100,
         offerTitle: offerTitle || '',
@@ -1462,8 +1493,14 @@ async function startServer() {
     }
   });
 
-  app.delete("/api/coupons/:id", authenticateToken, async (req, res) => {
+  app.delete("/api/coupons/:id", authenticateToken, async (req: any, res: any) => {
     try {
+      const coupon = await Coupon.findById(req.params.id);
+      if (!coupon) return res.status(404).json({ success: false, error: "Coupon not found" });
+      
+      if (req.user.role === 'shopadmin' && coupon.shopId !== req.user.shopId) {
+        return res.status(403).json({ success: false, error: "Access denied." });
+      }
       await Coupon.findByIdAndDelete(req.params.id);
       res.json({ success: true });
     } catch (err) {
@@ -1505,9 +1542,13 @@ async function startServer() {
   });
 
   // --- Admin Review Routes ---
-  app.get("/api/admin/reviews", authenticateToken, async (req, res) => {
+  app.get("/api/admin/reviews", authenticateToken, async (req: any, res: any) => {
     try {
-      const products = await Product.find({ 'reviews.0': { $exists: true } }, 'id name image reviews');
+      const query: any = { 'reviews.0': { $exists: true } };
+      if (req.user.role === 'shopadmin') {
+         query.shopId = req.user.shopId;
+      }
+      const products = await Product.find(query, 'id name image reviews');
       let allReviews: any[] = [];
       products.forEach(p => {
         p.reviews.forEach(r => {
@@ -1532,9 +1573,16 @@ async function startServer() {
     }
   });
 
-  app.delete("/api/admin/reviews/:productId/:reviewId", authenticateToken, async (req, res) => {
+  app.delete("/api/admin/reviews/:productId/:reviewId", authenticateToken, async (req: any, res: any) => {
     try {
       const { productId, reviewId } = req.params;
+      const product = await Product.findOne({ id: productId });
+      if (!product) return res.status(404).json({ success: false, error: "Product not found" });
+      
+      if (req.user.role === 'shopadmin' && product.shopId !== req.user.shopId) {
+         return res.status(403).json({ success: false, error: "Access denied" });
+      }
+
       await Product.updateOne(
         { id: productId },
         { $pull: { reviews: { _id: reviewId } } as any }
@@ -1782,8 +1830,11 @@ async function startServer() {
       if (req.user.role === 'shopadmin') {
         // Filter items within orders to calculate accurate revenue for this shop
         orders = orders.map((order: any) => {
-          const shopItems = order.items.filter((item: any) => item.shopId === req.user.shopId || (!item.shopId && req.user.shopId === 'main-shop'));
-          const shopTotal = shopItems.reduce((acc: number, item: any) => acc + (item.price * item.quantity), 0);
+          const shopItems = order.items.filter((item: any) => {
+            const id = item.product?.shopId || item.product?.storeId || 'main-shop';
+            return id === req.user.shopId || (!id && req.user.shopId === 'main-shop');
+          });
+          const shopTotal = shopItems.reduce((acc: number, item: any) => acc + ((item.product?.price || 0) * item.quantity), 0);
           return { ...order, totalAmount: shopTotal };
         });
       }

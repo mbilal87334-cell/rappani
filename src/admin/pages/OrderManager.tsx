@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Download, Trash2, Filter, PackageOpen, X, MapPin, Search, Phone, MessageCircle } from 'lucide-react';
+import { Download, Trash2, Filter, PackageOpen, X, MapPin, Search, Phone, MessageCircle, Eye } from 'lucide-react';
 import { Order } from '../../App';
 import { fetchWithAuth } from '../../api';
 import { MapContainer, TileLayer, Marker } from 'react-leaflet';
@@ -18,6 +18,7 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
   const [statusFilter, setStatusFilter] = useState('All Status');
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMap, setViewMap] = useState<{lat: number, lng: number} | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const filteredOrders = orders.filter(order => {
     const matchesStatus = statusFilter === 'All Status' ||
@@ -366,6 +367,13 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                     </td>
                     <td className="px-5 py-4 text-right">
                       <button 
+                        onClick={() => setSelectedOrder(order)}
+                        className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-md transition-colors inline-flex items-center justify-center mr-2"
+                        title="View Details"
+                      >
+                        <Eye size={16} />
+                      </button>
+                      <button 
                         onClick={() => {
                           if (window.confirm('Are you sure you want to delete this order?')) {
                             fetchWithAuth(`/api/orders/${order.id}`, { method: 'DELETE' })
@@ -397,6 +405,42 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                 <Marker position={[viewMap.lat, viewMap.lng]} icon={customIcon} />
               </MapContainer>
+            </div>
+          </div>
+        </div>
+      )}
+      {selectedOrder && (
+        <div className="fixed inset-0 z-[100] bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex justify-between items-center p-4 border-b sticky top-0 bg-white z-10">
+              <h3 className="font-bold text-lg text-gray-900">Order Details - #{selectedOrder.id?.slice(0, 8).toUpperCase()}</h3>
+              <button onClick={() => setSelectedOrder(null)} className="p-2 hover:bg-neutral-100 rounded-full transition"><X className="w-5 h-5"/></button>
+            </div>
+            <div className="p-6">
+              <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Items Ordered</h4>
+              <div className="space-y-4">
+                {selectedOrder.items && selectedOrder.items.length > 0 ? (
+                  selectedOrder.items.map((item: any, idx: number) => (
+                    <div key={idx} className="flex items-center gap-4 p-4 border border-gray-100 rounded-xl bg-gray-50">
+                      <img src={item.image || 'https://via.placeholder.com/80'} alt={item.name} className="w-20 h-20 object-cover rounded-lg shadow-sm bg-white" />
+                      <div className="flex-1">
+                        <h5 className="font-semibold text-gray-900">{item.name}</h5>
+                        <p className="text-sm text-gray-500 mt-1">Qty: {item.quantity}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-gray-900">₹{((item.price || 0) * (item.quantity || 1)).toLocaleString()}</p>
+                        <p className="text-xs text-gray-400 mt-1">₹{item.price || 0} each</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-500 text-sm italic">No items found for this order.</p>
+                )}
+              </div>
+              <div className="mt-6 pt-6 border-t border-gray-100 flex justify-between items-center">
+                <span className="font-medium text-gray-600">Order Total Amount:</span>
+                <span className="text-xl font-bold text-gray-900">₹{selectedOrder.totalAmount?.toLocaleString()}</span>
+              </div>
             </div>
           </div>
         </div>
