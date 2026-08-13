@@ -23,6 +23,7 @@ import NotificationHub from './pages/NotificationHub';
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import WhatsAppManager from './pages/WhatsAppManager';
 import ShopsManager from './pages/ShopsManager';
+import CategoryManager from './pages/CategoryManager';
 
 export default function AdminApp({ 
   orders, products, setProducts, settings, setSettings, apiCategories, setApiCategories 
@@ -58,7 +59,8 @@ export default function AdminApp({
         
         {/* Fully Implemented Premium UIs */}
         <Route path="/shops" element={<ShopsManager />} />
-        <Route path="/categories" element={<CategoriesManager apiCategories={apiCategories} setApiCategories={setApiCategories} products={products} />} />
+        <Route path="/categories" element={<CategoryManager products={products} />} />
+        <Route path="/legacy-categories" element={<CategoriesManager apiCategories={apiCategories} setApiCategories={setApiCategories} products={products} />} />
         <Route path="/customers" element={<CustomersList orders={orders} />} />
         <Route path="/revenue" element={<RevenueDashboard orders={orders} />} />
         <Route path="/transactions" element={<TransactionsLedger orders={orders} />} />

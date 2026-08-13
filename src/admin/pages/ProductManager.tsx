@@ -8,6 +8,10 @@ export default function ProductManager({ products, setProducts, apiCategories = 
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('All');
   
+  const [userRole, setUserRole] = useState('shopadmin');
+  const [shops, setShops] = useState<any[]>([]);
+  const [selectedShopId, setSelectedShopId] = useState<string>('all');
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState<Partial<Product>>({
@@ -25,12 +29,40 @@ export default function ProductManager({ products, setProducts, apiCategories = 
   const csvImagesInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   
+  const [apiSubcategories, setApiSubcategories] = useState<any[]>([]);
+
+  React.useEffect(() => {
+    const token = localStorage.getItem('adminToken');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        setUserRole(payload.role || 'shopadmin');
+      } catch (e) {}
+
+      fetch('/api/subcategories', { headers: { Authorization: `Bearer ${token}` } })
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) setApiSubcategories(data);
+        })
+        .catch(console.error);
+
+      fetch('/api/admin/shops', { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.json())
+        .then(data => {
+          if (Array.isArray(data)) setShops(data);
+          else if (data.shops && Array.isArray(data.shops)) setShops(data.shops);
+        })
+        .catch(console.error);
+    }
+  }, []);
+
   const tabs = ['All', ...apiCategories.map(c => c.name)];
 
   const filteredProducts = products.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTab = activeTab === 'All' || p.category === activeTab;
-    return matchesSearch && matchesTab;
+    const matchesShop = userRole !== 'superadmin' || selectedShopId === 'all' || (p.shopId || 'main-shop') === selectedShopId;
+    return matchesSearch && matchesTab && matchesShop;
   });
 
   const openModal = (product?: Product, isCopy = false) => {
@@ -45,7 +77,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
     } else {
       setEditingProduct(null);
       setFormData({ 
-        id: `prod_${Date.now()}`, name: '', category: apiCategories[0]?.name || 'Stationery', brand: '', sku: '', description: '',
+        id: `prod_${Date.now()}`, name: '', category: apiCategories[0]?.name || 'Stationery', categoryId: apiCategories[0]?.id || '', brand: '', sku: '', description: '',
         price: 0, stock: 50, image: '', images: [], isVisible: true, isFeatured: false 
       });
     }
@@ -71,7 +103,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
         toast.success("Product created successfully");
         // Reset form for the next product to be added
         setFormData({ 
-          id: `prod_${Date.now()}`, name: '', category: formData.category || apiCategories[0]?.name || 'Stationery', brand: '', sku: '', description: '',
+          id: `prod_${Date.now()}`, name: '', category: formData.category || apiCategories[0]?.name || 'Stationery', categoryId: formData.categoryId || apiCategories[0]?.id || '', subcategory: '', subcategoryId: '', brand: '', sku: '', description: '',
           price: 0, deliveryCharge: 30, stock: 50, image: '', images: [], isVisible: true, isFeatured: false 
         });
       }
@@ -678,6 +710,19 @@ export default function ProductManager({ products, setProducts, apiCategories = 
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Products</h1>
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          {userRole === 'superadmin' && (
+            <select 
+              value={selectedShopId}
+              onChange={e => setSelectedShopId(e.target.value)}
+              className="px-4 py-2 bg-white border border-gray-200 rounded-md text-sm font-medium w-full sm:w-auto focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none shadow-sm transition-all text-gray-700 cursor-pointer"
+            >
+              <option value="all">All Shops (Combined)</option>
+              <option value="main-shop">Main Shop</option>
+              {shops.filter(s => s.id !== 'main-shop').map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          )}
           <div className="relative w-full sm:w-auto flex-1 sm:flex-none">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input 
@@ -848,15 +893,49 @@ export default function ProductManager({ products, setProducts, apiCategories = 
                       className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-gray-900"
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                    <select
-                      required value={formData.category || ''}
-                      onChange={e => setFormData({...formData, category: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-gray-900"
-                    >
-                      {apiCategories.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                    </select>
+                  <div className="flex gap-4">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                      <select
+                        required value={formData.categoryId || formData.category || ''}
+                        onChange={e => {
+                          const catId = e.target.value;
+                          const cat = apiCategories.find(c => c.id === catId || c.name === catId);
+                          setFormData({
+                            ...formData, 
+                            categoryId: cat ? cat.id : catId,
+                            category: cat ? cat.name : catId,
+                            subcategoryId: '',
+                            subcategory: ''
+                          });
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-gray-900"
+                      >
+                        <option value="">Select a category</option>
+                        {apiCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Subcategory</label>
+                      <select
+                        value={formData.subcategoryId || formData.subcategory || ''}
+                        onChange={e => {
+                          const subId = e.target.value;
+                          const sub = apiSubcategories.find(s => s.id === subId || s.name === subId);
+                          setFormData({
+                            ...formData, 
+                            subcategoryId: sub ? sub.id : subId,
+                            subcategory: sub ? sub.name : subId
+                          });
+                        }}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-gray-900"
+                      >
+                        <option value="">None</option>
+                        {apiSubcategories.filter(s => s.categoryId === formData.categoryId || s.categoryId === formData.category).map(s => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                   <div className="flex gap-4">
                     <div className="flex-1">

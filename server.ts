@@ -92,7 +92,9 @@ const productSchema = new mongoose.Schema({
   price: { type: Number, required: true },
   discountPrice: { type: Number, required: false },
   category: { type: String, required: true },
+  categoryId: { type: String, required: false },
   subcategory: { type: String, required: false },
+  subcategoryId: { type: String, required: false },
   sku: { type: String, required: false },
   brand: { type: String, required: false },
   size: { type: String, required: false },
@@ -121,11 +123,29 @@ const Product = mongoose.model("Product", productSchema);
 
 const categorySchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
+  storeId: { type: String, required: true, default: 'main-shop' },
   name: { type: String, required: true },
-  icon: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now }
-});
+  slug: { type: String, required: false },
+  description: { type: String, required: false },
+  icon: { type: String, required: false },
+  image: { type: String, required: false },
+  status: { type: String, default: 'active' },
+}, { timestamps: true });
+categorySchema.index({ storeId: 1, name: 1 }, { unique: true });
 const Category = mongoose.model("Category", categorySchema);
+
+const subcategorySchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  storeId: { type: String, required: true },
+  categoryId: { type: String, required: true },
+  name: { type: String, required: true },
+  slug: { type: String, required: false },
+  description: { type: String, required: false },
+  image: { type: String, required: false },
+  status: { type: String, default: 'active' },
+}, { timestamps: true });
+subcategorySchema.index({ categoryId: 1, name: 1 }, { unique: true });
+const Subcategory = mongoose.model("Subcategory", subcategorySchema);
 
 const settingSchema = new mongoose.Schema({
   key: { type: String, required: true, unique: true },
@@ -260,7 +280,7 @@ async function startServer() {
       res.status(500).json({ error: err.message });
     }
   });
-  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 5001;
   const uploadsDir = path.join(ROOT_DIR, "public", "uploads");
 
   app.use(cors());
@@ -793,10 +813,10 @@ async function startServer() {
 
   app.post("/api/products", authenticateToken, verifyShopAdmin, async (req: any, res) => {
     try {
-      const { id, name, category, price, discountPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, isVisible, brand, sku, description } = req.body;
+      const { id, name, category, categoryId, subcategory, subcategoryId, price, discountPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, isVisible, brand, sku, description } = req.body;
       const visibleFlag = isVisible !== undefined ? isVisible : true;
       const shopId = req.user.role === 'shopadmin' ? req.user.shopId : (req.body.shopId || 'main-shop');
-      const newProduct = await Product.create({ id, shopId, name, category, price, discountPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, isVisible: visibleFlag, brand, sku, description });
+      const newProduct = await Product.create({ id, shopId, name, category, categoryId, subcategory, subcategoryId, price, discountPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, isVisible: visibleFlag, brand, sku, description });
       res.json(newProduct);
     } catch (err: any) {
       console.error("Product create error:", err);
@@ -844,8 +864,8 @@ async function startServer() {
         }
       }
 
-      const { name, category, price, discountPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, isVisible, brand, sku, description } = req.body;
-      const updateData: any = { name, category, price, discountPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, brand, sku, description };
+      const { name, category, categoryId, subcategory, subcategoryId, price, discountPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, isVisible, brand, sku, description } = req.body;
+      const updateData: any = { name, category, categoryId, subcategory, subcategoryId, price, discountPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, brand, sku, description };
       if (isVisible !== undefined) updateData.isVisible = isVisible;
       
       await Product.updateOne({ id }, updateData);
@@ -859,46 +879,155 @@ async function startServer() {
   // --- Category Routes ---
   app.get("/api/categories", async (req, res) => {
     try {
-      const categories = await Category.find({});
+      const query: any = {};
+      // If storeId is provided in query, filter by it. (Super Admin might use this, or public UI)
+      if (req.query.storeId) {
+        query.storeId = req.query.storeId;
+      }
+      const categories = await Category.find(query);
       res.json(categories);
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });
     }
   });
 
-  app.post("/api/categories", authenticateToken, async (req, res) => {
+  app.post("/api/categories", authenticateToken, async (req: any, res) => {
     try {
-      const { id, name, icon } = req.body;
-      await Category.create({ id, name, icon });
+      const { id, name, icon, image, description, slug, status, storeId } = req.body;
+      const targetStoreId = req.user.role === 'shopadmin' ? req.user.shopId : (storeId || 'main-shop');
+      await Category.create({ id, name, icon, image, description, slug, status, storeId: targetStoreId });
       res.json({ success: true });
-    } catch (err) {
+    } catch (err: any) {
+      if (err.code === 11000) {
+        return res.status(400).json({ success: false, error: "Category name already exists in this store." });
+      }
       res.status(500).json({ success: false, error: "Server error" });
     }
   });
 
-  app.put("/api/categories/:id", authenticateToken, async (req, res) => {
+  app.put("/api/categories/:id", authenticateToken, async (req: any, res) => {
     try {
       const { id } = req.params;
-      const { name, icon } = req.body;
-      await Category.updateOne({ id }, { name, icon });
+      const { name, icon, image, description, slug, status } = req.body;
+      
+      const category = await Category.findOne({ id });
+      if (!category) return res.status(404).json({ success: false, error: "Category not found" });
+      
+      if (req.user.role === 'shopadmin' && category.storeId !== req.user.shopId) {
+        return res.status(403).json({ success: false, error: "Access denied" });
+      }
+
+      await Category.updateOne({ id }, { name, icon, image, description, slug, status });
       res.json({ success: true });
-    } catch (err) {
+    } catch (err: any) {
+      if (err.code === 11000) {
+        return res.status(400).json({ success: false, error: "Category name already exists in this store." });
+      }
       res.status(500).json({ success: false, error: "Server error" });
     }
   });
 
-  app.delete("/api/categories/:id", authenticateToken, async (req, res) => {
+  app.delete("/api/categories/:id", authenticateToken, async (req: any, res) => {
     try {
       const { id } = req.params;
       const category = await Category.findOne({ id });
       if (!category) return res.status(404).json({ success: false, error: "Category not found" });
 
-      const productCount = await Product.countDocuments({ category: category.name });
-      if (productCount > 0) {
-        return res.status(400).json({ success: false, error: `Cannot delete category with ${productCount} assigned products.` });
+      if (req.user.role === 'shopadmin' && category.storeId !== req.user.shopId) {
+        return res.status(403).json({ success: false, error: "Access denied" });
+      }
+
+      const productCount = await Product.countDocuments({ categoryId: id });
+      const productCountByName = await Product.countDocuments({ category: category.name, shopId: category.storeId });
+      if (productCount > 0 || productCountByName > 0) {
+        return res.status(400).json({ success: false, error: `Cannot delete category. There are products assigned to it.` });
       }
 
       await Category.deleteOne({ id });
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  // --- Subcategory Routes ---
+  app.get("/api/subcategories", async (req, res) => {
+    try {
+      const query: any = {};
+      if (req.query.storeId) query.storeId = req.query.storeId;
+      if (req.query.categoryId) query.categoryId = req.query.categoryId;
+      const subcategories = await Subcategory.find(query);
+      res.json(subcategories);
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  app.post("/api/subcategories", authenticateToken, async (req: any, res) => {
+    try {
+      const { id, categoryId, name, image, description, slug, status, storeId } = req.body;
+      const targetStoreId = req.user.role === 'shopadmin' ? req.user.shopId : (storeId || 'main-shop');
+      
+      const category = await Category.findOne({ id: categoryId });
+      if (!category || category.storeId !== targetStoreId) {
+        return res.status(400).json({ success: false, error: "Invalid category or store mismatch." });
+      }
+
+      await Subcategory.create({ id, categoryId, name, image, description, slug, status, storeId: targetStoreId });
+      res.json({ success: true });
+    } catch (err: any) {
+      if (err.code === 11000) {
+        return res.status(400).json({ success: false, error: "Subcategory name already exists in this category." });
+      }
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  app.put("/api/subcategories/:id", authenticateToken, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { categoryId, name, image, description, slug, status } = req.body;
+      
+      const subcategory = await Subcategory.findOne({ id });
+      if (!subcategory) return res.status(404).json({ success: false, error: "Subcategory not found" });
+      
+      if (req.user.role === 'shopadmin' && subcategory.storeId !== req.user.shopId) {
+        return res.status(403).json({ success: false, error: "Access denied" });
+      }
+
+      if (categoryId) {
+        const category = await Category.findOne({ id: categoryId });
+        if (!category || category.storeId !== subcategory.storeId) {
+          return res.status(400).json({ success: false, error: "Invalid category or store mismatch." });
+        }
+      }
+
+      await Subcategory.updateOne({ id }, { categoryId, name, image, description, slug, status });
+      res.json({ success: true });
+    } catch (err: any) {
+      if (err.code === 11000) {
+        return res.status(400).json({ success: false, error: "Subcategory name already exists in this category." });
+      }
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  app.delete("/api/subcategories/:id", authenticateToken, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const subcategory = await Subcategory.findOne({ id });
+      if (!subcategory) return res.status(404).json({ success: false, error: "Subcategory not found" });
+
+      if (req.user.role === 'shopadmin' && subcategory.storeId !== req.user.shopId) {
+        return res.status(403).json({ success: false, error: "Access denied" });
+      }
+
+      const productCount = await Product.countDocuments({ subcategoryId: id });
+      if (productCount > 0) {
+        return res.status(400).json({ success: false, error: `Cannot delete subcategory. There are products assigned to it.` });
+      }
+
+      await Subcategory.deleteOne({ id });
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });

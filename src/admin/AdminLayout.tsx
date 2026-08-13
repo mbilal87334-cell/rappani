@@ -20,7 +20,8 @@ import {
   X,
   Search,
   LogOut,
-  MessageSquare
+  MessageSquare,
+  Layers
 } from 'lucide-react';
 
 const ALL_MENU_ITEMS = [
@@ -28,7 +29,7 @@ const ALL_MENU_ITEMS = [
   { path: '/admin/shops', icon: Users, label: 'Shops & Admins', roles: ['superadmin'] },
   { path: '/admin/orders', icon: ShoppingCart, label: 'Orders', roles: ['superadmin', 'shopadmin'] },
   { path: '/admin/products', icon: Package, label: 'Products', roles: ['superadmin', 'shopadmin'] },
-  { path: '/admin/categories', icon: Tags, label: 'Categories', roles: ['superadmin'] },
+  { path: '/admin/categories', icon: Tags, label: 'Categories', roles: ['superadmin', 'shopadmin'] },
   { path: '/admin/customers', icon: Users, label: 'Customers', roles: ['superadmin', 'shopadmin'] },
   { path: '/admin/revenue', icon: DollarSign, label: 'Revenue', roles: ['superadmin', 'shopadmin'] },
   { path: '/admin/transactions', icon: CreditCard, label: 'Transactions', roles: ['superadmin', 'shopadmin'] },
