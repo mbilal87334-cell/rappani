@@ -813,6 +813,17 @@ async function startServer() {
     }
   });
 
+  // Public route to fetch shop locations and details for checkout
+  app.get("/api/public/shops", async (req, res) => {
+    try {
+      // Only fetch active shops and exclude sensitive fields
+      const shops = await Shop.find({ status: 'active' }, 'id name address latitude longitude logo').lean();
+      res.json(shops);
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
   app.get("/api/products", async (req, res) => {
     try {
       const page = parseInt(req.query.page as string) || 1;

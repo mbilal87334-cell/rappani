@@ -159,6 +159,12 @@ export async function saveProduct(product: Product, isEditing: boolean) {
   return res.json();
 }
 
+export async function fetchPublicShopsApi() {
+  const res = await fetch(`${API_BASE}/public/shops`);
+  if (!res.ok) throw new Error("Failed to fetch public shops");
+  return res.json();
+}
+
 export async function fetchCategoriesApi() {
   const res = await fetch(`${API_BASE}/categories`);
   if (!res.ok) throw new Error("Failed to fetch categories");
@@ -396,7 +402,7 @@ function getDistanceInKm(lat1: number, lon1: number, lat2: number, lon2: number)
 }
 
 // --- Visitor Panel ---
-function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore, loadMoreProducts, apiCategories, setOrders }: { products: Product[], settings: Record<string, string>, setProducts: React.Dispatch<React.SetStateAction<Product[]>>, hasMore?: boolean, isLoadingMore?: boolean, loadMoreProducts?: () => void, apiCategories: any[], setOrders: React.Dispatch<React.SetStateAction<any[]>> }) {
+function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore, loadMoreProducts, apiCategories, setOrders, publicShops = [] }: { products: Product[], settings: Record<string, string>, setProducts: React.Dispatch<React.SetStateAction<Product[]>>, hasMore?: boolean, isLoadingMore?: boolean, loadMoreProducts?: () => void, apiCategories: any[], setOrders: React.Dispatch<React.SetStateAction<any[]>>, publicShops?: any[] }) {
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem('rappani_cart');
@@ -2196,18 +2202,34 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                         </div>
                       </div>
 
-                      {/* Store Pickup Info Card */}
+                      {/* Store Pickup Info Cards (Dynamic based on cart items) */}
                       {deliveryMethod === 'pickup' && (
-                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
-                          <span className="text-2xl shrink-0">📍</span>
-                          <div>
-                            <p className="font-bold text-amber-800 text-sm">Rappani Store</p>
-                            <p className="text-xs text-amber-700 mt-1">Come pick up your order from our store. We'll WhatsApp you when it's ready!</p>
-                            <a href={`https://maps.google.com/?q=${STORE_LAT},${STORE_LON}`} target="_blank" rel="noreferrer"
-                              className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 hover:underline mt-2">
-                              <MapPin className="w-3 h-3" /> View Store on Map
-                            </a>
-                          </div>
+                        <div className="flex flex-col gap-3">
+                          {[...new Set(cart.map(item => item.product.shopId || (item.product as any).storeId || 'main-shop'))].map((shopId) => {
+                            const shop = publicShops?.find((s: any) => s.id === shopId) || {
+                              id: 'main-shop',
+                              name: 'Rappani Store',
+                              address: '21,B Kottikulam Road Rappani Bazar, Melapalayam, Tirunelveli-627005',
+                              latitude: STORE_LAT,
+                              longitude: STORE_LON
+                            };
+                            return (
+                              <div key={shopId} className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3 shadow-sm">
+                                <span className="text-2xl shrink-0">📍</span>
+                                <div className="flex-1">
+                                  <p className="font-bold text-amber-800 text-sm">{shop.name}</p>
+                                  {shop.address && <p className="text-xs text-amber-900 mt-1 whitespace-pre-wrap">{shop.address}</p>}
+                                  <p className="text-[11px] text-amber-700 mt-1.5 bg-amber-100/50 p-1.5 rounded-lg border border-amber-200/50">Come pick up your order from this store. We'll WhatsApp you when it's ready!</p>
+                                  {(shop.latitude && shop.longitude) ? (
+                                    <a href={`https://maps.google.com/?q=${shop.latitude},${shop.longitude}`} target="_blank" rel="noreferrer"
+                                      className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 hover:text-amber-800 hover:underline mt-2 bg-amber-100 px-2 py-1 rounded-md transition-colors">
+                                      <MapPin className="w-3.5 h-3.5" /> View Store on Map
+                                    </a>
+                                  ) : null}
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
 
@@ -3336,6 +3358,7 @@ export default function App() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [publicShops, setPublicShops] = useState<any[]>([]);
 
   const loadMoreProducts = async () => {
     if (!hasMore || isLoadingMore) return;
@@ -3373,6 +3396,7 @@ export default function App() {
           fetchOrders().then(data => setOrders(Array.isArray(data) ? data : [])).catch(console.error);
         }
         fetchCategoriesApi().then(data => setApiCategories(data)).catch(console.error);
+        fetchPublicShopsApi().then(data => setPublicShops(data)).catch(console.error);
       } catch (e) {
         console.error("Failed to load backend data", e);
       } finally {
@@ -3387,7 +3411,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<VisitorPanel products={products} settings={settings} setProducts={setProducts} hasMore={hasMore} isLoadingMore={isLoadingMore} loadMoreProducts={loadMoreProducts} apiCategories={apiCategories} setOrders={setOrders} />} />
+        <Route path="/" element={<VisitorPanel products={products} settings={settings} setProducts={setProducts} hasMore={hasMore} isLoadingMore={isLoadingMore} loadMoreProducts={loadMoreProducts} apiCategories={apiCategories} setOrders={setOrders} publicShops={publicShops} />} />
         <Route path="/admin/*" element={
           <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="w-8 h-8 border-4 border-gold-500 border-t-transparent rounded-full animate-spin"></div></div>}>
             <AdminApp orders={orders} products={products} setProducts={setProducts} apiCategories={apiCategories} setApiCategories={setApiCategories} settings={settings} setSettings={setSettings} />
