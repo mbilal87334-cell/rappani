@@ -353,7 +353,14 @@ async function startServer() {
           phone
         });
 
-        // SIMULATED SEND OTP: In production, send via Nodemailer or WhatsApp here.
+        // Send OTP via WhatsApp
+        const otpMessage = `*Rappani Admin Login*\n\nYour secure OTP is: *${otp}*\n\nThis OTP will expire in 2 minutes. Do not share this code with anyone.`;
+        try {
+          await sendWhatsAppMessage(currentPhone, otpMessage);
+        } catch (e) {
+          console.error("Failed to send WhatsApp OTP:", e);
+        }
+
         console.log(`\n\n================================`);
         console.log(`🔐 ADMIN OTP GENERATED: ${otp}`);
         console.log(`================================\n\n`);
@@ -410,8 +417,6 @@ async function startServer() {
         return res.status(400).json({ error: "OTP session not found. Please login again." });
       }
 
-      // Enforce a small delay before allowing resend? (Optional, skipping for now since frontend has a 2-min timer)
-      
       const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
       
       adminOtpStore.set(otpToken, {
@@ -420,6 +425,14 @@ async function startServer() {
         expiresAt: Date.now() + 2 * 60 * 1000,
         attempts: 0
       });
+
+      // Send new OTP via WhatsApp
+      const otpMessage = `*Rappani Admin Login*\n\nYour new secure OTP is: *${newOtp}*\n\nThis OTP will expire in 2 minutes. Do not share this code with anyone.`;
+      try {
+        await sendWhatsAppMessage(otpData.phone, otpMessage);
+      } catch (e) {
+        console.error("Failed to resend WhatsApp OTP:", e);
+      }
 
       console.log(`\n\n================================`);
       console.log(`🔐 ADMIN OTP RESENT: ${newOtp}`);
