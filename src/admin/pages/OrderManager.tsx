@@ -420,19 +420,22 @@ export default function OrderManager({ orders }: { orders: Order[] }) {
               <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Items Ordered</h4>
               <div className="space-y-4">
                 {selectedOrder.items && selectedOrder.items.length > 0 ? (
-                  selectedOrder.items.map((item: any, idx: number) => (
-                    <div key={idx} className="flex items-center gap-4 p-4 border border-gray-100 rounded-xl bg-gray-50">
-                      <img src={item.image || 'https://via.placeholder.com/80'} alt={item.name} className="w-20 h-20 object-cover rounded-lg shadow-sm bg-white" />
-                      <div className="flex-1">
-                        <h5 className="font-semibold text-gray-900">{item.name}</h5>
-                        <p className="text-sm text-gray-500 mt-1">Qty: {item.quantity}</p>
+                  selectedOrder.items.map((item: any, idx: number) => {
+                    const prod = item.product || item;
+                    return (
+                      <div key={idx} className="flex items-center gap-4 p-4 border border-gray-100 rounded-xl bg-gray-50">
+                        <img src={prod.image || 'https://via.placeholder.com/80'} alt={prod.name} className="w-20 h-20 object-cover rounded-lg shadow-sm bg-white" />
+                        <div className="flex-1">
+                          <h5 className="font-semibold text-gray-900">{prod.name}</h5>
+                          <p className="text-sm text-gray-500 mt-1">Qty: {item.quantity}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-gray-900">₹{((prod.price || 0) * (item.quantity || 1)).toLocaleString()}</p>
+                          <p className="text-xs text-gray-400 mt-1">₹{prod.price || 0} each</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-gray-900">₹{((item.price || 0) * (item.quantity || 1)).toLocaleString()}</p>
-                        <p className="text-xs text-gray-400 mt-1">₹{item.price || 0} each</p>
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 ) : (
                   <p className="text-gray-500 text-sm italic">No items found for this order.</p>
                 )}
