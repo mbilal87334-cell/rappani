@@ -350,8 +350,7 @@ async function startServer() {
     cloudinary: cloudinary,
     params: {
       folder: "rappani-store",
-      allowed_formats: ["jpg", "png", "jpeg", "webp"],
-      background_removal: "cloudinary_ai",
+      allowed_formats: ["jpg", "png", "jpeg", "webp"]
     } as any,
   });
 
