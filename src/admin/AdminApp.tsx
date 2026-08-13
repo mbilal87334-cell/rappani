@@ -22,6 +22,7 @@ import CouponManager from './pages/CouponManager';
 import NotificationHub from './pages/NotificationHub';
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import WhatsAppManager from './pages/WhatsAppManager';
+import ShopsManager from './pages/ShopsManager';
 
 export default function AdminApp({ 
   orders, products, setProducts, settings, setSettings, apiCategories, setApiCategories 
@@ -56,6 +57,7 @@ export default function AdminApp({
         <Route path="/orders" element={<OrderManager orders={orders} />} />
         
         {/* Fully Implemented Premium UIs */}
+        <Route path="/shops" element={<ShopsManager />} />
         <Route path="/categories" element={<CategoriesManager apiCategories={apiCategories} setApiCategories={setApiCategories} products={products} />} />
         <Route path="/customers" element={<CustomersList orders={orders} />} />
         <Route path="/revenue" element={<RevenueDashboard orders={orders} />} />
@@ -81,6 +83,7 @@ export default function AdminApp({
 
 function AdminLogin({ onLogin, actualPassword, actualPhone }: { onLogin: () => void, actualPassword: string, actualPhone: string }) {
   const [step, setStep] = useState<'login' | 'otp'>('login');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [otpToken, setOtpToken] = useState('');
@@ -109,10 +112,14 @@ function AdminLogin({ onLogin, actualPassword, actualPhone }: { onLogin: () => v
     setError('');
     setIsLoading(true);
     try {
+      // Pass the username to the new multi-admin auth endpoint.
+      // (The backend will lookup the user by username/phone/email)
+      const payload = { username, password };
+      
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: actualPhone, password })
+        body: JSON.stringify(payload)
       });
       
       const data = await res.json();
@@ -244,6 +251,17 @@ function AdminLogin({ onLogin, actualPassword, actualPhone }: { onLogin: () => v
             <p className="text-stone-500 text-sm mb-8">Please enter your credentials to access the premium dashboard.</p>
             
             <form onSubmit={handleLogin} className="space-y-4 text-left">
+              <div>
+                <label className="block text-sm font-bold text-stone-700 mb-1">Username / Phone</label>
+                <input 
+                  type="text"
+                  value={username}
+                  onChange={(e) => { setUsername(e.target.value); setError(''); }}
+                  className="w-full px-4 py-3 bg-stone-50 border border-stone-200 rounded-xl focus:ring-gold-500 focus:border-gold-500 outline-none transition-all"
+                  placeholder="Enter username or phone"
+                  disabled={isLoading}
+                />
+              </div>
               <div>
                 <label className="block text-sm font-bold text-stone-700 mb-1">Password</label>
                 <input 

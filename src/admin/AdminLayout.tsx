@@ -23,25 +23,41 @@ import {
   MessageSquare
 } from 'lucide-react';
 
-const MENU_ITEMS = [
-  { path: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/admin/orders', icon: ShoppingCart, label: 'Orders' },
-  { path: '/admin/products', icon: Package, label: 'Products' },
-  { path: '/admin/categories', icon: Tags, label: 'Categories' },
-  { path: '/admin/customers', icon: Users, label: 'Customers' },
-  { path: '/admin/revenue', icon: DollarSign, label: 'Revenue' },
-  { path: '/admin/transactions', icon: CreditCard, label: 'Transactions' },
-  { path: '/admin/whatsapp', icon: MessageSquare, label: 'WhatsApp Bot' },
-  { path: '/admin/settings', icon: Settings, label: 'Website Settings' },
-  { path: '/admin/coupons', icon: Ticket, label: 'Coupons' },
-  { path: '/admin/reviews', icon: Star, label: 'Reviews' },
-  { path: '/admin/notifications', icon: Bell, label: 'Notifications' },
-  { path: '/admin/reports', icon: FileText, label: 'Reports' },
-  { path: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
-  { path: '/admin/profile', icon: User, label: 'Profile' },
+const ALL_MENU_ITEMS = [
+  { path: '/admin', icon: LayoutDashboard, label: 'Dashboard', roles: ['superadmin', 'shopadmin'] },
+  { path: '/admin/shops', icon: Users, label: 'Shops & Admins', roles: ['superadmin'] },
+  { path: '/admin/orders', icon: ShoppingCart, label: 'Orders', roles: ['superadmin', 'shopadmin'] },
+  { path: '/admin/products', icon: Package, label: 'Products', roles: ['superadmin', 'shopadmin'] },
+  { path: '/admin/categories', icon: Tags, label: 'Categories', roles: ['superadmin'] },
+  { path: '/admin/customers', icon: Users, label: 'Customers', roles: ['superadmin', 'shopadmin'] },
+  { path: '/admin/revenue', icon: DollarSign, label: 'Revenue', roles: ['superadmin', 'shopadmin'] },
+  { path: '/admin/transactions', icon: CreditCard, label: 'Transactions', roles: ['superadmin', 'shopadmin'] },
+  { path: '/admin/whatsapp', icon: MessageSquare, label: 'WhatsApp Bot', roles: ['superadmin'] },
+  { path: '/admin/settings', icon: Settings, label: 'Website Settings', roles: ['superadmin'] },
+  { path: '/admin/coupons', icon: Ticket, label: 'Coupons', roles: ['superadmin'] },
+  { path: '/admin/reviews', icon: Star, label: 'Reviews', roles: ['superadmin'] },
+  { path: '/admin/notifications', icon: Bell, label: 'Notifications', roles: ['superadmin'] },
+  { path: '/admin/reports', icon: FileText, label: 'Reports', roles: ['superadmin', 'shopadmin'] },
+  { path: '/admin/analytics', icon: BarChart3, label: 'Analytics', roles: ['superadmin', 'shopadmin'] },
+  { path: '/admin/profile', icon: User, label: 'Profile', roles: ['superadmin', 'shopadmin'] },
 ];
 
 export default function AdminLayout({ setIsAuthenticated, children }: { setIsAuthenticated: (v: boolean) => void, children: React.ReactNode }) {
+  const [userRole, setUserRole] = useState('superadmin');
+  
+  useEffect(() => {
+    try {
+      const token = localStorage.getItem('adminToken');
+      if (token) {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        setUserRole(payload.role || 'superadmin');
+      }
+    } catch (e) {
+      console.error("Failed to parse token");
+    }
+  }, []);
+
+  const MENU_ITEMS = ALL_MENU_ITEMS.filter(item => item.roles.includes(userRole));
   const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' ? window.innerWidth < 1024 : false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => typeof window !== 'undefined' ? window.innerWidth >= 1024 : true);
   const location = useLocation();

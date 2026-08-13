@@ -56,17 +56,46 @@ let dbConnectionError = "";
 const otpStore = new Map<string, { otp: string, expiresAt: number }>();
 
 // Mongoose Models
-const productSchema = new mongoose.Schema({
+// Multi-Shop Schemas
+const shopSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   name: { type: String, required: true },
-  category: { type: String, required: true },
-  brand: { type: String, required: false },
-  sku: { type: String, required: false },
-  description: { type: String, required: false },
-  specifications: { type: Object, default: {} },
-  variants: { type: Array, default: [] },
+  description: { type: String, default: '' },
+  address: { type: String, default: '' },
+  logo: { type: String, default: '' },
+  status: { type: String, default: 'active' }, // active, suspended
+  assignedCategories: { type: [String], default: [] },
+  createdAt: { type: Date, default: Date.now }
+});
+const Shop = mongoose.model("Shop", shopSchema);
+
+const adminUserSchema = new mongoose.Schema({
+  username: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  email: { type: String, required: true },
+  phone: { type: String, required: true },
+  role: { type: String, required: true, default: 'shopadmin' }, // superadmin, shopadmin
+  shopId: { type: String, default: null }, // Null for superadmin
+  status: { type: String, default: 'active' }, // active, suspended
+  createdAt: { type: Date, default: Date.now }
+});
+const AdminUser = mongoose.model("AdminUser", adminUserSchema);
+
+// Existing Schemas with multi-shop additions
+const productSchema = new mongoose.Schema({
+  id: { type: String, required: true, unique: true },
+  shopId: { type: String, required: true, default: 'main-shop' },
+  name: { type: String, required: true },
+  description: { type: String, required: true },
   price: { type: Number, required: true },
-  originalPrice: { type: Number, required: false },
+  discountPrice: { type: Number, required: false },
+  category: { type: String, required: true },
+  subcategory: { type: String, required: false },
+  sku: { type: String, required: false },
+  brand: { type: String, required: false },
+  size: { type: String, required: false },
+  color: { type: String, required: false },
+  weight: { type: String, required: false },
   deliveryCharge: { type: Number, default: 30 },
   stock: { type: Number, required: false, default: 100 },
   lowStockThreshold: { type: Number, default: 10 },
@@ -104,6 +133,7 @@ const Setting = mongoose.model("Setting", settingSchema);
 
 const orderSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
+  shopIds: { type: [String], default: ['main-shop'] }, // Tracks which shops are involved
   userId: { type: String, required: false },
   customerName: { type: String, required: true },
   customerPhone: { type: String, required: true },
@@ -160,6 +190,7 @@ const User = mongoose.model("User", userSchema);
 
 const couponSchema = new mongoose.Schema({
   code: { type: String, required: true, unique: true },
+  shopId: { type: String, default: null }, // Global if null
   discountPercent: { type: Number, required: true },
   maxUses: { type: Number, default: 100 },
   usedCount: { type: Number, default: 0 },
@@ -335,13 +366,23 @@ async function startServer() {
 
   app.post("/api/auth/login", async (req, res) => {
     try {
-      const { phone, password } = req.body;
-      const passSetting = await Setting.findOne({ key: 'admin_password' });
-      const phoneSetting = await Setting.findOne({ key: 'admin_phone' });
-      const currentPassword = passSetting ? passSetting.value : 'rappani123';
-      const currentPhone = phoneSetting ? phoneSetting.value : '9876543210';
+      const { username, password, phone } = req.body;
+      const loginIdentifier = username || phone;
       
-      if (password === currentPassword && phone === currentPhone) {
+      // Look up admin by username, phone, or email
+      const adminUser = await AdminUser.findOne({
+        $or: [
+          { username: loginIdentifier },
+          { phone: loginIdentifier },
+          { email: loginIdentifier }
+        ]
+      });
+      
+      if (adminUser && adminUser.password === password) {
+        if (adminUser.status === 'suspended') {
+          return res.status(403).json({ error: "Your account is suspended." });
+        }
+        
         // Generate secure 6-digit OTP
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const otpToken = crypto.randomUUID(); // Secure unique token
@@ -350,14 +391,15 @@ async function startServer() {
           otp,
           expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes expiry
           attempts: 0,
-          phone
+          phone: adminUser.phone,
+          adminId: adminUser._id.toString()
         });
 
         // Send OTP via WhatsApp
         const otpMessage = `*Rappani Admin Login*\n\nYour secure OTP is: *${otp}*\n\nThis OTP will expire in 5 minutes. Do not share this code with anyone.`;
         let sent = false;
         try {
-          sent = await sendWhatsAppMessage(currentPhone, otpMessage);
+          sent = await sendWhatsAppMessage(adminUser.phone, otpMessage);
         } catch (e) {
           console.error("Failed to send WhatsApp OTP:", e);
         }
@@ -373,9 +415,10 @@ async function startServer() {
           message: sent ? "OTP sent successfully" : "OTP generated (WhatsApp pending)"
         });
       } else {
-        res.status(401).json({ error: "Invalid phone number or password" });
+        res.status(401).json({ error: "Invalid credentials" });
       }
     } catch (err) {
+      console.error("Login Error:", err);
       res.status(500).json({ error: "Server error" });
     }
   });
@@ -401,16 +444,33 @@ async function startServer() {
 
       if (otpData.otp !== otp) {
         otpData.attempts += 1;
-        return res.status(400).json({ error: "Invalid OTP. Please try again." });
+        return res.status(400).json({ error: `Invalid OTP. ${3 - otpData.attempts} attempts remaining.` });
       }
 
-      // Success
+      // Successful verification
       adminOtpStore.delete(otpToken);
-      const token = jwt.sign({ role: 'admin' }, process.env.JWT_SECRET || 'rappani_super_secret_key');
-      res.json({ success: true, token });
 
+      // Fetch the admin user to get their role and shopId
+      const adminUser = await AdminUser.findById(otpData.adminId);
+      if (!adminUser) {
+        return res.status(404).json({ error: "Admin user not found" });
+      }
+
+      const token = jwt.sign(
+        { 
+          phone: otpData.phone,
+          userId: adminUser._id,
+          role: adminUser.role,
+          shopId: adminUser.shopId
+        }, 
+        process.env.JWT_SECRET || 'rappani_super_secret_key', 
+        { expiresIn: "24h" }
+      );
+      
+      res.json({ success: true, token, role: adminUser.role, shopId: adminUser.shopId });
     } catch (err) {
-      res.status(500).json({ error: "Server error during verification" });
+      console.error("Verify OTP Error:", err);
+      res.status(500).json({ error: "Server error" });
     }
   });
 
@@ -605,6 +665,20 @@ async function startServer() {
     });
   };
 
+  const verifySuperAdmin = (req: any, res: any, next: any) => {
+    if (!req.user || req.user.role !== 'superadmin') {
+      return res.status(403).json({ error: "Access denied. Super Admin only." });
+    }
+    next();
+  };
+
+  const verifyShopAdmin = (req: any, res: any, next: any) => {
+    if (!req.user || (req.user.role !== 'superadmin' && req.user.role !== 'shopadmin')) {
+      return res.status(403).json({ error: "Access denied. Admin only." });
+    }
+    next();
+  };
+
   // User Profile Routes
   app.get("/api/user/me", authenticateToken, async (req: any, res) => {
     try {
@@ -681,9 +755,10 @@ async function startServer() {
   });
 
   // Admin-only: fetch ALL products without pagination limit
-  app.get("/api/products/all", authenticateToken, async (req, res) => {
+  app.get("/api/products/all", verifyShopAdmin, async (req: any, res) => {
     try {
-      const products = await Product.find({}, '-_id -__v').sort({ createdAt: -1 });
+      const query = req.user.role === 'shopadmin' ? { shopId: req.user.shopId } : {};
+      const products = await Product.find(query, '-_id -__v').sort({ createdAt: -1 });
       res.json({ products, total: products.length });
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });
@@ -707,26 +782,30 @@ async function startServer() {
     }
   });
 
-  app.post("/api/products", authenticateToken, async (req, res) => {
+  app.post("/api/products", verifyShopAdmin, async (req: any, res) => {
     try {
       const { id, name, category, price, originalPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, isVisible, brand, sku, description, specifications, variants } = req.body;
       const visibleFlag = isVisible !== undefined ? isVisible : true;
-      const newProduct = await Product.create({ id, name, category, price, originalPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, isVisible: visibleFlag, brand, sku, description, specifications, variants });
+      const shopId = req.user.role === 'shopadmin' ? req.user.shopId : (req.body.shopId || 'main-shop');
+      const newProduct = await Product.create({ id, shopId, name, category, price, originalPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, isVisible: visibleFlag, brand, sku, description, specifications, variants });
       res.json(newProduct);
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });
     }
   });
 
-  app.post("/api/products/bulk", authenticateToken, async (req, res) => {
+  app.post("/api/products/bulk", verifyShopAdmin, async (req: any, res) => {
     try {
       const products = req.body;
       if (!Array.isArray(products)) {
         return res.status(400).json({ success: false, error: "Invalid data format" });
       }
 
+      const shopId = req.user.role === 'shopadmin' ? req.user.shopId : 'main-shop';
+      const productsWithShopId = products.map(p => ({ ...p, shopId: req.user.role === 'shopadmin' ? shopId : (p.shopId || shopId) }));
+
       // Insert products into database
-      const inserted = await Product.insertMany(products);
+      const inserted = await Product.insertMany(productsWithShopId);
 
       // Auto-create missing categories
       const uniqueCategories = [...new Set(products.map(p => p.category).filter(Boolean))];
@@ -744,9 +823,17 @@ async function startServer() {
     }
   });
 
-  app.put("/api/products/:id", authenticateToken, async (req, res) => {
+  app.put("/api/products/:id", verifyShopAdmin, async (req: any, res) => {
     try {
       const { id } = req.params;
+      
+      if (req.user.role === 'shopadmin') {
+        const existing = await Product.findOne({ id });
+        if (existing && existing.shopId !== req.user.shopId) {
+          return res.status(403).json({ error: "Access denied" });
+        }
+      }
+
       const { name, category, price, originalPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, isVisible, brand, sku, description, specifications, variants } = req.body;
       const updateData: any = { name, category, price, originalPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, brand, sku, description, specifications, variants };
       if (isVisible !== undefined) updateData.isVisible = isVisible;
@@ -1012,18 +1099,45 @@ async function startServer() {
     }
   });
 
-  app.get("/api/orders", authenticateToken, async (req, res) => {
+  app.get("/api/orders", verifyShopAdmin, async (req: any, res) => {
     try {
-      const orders = await Order.find({}, '-_id -__v').sort({ createdAt: -1 });
+      let query = {};
+      if (req.user.role === 'shopadmin') {
+        query = { shopIds: req.user.shopId };
+      }
+
+      let orders = await Order.find(query, '-_id -__v').sort({ createdAt: -1 }).lean();
+
+      if (req.user.role === 'shopadmin') {
+        // Filter the items within the orders so the shop admin only sees their products
+        orders = orders.map(order => {
+          const shopItems = order.items.filter((item: any) => item.shopId === req.user.shopId || (!item.shopId && req.user.shopId === 'main-shop'));
+          const shopTotal = shopItems.reduce((acc: number, item: any) => acc + (item.price * item.quantity), 0);
+          return {
+            ...order,
+            items: shopItems,
+            totalAmount: shopTotal // Show partial total for their items
+          };
+        });
+      }
+
       res.json(orders);
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });
     }
   });
 
-  app.put("/api/orders/:id", authenticateToken, async (req, res) => {
+  app.put("/api/orders/:id", verifyShopAdmin, async (req: any, res) => {
     try {
       const { id } = req.params;
+      
+      if (req.user.role === 'shopadmin') {
+        const order = await Order.findOne({ id });
+        if (order && !order.shopIds.includes(req.user.shopId)) {
+          return res.status(403).json({ error: "Access denied" });
+        }
+      }
+
       const { status, trackingStatus } = req.body;
       const timelineEntry = status || trackingStatus;
 
@@ -1053,7 +1167,7 @@ async function startServer() {
     }
   });
  
-  app.delete("/api/orders/:id", authenticateToken, async (req, res) => {
+  app.delete("/api/orders/:id", verifySuperAdmin, async (req, res) => {
     try {
       const { id } = req.params;
       await Order.deleteOne({ id });
@@ -1063,7 +1177,7 @@ async function startServer() {
     }
   });
 
-  app.delete("/api/orders", authenticateToken, async (req, res) => {
+  app.delete("/api/orders", verifySuperAdmin, async (req, res) => {
     try {
       await Order.deleteMany({});
       res.json({ success: true, message: "All orders reset" });
@@ -1594,6 +1708,54 @@ async function startServer() {
     // Cloudinary returns the image URL in req.file.path
     res.json({ imageUrl: req.file.path });
   });
+
+  // --- Multi-Shop Admin Routes ---
+  app.post("/api/admin/shops", verifySuperAdmin, async (req, res) => {
+    try {
+      const { shopName, shopDescription, shopAddress, adminName, adminUsername, adminPassword, adminPhone, adminEmail, assignedCategories } = req.body;
+      
+      const shopId = `shop_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      
+      const newShop = await Shop.create({
+        id: shopId,
+        name: shopName,
+        description: shopDescription,
+        address: shopAddress,
+        assignedCategories: assignedCategories || []
+      });
+
+      const newAdmin = await AdminUser.create({
+        username: adminUsername,
+        password: adminPassword,
+        email: adminEmail,
+        phone: adminPhone,
+        role: 'shopadmin',
+        shopId: shopId
+      });
+
+      res.json({ success: true, shop: newShop, admin: newAdmin });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message || "Server error" });
+    }
+  });
+
+  app.get("/api/admin/shops", verifySuperAdmin, async (req, res) => {
+    try {
+      const shops = await Shop.find().sort({ createdAt: -1 });
+      res.json(shops);
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  app.get("/api/admin/admins", verifySuperAdmin, async (req, res) => {
+    try {
+      const admins = await AdminUser.find().select('-password').sort({ createdAt: -1 });
+      res.json(admins);
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
   // WhatsApp Webhook Verification (GET)
   app.get("/api/whatsapp-webhook", (req, res) => {
     const mode = req.query["hub.mode"];
@@ -1723,14 +1885,42 @@ async function seedInitialData() {
       if (count === 0) {
         console.log("Seeding initial products into MongoDB...");
         const defaultProducts = [
-          { id: '1', name: 'Premium Ruled Notebook', category: 'Stationary', price: 120, image: 'https://picsum.photos/seed/notebook/400/400' },
-          { id: '2', name: 'Color Pen Set (12 Pcs)', category: 'Stationary', price: 150, image: 'https://picsum.photos/seed/pens/400/400' },
-          { id: '3', name: 'Birthday Gift Box', category: 'Fancy', price: 450, image: 'https://picsum.photos/seed/giftbox/400/400' },
-          { id: '4', name: 'Cute Teddy Bear', category: 'Fancy', price: 600, image: 'https://picsum.photos/seed/teddy/400/400' },
+          { id: '1', shopId: 'main-shop', name: 'Premium Ruled Notebook', category: 'Stationary', price: 120, image: 'https://picsum.photos/seed/notebook/400/400' },
+          { id: '2', shopId: 'main-shop', name: 'Color Pen Set (12 Pcs)', category: 'Stationary', price: 150, image: 'https://picsum.photos/seed/pens/400/400' },
+          { id: '3', shopId: 'main-shop', name: 'Birthday Gift Box', category: 'Fancy', price: 450, image: 'https://picsum.photos/seed/giftbox/400/400' },
+          { id: '4', shopId: 'main-shop', name: 'Cute Teddy Bear', category: 'Fancy', price: 600, image: 'https://picsum.photos/seed/teddy/400/400' },
         ];
         await Product.insertMany(defaultProducts);
       }
       await Setting.create({ key: 'initial_seed', value: 'true' });
+    }
+
+    // MULTI-SHOP SEEDING
+    const mainShop = await Shop.findOne({ id: 'main-shop' });
+    if (!mainShop) {
+      console.log("Creating default Main Shop...");
+      await Shop.create({
+        id: 'main-shop',
+        name: 'Main Store',
+        description: 'The default main store',
+        status: 'active'
+      });
+    }
+
+    const superAdmin = await AdminUser.findOne({ role: 'superadmin' });
+    if (!superAdmin) {
+      console.log("Creating default Super Admin...");
+      const passSetting = await Setting.findOne({ key: 'admin_password' });
+      const phoneSetting = await Setting.findOne({ key: 'admin_phone' });
+      await AdminUser.create({
+        username: 'admin',
+        password: passSetting ? passSetting.value : 'rappani123',
+        email: 'admin@rappani.com',
+        phone: phoneSetting ? phoneSetting.value : '9876543210',
+        role: 'superadmin',
+        shopId: null,
+        status: 'active'
+      });
     }
 
     const passExists = await Setting.findOne({ key: 'admin_password' });
