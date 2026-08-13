@@ -661,6 +661,10 @@ async function startServer() {
 
     jwt.verify(token, process.env.JWT_SECRET || 'rappani_super_secret_key', (err: any, user: any) => {
       if (err) return res.sendStatus(403);
+      if (!user.role) {
+        user.role = 'superadmin';
+        user.shopId = null;
+      }
       req.user = user;
       next();
     });
