@@ -760,7 +760,7 @@ async function startServer() {
   });
 
   // Admin-only: fetch ALL products without pagination limit
-  app.get("/api/products/all", verifyShopAdmin, async (req: any, res) => {
+  app.get("/api/products/all", authenticateToken, verifyShopAdmin, async (req: any, res) => {
     try {
       const query = req.user.role === 'shopadmin' ? { shopId: req.user.shopId } : {};
       const products = await Product.find(query, '-_id -__v').sort({ createdAt: -1 });
@@ -787,7 +787,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/products", verifyShopAdmin, async (req: any, res) => {
+  app.post("/api/products", authenticateToken, verifyShopAdmin, async (req: any, res) => {
     try {
       const { id, name, category, price, discountPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, isVisible, brand, sku, description } = req.body;
       const visibleFlag = isVisible !== undefined ? isVisible : true;
@@ -799,7 +799,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/products/bulk", verifyShopAdmin, async (req: any, res) => {
+  app.post("/api/products/bulk", authenticateToken, verifyShopAdmin, async (req: any, res) => {
     try {
       const products = req.body;
       if (!Array.isArray(products)) {
@@ -828,7 +828,7 @@ async function startServer() {
     }
   });
 
-  app.put("/api/products/:id", verifyShopAdmin, async (req: any, res) => {
+  app.put("/api/products/:id", authenticateToken, verifyShopAdmin, async (req: any, res) => {
     try {
       const { id } = req.params;
       
@@ -1104,7 +1104,7 @@ async function startServer() {
     }
   });
 
-  app.get("/api/orders", verifyShopAdmin, async (req: any, res) => {
+  app.get("/api/orders", authenticateToken, verifyShopAdmin, async (req: any, res) => {
     try {
       let query = {};
       if (req.user.role === 'shopadmin') {
@@ -1132,7 +1132,7 @@ async function startServer() {
     }
   });
 
-  app.put("/api/orders/:id", verifyShopAdmin, async (req: any, res) => {
+  app.put("/api/orders/:id", authenticateToken, verifyShopAdmin, async (req: any, res) => {
     try {
       const { id } = req.params;
       
@@ -1172,7 +1172,7 @@ async function startServer() {
     }
   });
  
-  app.delete("/api/orders/:id", verifySuperAdmin, async (req, res) => {
+  app.delete("/api/orders/:id", authenticateToken, verifySuperAdmin, async (req, res) => {
     try {
       const { id } = req.params;
       await Order.deleteOne({ id });
@@ -1182,7 +1182,7 @@ async function startServer() {
     }
   });
 
-  app.delete("/api/orders", verifySuperAdmin, async (req, res) => {
+  app.delete("/api/orders", authenticateToken, verifySuperAdmin, async (req, res) => {
     try {
       await Order.deleteMany({});
       res.json({ success: true, message: "All orders reset" });
@@ -1715,7 +1715,7 @@ async function startServer() {
   });
 
   // --- Multi-Shop Admin Routes ---
-  app.post("/api/admin/shops", verifySuperAdmin, async (req, res) => {
+  app.post("/api/admin/shops", authenticateToken, verifySuperAdmin, async (req, res) => {
     try {
       const { shopName, shopDescription, shopAddress, adminName, adminUsername, adminPassword, adminPhone, adminEmail, assignedCategories } = req.body;
       
@@ -1744,7 +1744,7 @@ async function startServer() {
     }
   });
 
-  app.get("/api/admin/shops", verifySuperAdmin, async (req, res) => {
+  app.get("/api/admin/shops", authenticateToken, verifySuperAdmin, async (req, res) => {
     try {
       const shops = await Shop.find().sort({ createdAt: -1 });
       res.json(shops);
@@ -1753,7 +1753,7 @@ async function startServer() {
     }
   });
 
-  app.get("/api/admin/admins", verifySuperAdmin, async (req, res) => {
+  app.get("/api/admin/admins", authenticateToken, verifySuperAdmin, async (req, res) => {
     try {
       const admins = await AdminUser.find().select('-password').sort({ createdAt: -1 });
       res.json(admins);
