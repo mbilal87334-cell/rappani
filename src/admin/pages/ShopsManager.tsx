@@ -422,10 +422,39 @@ export default function ShopsManager() {
                       </div>
                       
                       <div className="pt-2">
-                        <label className="block text-sm font-medium text-stone-700 mb-2">Shop Location (Map)</label>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="block text-sm font-medium text-stone-700">Shop Location (Map)</label>
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              if (navigator.geolocation) {
+                                toast.loading("Getting live location...", { id: "geo" });
+                                navigator.geolocation.getCurrentPosition(
+                                  (pos) => {
+                                    setMapPosition([pos.coords.latitude, pos.coords.longitude]);
+                                    toast.success("Live location selected!", { id: "geo" });
+                                  },
+                                  (err) => {
+                                    toast.error("Failed to get location. Please allow location access.", { id: "geo" });
+                                  }
+                                );
+                              } else {
+                                toast.error("Geolocation is not supported by your browser");
+                              }
+                            }}
+                            className="text-xs flex items-center gap-1 text-gold-600 hover:text-gold-700 font-medium px-2 py-1 bg-gold-50 rounded-lg transition-colors border border-gold-200"
+                          >
+                            <MapPin size={14} /> Use Current Live Location
+                          </button>
+                        </div>
                         <div className="h-[200px] rounded-xl overflow-hidden border border-stone-300 relative z-0">
                           <MapContainer center={mapPosition || defaultLocation} zoom={mapPosition ? 15 : 11} style={{ height: '100%', width: '100%' }}>
-                            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                            <TileLayer 
+                              url="http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}" 
+                              subdomains={['mt0', 'mt1', 'mt2', 'mt3']}
+                              maxZoom={20}
+                              attribution="&copy; Google Maps"
+                            />
                             <LocationPicker position={mapPosition} setPosition={setMapPosition} />
                             <MapCenterUpdater position={mapPosition} />
                           </MapContainer>

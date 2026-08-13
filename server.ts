@@ -116,7 +116,7 @@ const productSchema = new mongoose.Schema({
     imageUrl: { type: String, required: false },
     createdAt: { type: Date, default: Date.now }
   }]
-});
+}, { timestamps: true });
 const Product = mongoose.model("Product", productSchema);
 
 const categorySchema = new mongoose.Schema({
