@@ -37,8 +37,18 @@ export default function ShopsManager() {
       const shopsData = await shopsRes.json();
       const adminsData = await adminsRes.json();
       
-      setShops(shopsData);
-      setAdmins(adminsData);
+      if (Array.isArray(shopsData)) {
+        setShops(shopsData);
+      } else if (shopsData.error) {
+        toast.error(shopsData.error);
+        if (shopsData.error.includes("Access denied")) {
+           toast.error("Please log out and log in again to refresh your session.");
+        }
+      }
+
+      if (Array.isArray(adminsData)) {
+        setAdmins(adminsData);
+      }
     } catch (e) {
       toast.error('Failed to load shops and admins');
     } finally {
