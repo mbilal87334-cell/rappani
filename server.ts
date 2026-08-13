@@ -748,8 +748,11 @@ async function startServer() {
         const totalSpent = orders.reduce((sum, order) => {
            let amount = 0;
            if (req.user.role === 'shopadmin') {
-              const shopItems = order.items.filter((i:any) => i.shopId === req.user.shopId || (!i.shopId && req.user.shopId === 'main-shop'));
-              amount = shopItems.reduce((acc: number, item: any) => acc + (item.price * item.quantity), 0);
+              const shopItems = order.items.filter((i:any) => {
+                 const shopId = i.product?.shopId || i.product?.storeId || 'main-shop';
+                 return shopId === req.user.shopId || (!shopId && req.user.shopId === 'main-shop');
+              });
+              amount = shopItems.reduce((acc: number, item: any) => acc + ((item.product?.price || 0) * item.quantity), 0);
            } else {
               amount = order.totalAmount || 0;
            }
