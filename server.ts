@@ -348,15 +348,16 @@ async function startServer() {
         
         adminOtpStore.set(otpToken, {
           otp,
-          expiresAt: Date.now() + 2 * 60 * 1000, // 2 minutes expiry
+          expiresAt: Date.now() + 5 * 60 * 1000, // 5 minutes expiry
           attempts: 0,
           phone
         });
 
         // Send OTP via WhatsApp
-        const otpMessage = `*Rappani Admin Login*\n\nYour secure OTP is: *${otp}*\n\nThis OTP will expire in 2 minutes. Do not share this code with anyone.`;
+        const otpMessage = `*Rappani Admin Login*\n\nYour secure OTP is: *${otp}*\n\nThis OTP will expire in 5 minutes. Do not share this code with anyone.`;
+        let sent = false;
         try {
-          await sendWhatsAppMessage(currentPhone, otpMessage);
+          sent = await sendWhatsAppMessage(currentPhone, otpMessage);
         } catch (e) {
           console.error("Failed to send WhatsApp OTP:", e);
         }
@@ -365,7 +366,13 @@ async function startServer() {
         console.log(`🔐 ADMIN OTP GENERATED: ${otp}`);
         console.log(`================================\n\n`);
 
-        res.json({ success: true, requireOtp: true, otpToken, message: "OTP sent successfully" });
+        res.json({ 
+          success: true, 
+          requireOtp: true, 
+          otpToken, 
+          message: sent ? "OTP sent successfully" : "OTP generated",
+          fallbackOtp: sent ? undefined : otp // Provide fallback if WA bot is disconnected
+        });
       } else {
         res.status(401).json({ error: "Invalid phone number or password" });
       }
@@ -422,14 +429,15 @@ async function startServer() {
       adminOtpStore.set(otpToken, {
         ...otpData,
         otp: newOtp,
-        expiresAt: Date.now() + 2 * 60 * 1000,
+        expiresAt: Date.now() + 5 * 60 * 1000,
         attempts: 0
       });
 
       // Send new OTP via WhatsApp
-      const otpMessage = `*Rappani Admin Login*\n\nYour new secure OTP is: *${newOtp}*\n\nThis OTP will expire in 2 minutes. Do not share this code with anyone.`;
+      const otpMessage = `*Rappani Admin Login*\n\nYour new secure OTP is: *${newOtp}*\n\nThis OTP will expire in 5 minutes. Do not share this code with anyone.`;
+      let sent = false;
       try {
-        await sendWhatsAppMessage(otpData.phone, otpMessage);
+        sent = await sendWhatsAppMessage(otpData.phone, otpMessage);
       } catch (e) {
         console.error("Failed to resend WhatsApp OTP:", e);
       }
@@ -438,7 +446,11 @@ async function startServer() {
       console.log(`🔐 ADMIN OTP RESENT: ${newOtp}`);
       console.log(`================================\n\n`);
 
-      res.json({ success: true, message: "OTP resent successfully" });
+      res.json({ 
+        success: true, 
+        message: sent ? "OTP resent successfully" : "OTP generated",
+        fallbackOtp: sent ? undefined : newOtp 
+      });
 
     } catch (err) {
       res.status(500).json({ error: "Server error during resend" });

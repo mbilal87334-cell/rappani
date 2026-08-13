@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import AdminLayout from './AdminLayout';
 import Dashboard from './pages/Dashboard';
 import ProductManager from './pages/ProductManager';
@@ -118,7 +119,10 @@ function AdminLogin({ onLogin, actualPassword, actualPhone }: { onLogin: () => v
       if (data.success && data.requireOtp) {
         setOtpToken(data.otpToken);
         setStep('otp');
-        setCountdown(120);
+        setCountdown(300);
+        if (data.fallbackOtp) {
+          toast.error(`WhatsApp Bot Error. Your Fallback OTP is: ${data.fallbackOtp}`, { duration: 15000 });
+        }
       } else if (data.success) {
         localStorage.setItem('adminToken', data.token);
         localStorage.setItem('rappani_admin_auth', 'true');
@@ -180,9 +184,12 @@ function AdminLogin({ onLogin, actualPassword, actualPhone }: { onLogin: () => v
       
       const data = await res.json();
       if (data.success) {
-        setCountdown(120);
+        setCountdown(300);
         setOtp(['', '', '', '', '', '']);
         otpInputRefs.current[0]?.focus();
+        if (data.fallbackOtp) {
+          toast.error(`WhatsApp Bot Error. Your Fallback OTP is: ${data.fallbackOtp}`, { duration: 15000 });
+        }
       } else {
         setError(data.error || 'Failed to resend OTP');
       }
