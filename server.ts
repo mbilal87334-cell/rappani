@@ -355,7 +355,10 @@ async function startServer() {
     } as any,
   });
 
-  const upload = multer({ storage });
+  const upload = multer({ 
+    storage: storage,
+    limits: { fileSize: 20 * 1024 * 1024 } // 20MB limit
+  });
 
   // Admin OTP Store
   interface AdminOtpData {
@@ -1723,12 +1726,20 @@ async function startServer() {
   });
 
   // Image Upload Route
-  app.post("/api/upload", authenticateToken, upload.single("image"), (req, res) => {
-    if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded" });
-    }
-    // Cloudinary returns the image URL in req.file.path
-    res.json({ imageUrl: req.file.path });
+  app.post("/api/upload", authenticateToken, (req, res) => {
+    upload.single("image")(req, res, (err) => {
+      if (err instanceof multer.MulterError) {
+        return res.status(400).json({ error: `Upload error: ${err.message}` });
+      } else if (err) {
+        return res.status(500).json({ error: `Unknown upload error: ${err.message}` });
+      }
+      
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+      // Cloudinary returns the image URL in req.file.path
+      res.json({ imageUrl: req.file.path });
+    });
   });
 
   // --- Admin Profile Routes ---
