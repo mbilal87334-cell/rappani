@@ -370,8 +370,7 @@ async function startServer() {
           success: true, 
           requireOtp: true, 
           otpToken, 
-          message: sent ? "OTP sent successfully" : "OTP generated",
-          fallbackOtp: sent ? undefined : otp // Provide fallback if WA bot is disconnected
+          message: sent ? "OTP sent successfully" : "OTP generated (WhatsApp pending)"
         });
       } else {
         res.status(401).json({ error: "Invalid phone number or password" });
@@ -448,8 +447,7 @@ async function startServer() {
 
       res.json({ 
         success: true, 
-        message: sent ? "OTP resent successfully" : "OTP generated",
-        fallbackOtp: sent ? undefined : newOtp 
+        message: sent ? "OTP resent successfully" : "OTP generated (WhatsApp pending)"
       });
 
     } catch (err) {

@@ -120,9 +120,6 @@ function AdminLogin({ onLogin, actualPassword, actualPhone }: { onLogin: () => v
         setOtpToken(data.otpToken);
         setStep('otp');
         setCountdown(300);
-        if (data.fallbackOtp) {
-          toast.error(`WhatsApp Bot Error. Your Fallback OTP is: ${data.fallbackOtp}`, { duration: 15000 });
-        }
       } else if (data.success) {
         localStorage.setItem('adminToken', data.token);
         localStorage.setItem('rappani_admin_auth', 'true');
@@ -187,9 +184,6 @@ function AdminLogin({ onLogin, actualPassword, actualPhone }: { onLogin: () => v
         setCountdown(300);
         setOtp(['', '', '', '', '', '']);
         otpInputRefs.current[0]?.focus();
-        if (data.fallbackOtp) {
-          toast.error(`WhatsApp Bot Error. Your Fallback OTP is: ${data.fallbackOtp}`, { duration: 15000 });
-        }
       } else {
         setError(data.error || 'Failed to resend OTP');
       }
