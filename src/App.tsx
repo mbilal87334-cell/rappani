@@ -152,7 +152,10 @@ export async function saveProduct(product: Product, isEditing: boolean) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(product),
   });
-  if (!res.ok) throw new Error("Failed to save product");
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new Error(errorData.error || "Failed to save product");
+  }
   return res.json();
 }
 

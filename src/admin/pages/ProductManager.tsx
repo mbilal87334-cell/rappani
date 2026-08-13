@@ -75,9 +75,9 @@ export default function ProductManager({ products, setProducts, apiCategories = 
           price: 0, deliveryCharge: 30, stock: 50, image: '', images: [], isVisible: true, isFeatured: false 
         });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      toast.error("Failed to save product");
+      toast.error(err.message || "Failed to save product");
     } finally {
       setIsSaving(false);
     }
@@ -880,6 +880,7 @@ export default function ProductManager({ products, setProducts, apiCategories = 
                     <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                     <textarea 
                       rows={3}
+                      required
                       value={formData.description || ''}
                       onChange={e => setFormData({...formData, description: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md outline-none focus:ring-2 focus:ring-gray-900 resize-none"

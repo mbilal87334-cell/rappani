@@ -799,8 +799,9 @@ async function startServer() {
       const shopId = req.user.role === 'shopadmin' ? req.user.shopId : (req.body.shopId || 'main-shop');
       const newProduct = await Product.create({ id, shopId, name, category, price, discountPrice, deliveryCharge, stock, image, images, videoUrl, features, tags, isFeatured, isVisible: visibleFlag, brand, sku, description });
       res.json(newProduct);
-    } catch (err) {
-      res.status(500).json({ success: false, error: "Server error" });
+    } catch (err: any) {
+      console.error("Product create error:", err);
+      res.status(400).json({ success: false, error: err.message || "Failed to create product" });
     }
   });
 
