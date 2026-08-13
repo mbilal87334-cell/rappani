@@ -62,8 +62,10 @@ const shopSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String, default: '' },
   address: { type: String, default: '' },
+  latitude: { type: String, default: '' },
+  longitude: { type: String, default: '' },
   logo: { type: String, default: '' },
-  status: { type: String, default: 'active' }, // active, suspended
+  status: { type: String, default: 'active' }, // active, inactive
   assignedCategories: { type: [String], default: [] },
   createdAt: { type: Date, default: Date.now }
 });
@@ -1717,7 +1719,7 @@ async function startServer() {
   // --- Multi-Shop Admin Routes ---
   app.post("/api/admin/shops", authenticateToken, verifySuperAdmin, async (req, res) => {
     try {
-      const { shopName, shopDescription, shopAddress, adminName, adminUsername, adminPassword, adminPhone, adminEmail, assignedCategories } = req.body;
+      const { shopName, shopDescription, shopAddress, shopLatitude, shopLongitude, adminName, adminUsername, adminPassword, adminPhone, adminEmail, assignedCategories } = req.body;
       
       const shopId = `shop_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
       
@@ -1726,6 +1728,8 @@ async function startServer() {
         name: shopName,
         description: shopDescription,
         address: shopAddress,
+        latitude: shopLatitude || '',
+        longitude: shopLongitude || '',
         assignedCategories: assignedCategories || []
       });
 
@@ -1739,6 +1743,87 @@ async function startServer() {
       });
 
       res.json({ success: true, shop: newShop, admin: newAdmin });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message || "Server error" });
+    }
+  });
+
+  app.put("/api/admin/shops/:id", authenticateToken, verifySuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { shopName, shopDescription, shopAddress, shopLatitude, shopLongitude, adminUsername, adminPassword, adminPhone, adminEmail, assignedCategories } = req.body;
+      
+      const updatedShop = await Shop.findOneAndUpdate(
+        { id },
+        {
+          name: shopName,
+          description: shopDescription,
+          address: shopAddress,
+          latitude: shopLatitude || '',
+          longitude: shopLongitude || '',
+          assignedCategories: assignedCategories || []
+        },
+        { new: true }
+      );
+
+      if (!updatedShop) {
+        return res.status(404).json({ success: false, error: "Shop not found" });
+      }
+
+      // Find and update admin
+      const adminUpdate: any = {
+        username: adminUsername,
+        email: adminEmail,
+        phone: adminPhone
+      };
+      
+      if (adminPassword) {
+        adminUpdate.password = adminPassword; // In real app, hash this
+      }
+
+      const updatedAdmin = await AdminUser.findOneAndUpdate(
+        { shopId: id },
+        adminUpdate,
+        { new: true }
+      );
+
+      res.json({ success: true, shop: updatedShop, admin: updatedAdmin });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message || "Server error" });
+    }
+  });
+
+  app.delete("/api/admin/shops/:id", authenticateToken, verifySuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      if (id === 'main_store') {
+        return res.status(400).json({ success: false, error: "Main Store cannot be deleted" });
+      }
+      
+      await Shop.findOneAndDelete({ id });
+      await AdminUser.findOneAndDelete({ shopId: id });
+      
+      // Optionally reassign products or delete them
+      // await Product.deleteMany({ shopId: id });
+
+      res.json({ success: true, message: "Shop deleted successfully" });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message || "Server error" });
+    }
+  });
+
+  app.put("/api/admin/shops/:id/status", authenticateToken, verifySuperAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+      
+      const updatedShop = await Shop.findOneAndUpdate(
+        { id },
+        { status },
+        { new: true }
+      );
+
+      res.json({ success: true, shop: updatedShop });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message || "Server error" });
     }
