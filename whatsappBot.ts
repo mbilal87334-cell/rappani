@@ -139,29 +139,54 @@ export async function connectToWhatsApp() {
 
 // Helper function to send messages
 export async function sendWhatsAppMessage(phone: string, text: string) {
+    // 1. Try Official Cloud API first (Instant Delivery) if configured
+    if (process.env.WHATSAPP_ACCESS_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID) {
+        try {
+            let formattedPhone = phone.replace(/\D/g, '');
+            if (formattedPhone.length === 10) formattedPhone = '91' + formattedPhone;
+            
+            const waResponse = await fetch(`https://graph.facebook.com/v17.0/${process.env.WHATSAPP_PHONE_NUMBER_ID}/messages`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    messaging_product: "whatsapp",
+                    to: formattedPhone,
+                    type: "text",
+                    text: { body: text }
+                })
+            });
+            if (waResponse.ok) {
+                console.log(`[WhatsApp Cloud] Message sent instantly to ${formattedPhone}`);
+                return true;
+            }
+        } catch (err) {
+            console.error('[WhatsApp Cloud] Error:', err);
+        }
+    }
+
+    // 2. Fallback to Baileys Bot (Websocket)
     if (!isWaConnected || !waSocket) {
         console.warn('[WhatsApp] Bot is not connected. Cannot send message to', phone);
         return false;
     }
+    
     try {
-        // Format phone number to JID
         let formattedPhone = phone.replace(/\D/g, '');
         if (formattedPhone.length === 10) {
-            formattedPhone = '91' + formattedPhone; // Default to India country code
+            formattedPhone = '91' + formattedPhone;
         }
         const jid = `${formattedPhone}@s.whatsapp.net`;
         
-        const [result] = await waSocket.onWhatsApp(jid);
-        if (!result?.exists) {
-            console.warn(`[WhatsApp] Number ${formattedPhone} is not registered on WhatsApp`);
-            return false;
-        }
-
+        // Removed the extremely slow `waSocket.onWhatsApp(jid)` existence check to make it instant.
         await waSocket.sendMessage(jid, { text });
-        console.log(`[WhatsApp] Message sent successfully to ${formattedPhone}`);
+        
+        console.log(`[WhatsApp Bot] Message sent instantly to ${formattedPhone}`);
         return true;
     } catch (err) {
-        console.error(`[WhatsApp] Failed to send message to ${phone}:`, err);
+        console.error(`[WhatsApp Bot] Failed to send message to ${phone}:`, err);
         return false;
     }
 }
