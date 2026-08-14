@@ -48,12 +48,6 @@ interface Setting {
   value: string;
 }
 
-export const HERO_SLIDES = [
-  "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=800&h=400",
-  "https://images.unsplash.com/photo-1505330622279-bf7d7fc918f4?auto=format&fit=crop&q=80&w=800&h=400",
-  "https://images.unsplash.com/photo-1583394838336-acd977736f90?auto=format&fit=crop&q=80&w=800&h=400"
-];
-
 export interface ShippingAddress {
   fullName?: string;
   houseNo?: string;
@@ -933,17 +927,20 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   }, [selectedCategory]);
 
   const [currentSlide, setCurrentSlide] = useState(0);
+  const featuredProducts = products.filter(p => p.isFeatured);
+  const slideProducts = featuredProducts.length > 0 ? featuredProducts : products.slice(0, 5);
+
   const [isSliderPaused, setIsSliderPaused] = useState(false);
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
 
   useEffect(() => {
-    if (HERO_SLIDES.length === 0 || isSliderPaused) return;
+    if (slideProducts.length === 0 || isSliderPaused) return;
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+      setCurrentSlide((prev) => (prev + 1) % slideProducts.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, [currentSlide, isSliderPaused]);
+  }, [currentSlide, isSliderPaused, slideProducts.length]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setIsSliderPaused(true);
@@ -959,10 +956,10 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
     if (!touchStartX.current || !touchEndX.current) return;
     const distance = touchStartX.current - touchEndX.current;
     if (distance > 50) {
-      setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+      setCurrentSlide((prev) => (prev + 1) % slideProducts.length);
     }
     if (distance < -50) {
-      setCurrentSlide((prev) => (prev === 0 ? HERO_SLIDES.length - 1 : prev - 1));
+      setCurrentSlide((prev) => (prev === 0 ? slideProducts.length - 1 : prev - 1));
     }
     touchStartX.current = null;
     touchEndX.current = null;
@@ -1759,14 +1756,25 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
               onMouseLeave={() => setIsSliderPaused(false)}
             >
                <div className="flex w-full h-full transition-transform duration-500 ease-in-out" style={{ transform: `translateX(-${currentSlide * 100}%)` }}>
-                  {HERO_SLIDES.map((slideImg, idx) => (
-                    <div key={idx} className="w-full h-full flex-shrink-0 relative bg-gradient-to-r from-violet-50 to-indigo-50 flex items-center justify-center">
-                       <img src={slideImg} alt={`Slide ${idx + 1}`} className="w-full h-full object-cover" />
+                  {slideProducts.map((product, idx) => (
+                    <div key={idx} className="w-full h-full flex-shrink-0 relative bg-gradient-to-r from-violet-50 to-indigo-50 flex items-center p-4 cursor-pointer" onClick={() => setSelectedProduct(product)}>
+                       <div className="w-1/2 z-10 pl-2">
+                         <span className="text-[10px] font-bold uppercase tracking-wider bg-red-500 text-white px-2 py-1 rounded inline-block mb-2 shadow-sm">Featured</span>
+                         <h2 className="text-lg font-bold leading-tight mb-2 text-primary line-clamp-2">{product.name}</h2>
+                         <div className="flex items-baseline gap-1 mb-3">
+                           <span className="text-lg font-black text-gold-500">₹{product.price}</span>
+                           {product.originalPrice && <span className="text-xs text-neutral-400 line-through">₹{product.originalPrice}</span>}
+                         </div>
+                         <button className="premium-button text-[10px] font-bold px-4 py-2 shadow-sm rounded-sm uppercase tracking-wide">Buy Now</button>
+                       </div>
+                       <div className="w-1/2 h-full flex justify-end items-center relative pr-2">
+                          <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400?text=No+Image"} alt={product.name} className="h-full max-h-36 object-contain mix-blend-multiply drop-shadow-md" />
+                       </div>
                     </div>
                   ))}
                </div>
                <div className="absolute bottom-1 left-0 right-0 flex justify-center gap-2 z-20">
-                 {HERO_SLIDES.map((_, idx) => (
+                 {slideProducts.map((_, idx) => (
                    <div key={idx} onClick={(e) => { e.stopPropagation(); setCurrentSlide(idx); }} className="p-2 cursor-pointer flex items-center justify-center">
                      <div className={`w-6 h-1.5 rounded-full transition-colors ${currentSlide === idx ? 'bg-primary' : 'bg-gray-300/80'}`} />
                    </div>
