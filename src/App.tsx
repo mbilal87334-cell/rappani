@@ -1,6 +1,6 @@
 import React, {  useState, useEffect, useRef, lazy, Suspense  } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
-import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate, useParams } from 'react-router-dom';
 import { Phone, Mail, Instagram, MessageCircle, MapPin, Map, Lock, LogOut, Plus, Edit, Trash2, Store, ShoppingBag, Menu, X, Camera, Aperture, Globe, Database, Search, ArrowUp, Package, LayoutGrid, ShoppingCart, Minus, Image, ShieldCheck, Gift, Sparkles, Sticker, Rocket, Coffee, Eye, Star, TrendingUp, CheckCircle2, Info , Home, Heart, User, ChevronRight, CreditCard, Briefcase, Ticket, Navigation, Smartphone, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 const AdminApp = lazy(() => import('./admin/AdminApp'));
@@ -112,11 +112,19 @@ async function fetchSettings() {
 
 export async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const token = localStorage.getItem('adminToken');
-  const headers = {
-    ...options.headers,
-    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-  };
-  return fetch(url, { ...options, headers });
+  const headers = new Headers(options.headers || {});
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
+  }
+  const res = await fetch(url, { ...options, headers });
+  if (res.status === 401 || res.status === 403) {
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('rappani_admin_auth');
+    if (window.location.pathname.startsWith('/admin') && window.location.pathname !== '/admin/login') {
+      window.location.href = '/admin/login';
+    }
+  }
+  return res;
 }
 
 export async function updateSetting(key: string, value: string) {
@@ -140,6 +148,14 @@ async function fetchAllAdminProducts() {
   const res = await fetch(`${API_BASE}/products/all`, {
     headers: { 'Authorization': `Bearer ${token}` }
   });
+  if (res.status === 401 || res.status === 403) {
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('rappani_admin_auth');
+    if (window.location.pathname.startsWith('/admin') && window.location.pathname !== '/admin/login') {
+      window.location.href = '/admin/login';
+    }
+    throw new Error("Auth failed");
+  }
   if (!res.ok) throw new Error("Failed to fetch all admin products");
   return res.json();
 }
@@ -402,7 +418,7 @@ function getDistanceInKm(lat1: number, lon1: number, lat2: number, lon2: number)
 }
 
 // --- Visitor Panel ---
-function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore, loadMoreProducts, apiCategories, setOrders, publicShops = [] }: { products: Product[], settings: Record<string, string>, setProducts: React.Dispatch<React.SetStateAction<Product[]>>, hasMore?: boolean, isLoadingMore?: boolean, loadMoreProducts?: () => void, apiCategories: any[], setOrders: React.Dispatch<React.SetStateAction<any[]>>, publicShops?: any[] }) {
+function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore, loadMoreProducts, apiCategories, setOrders, publicShops = [], initialShopId }: { products: Product[], settings: Record<string, string>, setProducts: React.Dispatch<React.SetStateAction<Product[]>>, hasMore?: boolean, isLoadingMore?: boolean, loadMoreProducts?: () => void, apiCategories: any[], setOrders: React.Dispatch<React.SetStateAction<any[]>>, publicShops?: any[], initialShopId?: string }) {
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem('rappani_cart');
@@ -898,12 +914,22 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewText, setReviewText] = useState('');
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
-  const [currentTab, setCurrentTab] = useState<'home' | 'products' | 'cart' | 'favorites' | 'account'>(
-    () => (localStorage.getItem('rappani_current_tab') as any) || 'home'
+  const [currentTab, setCurrentTab] = useState<'home' | 'shops' | 'products' | 'cart' | 'favorites' | 'account'>(
+    () => initialShopId ? 'products' : ((localStorage.getItem('rappani_current_tab') as any) || 'home')
   );
+  const [selectedShopId, setSelectedShopId] = useState<string | null>(initialShopId || null);
   useEffect(() => {
-    localStorage.setItem('rappani_current_tab', currentTab);
-  }, [currentTab]);
+    if (initialShopId) {
+      setSelectedShopId(initialShopId);
+      setCurrentTab('products');
+    }
+  }, [initialShopId]);
+  
+  useEffect(() => {
+    if (!initialShopId) {
+      localStorage.setItem('rappani_current_tab', currentTab);
+    }
+  }, [currentTab, initialShopId]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [lang, setLang] = useState<'en' | 'ta'>('en');
@@ -1120,6 +1146,10 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
   const publicProducts = products.filter(p => p.isVisible !== false);
 
   const filteredProducts = publicProducts.filter(product => {
+    if (selectedShopId && product.shopId !== selectedShopId) {
+      return false;
+    }
+
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
     let matchesCategory = false;
 
@@ -1788,6 +1818,10 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                 <h3 className="text-sm font-bold text-primary">Shop by Category</h3>
               </div>
               <div className="flex overflow-x-auto no-scrollbar gap-4 px-2 pb-2">
+                <div onClick={() => { setCurrentTab('shops'); setSelectedShopId(null); }} className="flex flex-col items-center gap-1 cursor-pointer min-w-[70px]">
+                   <div className="w-16 h-16 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500 shadow-sm hover:scale-105 transition-transform"><Store className="w-8 h-8"/></div>
+                   <span className="text-xs font-bold text-primary mt-1 text-center leading-tight">All Shops</span>
+                </div>
                 {categories.map((cat, idx) => (
                   <div key={idx} onClick={() => { setSelectedCategory(cat.name); setCurrentTab('products'); }} className="flex flex-col items-center gap-1 cursor-pointer min-w-[70px]">
                     <div className="w-14 h-14 bg-gold-500/10 rounded-full flex items-center justify-center text-gold-500 border border-gold-500/20 transition-colors relative">
@@ -1798,6 +1832,33 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                 ))}
               </div>
             </div>
+
+            {/* Top Shops Horizontal List */}
+            {publicShops && publicShops.length > 0 && (
+              <div className="mt-4 -mx-2">
+                <div className="flex justify-between items-center mb-3 px-2">
+                  <h3 className="text-sm font-bold text-primary flex items-center gap-1.5"><Store className="w-4 h-4 text-gold-500" /> Browse by Shop</h3>
+                  <button onClick={() => setCurrentTab('shops')} className="text-xs font-bold text-gold-600 hover:text-gold-700">View All</button>
+                </div>
+                <div className="flex overflow-x-auto no-scrollbar gap-3 px-2 pb-2">
+                  {publicShops.slice(0, 5).map((shop, idx) => (
+                    <div 
+                      key={idx} 
+                      onClick={() => { setSelectedShopId(shop.id); setCurrentTab('products'); }}
+                      className="min-w-[200px] bg-white rounded-xl shadow-sm border border-neutral-200 p-3 flex items-center gap-3 cursor-pointer hover:border-gold-500 transition-colors"
+                    >
+                      <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center shrink-0">
+                        <Store className="w-6 h-6" />
+                      </div>
+                      <div className="flex-1 overflow-hidden">
+                        <h4 className="font-bold text-primary text-sm truncate">{shop.name}</h4>
+                        <p className="text-[10px] text-neutral-500 truncate">{shop.description || 'Welcome'}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Real-time Limited Time Offers Widget on Home Page */}
             {activeOffers.length > 0 && (
@@ -1874,6 +1935,12 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                          <div>
                            <span className="text-[10px] bg-gold-500/10 text-gold-700 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">{getCategoryName(product.category)}</span>
                            <h4 className="text-sm font-bold text-primary mt-1.5 line-clamp-2 cursor-pointer hover:text-gold-600 transition-colors leading-tight" onClick={() => setSelectedProduct(product)}>{product.name}</h4>
+                            {product.shopId && (
+                              <p className="text-[10px] text-blue-500 font-bold mt-1 flex items-center gap-0.5" onClick={() => { setSelectedShopId(product.shopId || null); setCurrentTab('products'); }}>
+                                <Store className="w-3 h-3" />
+                                {publicShops.find(s => s.id === product.shopId)?.name || 'Store'}
+                              </p>
+                            )}
                          </div>
 
                          <div className="flex items-center justify-between gap-2 mt-2">
@@ -1887,9 +1954,9 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                            <div className="w-28">
                              {qty > 0 ? (
                                 <div className="flex items-center justify-between border border-neutral-300 rounded-lg overflow-hidden h-8">
-                                  <button onClick={() => updateQuantity(product.id, qty - 1)} className="bg-neutral-100 hover:bg-neutral-200 text-neutral-600 w-8 h-full flex items-center justify-center font-bold transition-colors">-</button>
+                                  <button onClick={() => updateQuantity(product.id, qty - 1)} className="bg-neutral-100 hover:bg-neutral-200 text-neutral-600 w-8 h-full flex items-center justify-center font-bold">-</button>
                                   <span className="text-xs font-bold text-primary">{qty}</span>
-                                  <button onClick={() => updateQuantity(product.id, qty + 1)} className="bg-neutral-100 hover:bg-neutral-200 text-neutral-600 w-8 h-full flex items-center justify-center font-bold transition-colors">+</button>
+                                  <button onClick={() => updateQuantity(product.id, qty + 1)} className="bg-neutral-100 hover:bg-neutral-200 text-neutral-600 w-8 h-full flex items-center justify-center font-bold">+</button>
                                 </div>
                              ) : (
                                 <button onClick={() => addToCart(product)} className="w-full bg-black hover:bg-gold-500 hover:text-black text-gold-500 text-xs font-bold py-1.5 rounded-lg border border-black transition-all uppercase tracking-wider active:scale-95">
@@ -1925,6 +1992,37 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                 </div>
               )}
             </div>
+          </div>
+        )}
+        {currentTab === 'shops' && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-primary mb-4">All Shops</h2>
+            {publicShops.length === 0 ? (
+              <div className="text-center text-neutral-500 py-10 bg-white rounded-2xl shadow-sm border border-neutral-200">
+                 No shops available at the moment.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {publicShops.map((shop, idx) => (
+                  <div 
+                    key={idx} 
+                    onClick={() => { setSelectedShopId(shop.id); setCurrentTab('products'); }}
+                    className="bg-white rounded-2xl shadow-sm border border-neutral-200 p-4 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-gold-500 hover:shadow-md transition-all group"
+                  >
+                    <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <Store className="w-8 h-8" />
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-lg font-bold text-primary group-hover:text-gold-600 transition-colors">{shop.name}</h3>
+                      <p className="text-sm text-neutral-500 line-clamp-2 mt-1">{shop.description || 'Welcome to our store'}</p>
+                    </div>
+                    <button className="mt-2 w-full premium-button py-2 rounded-xl text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                      Visit Store
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -1969,6 +2067,12 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                            )}
                          </div>
                          <h4 className="font-medium text-primary-light text-xs mb-1 line-clamp-2 leading-tight h-8 group-hover:text-gold-500 transition-colors">{product.name}</h4>
+                         {product.shopId && (
+                           <p className="text-[9px] text-blue-500 font-bold mb-1 flex items-center gap-0.5 mt-1">
+                             <Store className="w-3 h-3" />
+                             {publicShops.find(s => s.id === product.shopId)?.name || 'Store'}
+                           </p>
+                         )}
                        </div>
                        <div className="flex items-center gap-1 mb-2">
                          {product.reviews && product.reviews.length > 0 ? (
@@ -2131,6 +2235,12 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                             </div>
                             <div className="flex-1">
                                <h5 className="font-bold text-sm text-primary leading-tight">{item.product.name}</h5>
+                               {item.product.shopId && (
+                                 <p className="text-[10px] text-blue-500 font-bold mt-1 flex items-center gap-0.5">
+                                   <Store className="w-3 h-3" />
+                                   {publicShops.find(s => s.id === item.product.shopId)?.name || 'Store'}
+                                 </p>
+                               )}
                                <p className="font-black text-gold-600 text-sm mt-1">₹{item.product.price}</p>
                             </div>
                             <div className="flex items-center gap-2 bg-gold-50 border border-neutral-300 rounded-lg px-2 py-1 shrink-0">
@@ -2533,7 +2643,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
              ) : (
                <div 
                   onClick={() => setIsProfileModalOpen(true)}
-                  className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-300/50 flex flex-col items-center justify-center relative hover:bg-gold-50 cursor-pointer transition-colors"
+                  className="bg-white p-6 rounded-2xl shadow-sm border border-neutral-300/50 flex flex-col items-center justify-center relative hover:bg-gold-5 cursor-pointer transition-colors"
                >
                   <div className="absolute top-4 right-4 bg-gold-50 text-gold-600 p-2 rounded-full">
                     <Edit className="w-4 h-4" />
@@ -3381,7 +3491,10 @@ const getCategoryColor = (category: string) => {
   }
 };
 
-
+function StoreRoute(props: any) {
+  const { shopId } = useParams<{ shopId: string }>();
+  return <VisitorPanel {...props} initialShopId={shopId} />;
+}
 
 export default function App() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -3445,6 +3558,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/store/:shopId" element={<StoreRoute products={products} settings={settings} setProducts={setProducts} hasMore={hasMore} isLoadingMore={isLoadingMore} loadMoreProducts={loadMoreProducts} apiCategories={apiCategories} setOrders={setOrders} publicShops={publicShops} />} />
         <Route path="/" element={<VisitorPanel products={products} settings={settings} setProducts={setProducts} hasMore={hasMore} isLoadingMore={isLoadingMore} loadMoreProducts={loadMoreProducts} apiCategories={apiCategories} setOrders={setOrders} publicShops={publicShops} />} />
         <Route path="/admin/*" element={
           <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="w-8 h-8 border-4 border-gold-500 border-t-transparent rounded-full animate-spin"></div></div>}>

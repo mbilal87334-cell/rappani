@@ -44,7 +44,36 @@ const StatRow = ({ title, value, icon: Icon, colorClass }: any) => (
   </div>
 );
 
-export default function Dashboard({ orders = [], products = [] }: { orders?: any[], products?: any[] }) {
+export default function Dashboard({ orders = [], products = [], fetchError }: { orders?: any[], products?: any[], fetchError?: string | null }) {
+  const [shopName, setShopName] = React.useState<string>('Dashboard');
+
+  React.useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const token = localStorage.getItem('adminToken');
+        if (!token) return;
+        
+        // decode token to check if shopadmin
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.role === 'shopadmin' && payload.shopId) {
+          const res = await fetch('/api/admin/profile', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          const data = await res.json();
+          if (data.shopDetails && data.shopDetails.name) {
+             setShopName(`${data.shopDetails.name} — Admin Dashboard`);
+          } else {
+             setShopName('Shop Admin Dashboard');
+          }
+        } else {
+          setShopName('Super Admin Dashboard');
+        }
+      } catch (err) {
+        console.error("Failed to fetch admin profile for dashboard title", err);
+      }
+    };
+    fetchProfile();
+  }, []);
   const safeOrders = Array.isArray(orders) ? orders : [];
   const safeProducts = Array.isArray(products) ? products : [];
 
@@ -230,10 +259,15 @@ export default function Dashboard({ orders = [], products = [] }: { orders?: any
   };
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-10">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-primary tracking-tight">Dashboard</h1>
+    <div className="max-w-7xl mx-auto space-y-6 pb-10">
+      {fetchError && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+          <strong className="font-bold">Debug Info: </strong>
+          <span className="block sm:inline">{fetchError}</span>
+        </div>
+      )}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <h1 className="text-2xl font-bold text-primary tracking-tight">{shopName}</h1>
         <button 
           onClick={handleGenerateReport}
           className="flex items-center gap-2 bg-gray-900 text-white text-sm font-semibold px-4 py-2 rounded-md hover:bg-gray-800 transition-colors shadow-sm cursor-pointer"

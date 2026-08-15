@@ -26,15 +26,16 @@ import ShopsManager from './pages/ShopsManager';
 import CategoryManager from './pages/CategoryManager';
 
 export default function AdminApp({ 
-  orders, products, setProducts, settings, setSettings, apiCategories, setApiCategories 
+  orders, products, setProducts, settings, setSettings, apiCategories, setApiCategories, fetchError 
 }: { 
-  orders: any[],
+  orders: any[], 
   products: Product[], 
   setProducts: any, 
   settings: any, 
-  setSettings: any,
-  apiCategories: any[],
-  setApiCategories: any
+  setSettings: any, 
+  apiCategories: any[], 
+  setApiCategories: any,
+  fetchError?: string | null
 }) {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return localStorage.getItem('rappani_admin_auth') === 'true';
@@ -53,7 +54,7 @@ export default function AdminApp({
   return (
     <AdminLayout setIsAuthenticated={setIsAuthenticated}>
       <Routes>
-        <Route path="/" element={<Dashboard orders={orders} products={products} />} />
+        <Route path="/" element={<Dashboard orders={orders} products={products} fetchError={fetchError} />} />
         <Route path="/products" element={<ProductManager products={products} setProducts={setProducts} apiCategories={apiCategories} />} />
         <Route path="/orders" element={<OrderManager orders={orders} />} />
         

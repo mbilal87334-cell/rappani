@@ -57,13 +57,13 @@ export default function ProductManager({ products, setProducts, apiCategories = 
   }, []);
 
   const tabs = ['All', ...apiCategories.map(c => c.name)];
-
-  const filteredProducts = products.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredProducts = Array.isArray(products) ? products.filter(p => {
+    if (!p) return false;
+    const matchesSearch = p.name?.toLowerCase()?.includes((searchTerm || '').toLowerCase());
     const matchesTab = activeTab === 'All' || p.category === activeTab;
     const matchesShop = userRole !== 'superadmin' || selectedShopId === 'all' || (p.shopId || 'main-shop') === selectedShopId;
     return matchesSearch && matchesTab && matchesShop;
-  });
+  }) : [];
 
   const openModal = (product?: Product, isCopy = false) => {
     if (product) {
