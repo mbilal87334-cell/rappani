@@ -61,10 +61,19 @@ const shopSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   name: { type: String, required: true },
   description: { type: String, default: '' },
+  about: { type: String, default: '' },
   address: { type: String, default: '' },
   latitude: { type: String, default: '' },
   longitude: { type: String, default: '' },
   logo: { type: String, default: '' },
+  banner: { type: String, default: '' },
+  phone: { type: String, default: '' },
+  whatsapp: { type: String, default: '' },
+  email: { type: String, default: '' },
+  instagram: { type: String, default: '' },
+  openingTime: { type: String, default: '09:00 AM' },
+  closingTime: { type: String, default: '09:00 PM' },
+  isOpen: { type: Boolean, default: true },
   status: { type: String, default: 'active' }, // active, inactive
   assignedCategories: { type: [String], default: [] },
   createdAt: { type: Date, default: Date.now }
@@ -821,13 +830,81 @@ async function startServer() {
   // Public route to fetch shop locations and details for checkout
   app.get("/api/public/shops", async (req, res) => {
     try {
-      // Only fetch active shops and exclude sensitive fields
-      const shops = await Shop.find({ status: 'active' }, 'id name address latitude longitude logo').lean();
+      // Fetch active shops with new profile fields
+      const shops = await Shop.find({ status: 'active' }, 'id name address latitude longitude logo banner about phone whatsapp email instagram openingTime closingTime isOpen').lean();
       res.json(shops);
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });
     }
   });
+  // Admin: Get Shop Profile
+  app.get("/api/admin/shop-profile", authenticateToken, async (req: any, res) => {
+    try {
+      if (req.user.role === 'superadmin' && req.query.shopId) {
+        const shop = await Shop.findOne({ id: req.query.shopId });
+        return res.json({ success: true, shop });
+      }
+      
+      const shopId = req.user.shopId || 'main-shop';
+      const shop = await Shop.findOne({ id: shopId });
+      res.json({ success: true, shop });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
+  // Admin: Update Shop Profile
+  app.put("/api/admin/shop-profile", authenticateToken, async (req: any, res) => {
+    try {
+      let targetShopId = req.user.shopId || 'main-shop';
+      
+      // Super admin can update any shop if shopId is provided
+      if (req.user.role === 'superadmin' && req.body.shopId) {
+        targetShopId = req.body.shopId;
+      }
+
+      // Ensure shopadmin can only update their own shop
+      if (req.user.role === 'shopadmin' && req.body.shopId && req.body.shopId !== req.user.shopId) {
+        return res.status(403).json({ success: false, error: "Access denied" });
+      }
+
+      const updateData = {
+        name: req.body.name,
+        description: req.body.description,
+        about: req.body.about,
+        address: req.body.address,
+        latitude: req.body.latitude,
+        longitude: req.body.longitude,
+        logo: req.body.logo,
+        banner: req.body.banner,
+        phone: req.body.phone,
+        whatsapp: req.body.whatsapp,
+        email: req.body.email,
+        instagram: req.body.instagram,
+        openingTime: req.body.openingTime,
+        closingTime: req.body.closingTime,
+        isOpen: req.body.isOpen,
+      };
+
+      // Remove undefined values
+      Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
+
+      const shop = await Shop.findOneAndUpdate(
+        { id: targetShopId },
+        { $set: updateData },
+        { new: true, runValidators: true }
+      );
+
+      if (!shop) {
+        return res.status(404).json({ success: false, error: "Shop not found" });
+      }
+
+      res.json({ success: true, shop });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Server error" });
+    }
+  });
+
 
   app.get("/api/products", async (req, res) => {
     try {

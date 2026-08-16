@@ -24,6 +24,7 @@ import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import WhatsAppManager from './pages/WhatsAppManager';
 import ShopsManager from './pages/ShopsManager';
 import CategoryManager from './pages/CategoryManager';
+import ShopProfile from './pages/ShopProfile';
 
 export default function AdminApp({ 
   orders, products, setProducts, settings, setSettings, apiCategories, setApiCategories, fetchError 
@@ -75,6 +76,7 @@ export default function AdminApp({
         <Route path="/notifications" element={<NotificationHub />} />
         <Route path="/analytics" element={<AnalyticsDashboard orders={orders} products={products} />} />
         
+        <Route path="/shop-profile" element={<ShopProfile />} />
         <Route path="/profile" element={<SettingsPage settings={settings} setSettings={setSettings} />} />
         
         {/* Fallback */}

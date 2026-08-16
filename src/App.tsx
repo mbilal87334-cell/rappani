@@ -1886,6 +1886,29 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
               // INDIVIDUAL SHOP HOME
               (() => {
                 const shop = publicShops.find(s => s.id === selectedShopId);
+                
+                if (publicShops.length === 0) {
+                   return (
+                     <div className="flex flex-col items-center justify-center py-20 px-4 text-center">
+                       <div className="w-10 h-10 border-4 border-gold-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                       <p className="text-neutral-500 font-medium">Loading shop details...</p>
+                     </div>
+                   );
+                }
+
+                if (!shop) {
+                   return (
+                     <div className="flex flex-col items-center justify-center py-20 px-4 text-center bg-white rounded-2xl shadow-sm border border-neutral-100 mt-4">
+                       <Store className="w-16 h-16 text-neutral-300 mb-4" />
+                       <h2 className="text-xl font-black text-primary mb-2">Shop Not Found</h2>
+                       <p className="text-sm text-neutral-500 mb-6">The shop you are looking for does not exist or is currently unavailable.</p>
+                       <button onClick={() => { setSelectedShopId(null); setCurrentTab('home'); navigate('/'); }} className="premium-button px-6 py-2 rounded-xl text-sm font-bold">
+                         Browse All Shops
+                       </button>
+                     </div>
+                   );
+                }
+
                 const shopProducts = publicProducts.filter(p => p.shopId === selectedShopId);
                 const shopSlideProducts = shopProducts.filter(p => p.image).slice(0, 5);
                 
@@ -1926,10 +1949,10 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                        </div>
                        
                        {/* Shop About & Contact Info */}
-                       {(shop?.about || shop?.phone || shop?.openingHours || shop?.address?.street) && (
+                       {(shop?.about || shop?.phone || shop?.whatsapp || shop?.instagram || shop?.openingTime) && (
                          <div className="p-4 sm:p-6 bg-white">
                            {shop?.about && (
-                             <p className="text-sm text-neutral-600 leading-relaxed mb-4">{shop.about}</p>
+                             <p className="text-sm text-neutral-600 leading-relaxed mb-4 whitespace-pre-wrap">{shop.about}</p>
                            )}
                            <div className="flex flex-wrap gap-4 pt-4 border-t border-neutral-100">
                              {shop?.phone && (
@@ -1942,9 +1965,19 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                                  <MessageCircle className="w-4 h-4 text-green-500" /> WhatsApp
                                </a>
                              )}
-                             {shop?.openingHours && (
-                               <div className="flex items-center gap-2 text-xs font-medium text-neutral-600 bg-neutral-50 px-3 py-1.5 rounded-lg">
-                                 <Clock className="w-4 h-4 text-orange-500" /> {shop.openingHours}
+                             {shop?.email && (
+                               <a href={`mailto:${shop.email}`} className="flex items-center gap-2 text-xs font-semibold text-neutral-700 bg-red-50 px-3 py-1.5 rounded-lg hover:bg-red-100 transition-colors">
+                                 <Mail className="w-4 h-4 text-red-500" /> Email
+                               </a>
+                             )}
+                             {shop?.instagram && (
+                               <a href={shop.instagram} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-xs font-semibold text-neutral-700 bg-pink-50 px-3 py-1.5 rounded-lg hover:bg-pink-100 transition-colors">
+                                 <Instagram className="w-4 h-4 text-pink-500" /> Instagram
+                               </a>
+                             )}
+                             {shop?.openingTime && shop?.closingTime && (
+                               <div className="flex items-center gap-2 text-xs font-medium text-neutral-600 bg-neutral-50 px-3 py-1.5 rounded-lg border border-neutral-200">
+                                 <Clock className="w-4 h-4 text-orange-500" /> {shop.openingTime} - {shop.closingTime}
                                </div>
                              )}
                            </div>
@@ -2077,9 +2110,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                   const qty = cartItem ? cartItem.quantity : 0;
                   return (
                     <div key={product.id} className="bg-white p-2 rounded-sm shadow-sm border border-neutral-300/50 flex flex-col relative">
-                       <button onClick={() => toggleFavorite(product.id)} className="absolute top-2 right-2 z-10 p-1.5 bg-white/80 backdrop-blur-md rounded-full text-neutral-400">
-                         <Heart className={`w-4 h-4 ${favorites.includes(product.id) ? 'fill-rose-500 text-rose-500' : 'text-neutral-300'}`} />
-                       </button>
+                       
                        <div className="cursor-pointer group" onClick={() => setSelectedProduct(product)}>
                          <div className="w-full aspect-square bg-white mb-2 overflow-hidden flex items-center justify-center relative p-2">
                            <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400?text=No+Image"} alt={product.name} className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-300" />
@@ -2161,80 +2192,6 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
         )}
 
         
-        {currentTab === 'favorites' && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-primary">Your Favorites</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-              {products.filter(p => favorites.includes(p.id)).length === 0 ? (
-                <div className="col-span-2 text-center py-16 premium-card flex flex-col items-center justify-center">
-                  <div className="w-24 h-24 bg-rose-50 rounded-full flex items-center justify-center mb-4">
-                    <Heart className="w-12 h-12 text-rose-300" />
-                  </div>
-                  <h3 className="font-bold text-xl text-primary mb-2">No Favorites Yet</h3>
-                  <p className="text-sm text-neutral-500 mb-6">Save your favorite items to view them here later.</p>
-                  <button onClick={() => setCurrentTab('home')} className="bg-primary hover:bg-[#6D28D9] text-white px-8 py-3 rounded-full font-bold shadow-md transition-colors">Browse Products</button>
-                </div>
-              ) : (
-                products.filter(p => favorites.includes(p.id)).map(product => {
-                  const cartItem = cart.find(item => item.product.id === product.id);
-                  const qty = cartItem ? cartItem.quantity : 0;
-                  return (
-                    <div key={product.id} className="bg-white p-2 rounded-sm shadow-sm border border-neutral-300/50 flex flex-col relative">
-                       <button onClick={() => toggleFavorite(product.id)} className="absolute top-2 right-2 z-10 p-1.5 bg-white/80 backdrop-blur-md rounded-full text-neutral-400">
-                         <Heart className="w-4 h-4 fill-rose-500 text-rose-500" />
-                       </button>
-                       <div className="cursor-pointer group" onClick={() => setSelectedProduct(product)}>
-                         <div className="w-full aspect-square bg-white mb-2 overflow-hidden flex items-center justify-center relative p-2">
-                           <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400?text=No+Image"} alt={product.name} className="w-full h-full object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-300" />
-                           {product.originalPrice && product.originalPrice > product.price && (
-                             <span className="absolute bottom-0 left-0 premium-button text-[9px] font-bold px-1.5 py-0.5 rounded-tr-lg z-10">
-                               {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
-                             </span>
-                           )}
-                         </div>
-                         <h4 className="font-medium text-primary-light text-xs mb-1 line-clamp-2 leading-tight h-8 group-hover:text-gold-500 transition-colors">{product.name}</h4>
-                       </div>
-                       <div className="flex items-center gap-1 mb-2">
-                         {product.reviews && product.reviews.length > 0 ? (
-                           <>
-                             <span className="premium-button text-[9px] font-bold px-1 py-0.5 rounded flex items-center gap-0.5">
-                               {(product.reviews.reduce((sum, r) => sum + r.rating, 0) / product.reviews.length).toFixed(1)} <Star className="w-2 h-2 fill-white" />
-                             </span>
-                             <span className="text-[9px] text-neutral-400">({product.reviews.length})</span>
-                           </>
-                         ) : (
-                           <span className="text-[9px] text-neutral-400 italic">No Ratings</span>
-                         )}
-                       </div>
-                       <div className="mt-auto">
-                         <div className="flex items-baseline gap-1.5 flex-wrap">
-                           <span className="font-bold text-primary text-sm">₹{product.price}</span>
-                           {product.originalPrice && product.originalPrice > product.price && (
-                             <span className="text-[10px] text-neutral-500 line-through">₹{product.originalPrice}</span>
-                           )}
-                         </div>
-                         <div className="mt-2">
-                         {qty > 0 ? (
-                            <div className="flex items-center justify-between border border-neutral-300 rounded-sm overflow-hidden h-7">
-                              <button onClick={() => updateQuantity(product.id, qty - 1)} className="bg-neutral-100 text-neutral-500 w-8 h-full flex items-center justify-center font-bold">-</button>
-                              <span className="text-xs font-bold text-primary">{qty}</span>
-                              <button onClick={() => updateQuantity(product.id, qty + 1)} className="bg-neutral-100 text-neutral-500 w-8 h-full flex items-center justify-center font-bold">+</button>
-                            </div>
-                         ) : (
-                            <button onClick={() => addToCart(product)} className="w-full bg-white text-gold-500 text-xs font-bold py-1.5 rounded-sm border border-gold-500 hover:bg-gold-500/10 transition-colors uppercase">
-                              Add
-                            </button>
-                         )}
-                         </div>
-                       </div>
-                    </div>
-                  )
-                })
-              )}
-            </div>
-          </div>
-        )}
-
         {currentTab === 'cart' && (
            <div className="space-y-6">
              <h2 className="text-xl font-bold text-primary">Your Cart</h2>
@@ -3013,10 +2970,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
            </div>
            <span className="text-[10px] font-bold">Cart</span>
          </button>
-         <button onClick={() => setCurrentTab('favorites')} className={`flex flex-col items-center gap-1 w-16 ${currentTab === 'favorites' ? 'text-gold-500' : 'text-neutral-400'}`}>
-           <Heart className={`w-6 h-6 ${currentTab === 'favorites' ? 'fill-violet-100' : ''}`} />
-           <span className="text-[10px] font-bold">Favorites</span>
-         </button>
+         
          <button onClick={() => setCurrentTab('account')} className={`flex flex-col items-center gap-1 w-16 ${currentTab === 'account' ? 'text-gold-500' : 'text-neutral-400'}`}>
            <User className={`w-6 h-6 ${currentTab === 'account' ? 'fill-violet-100' : ''}`} />
            <span className="text-[10px] font-bold">Account</span>

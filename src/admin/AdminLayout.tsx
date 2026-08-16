@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 
 const ALL_MENU_ITEMS = [
+  { path: '/admin/shop-profile', icon: Store, label: 'Shop Profile', roles: ['superadmin', 'shopadmin'] },
   { path: '/admin', icon: LayoutDashboard, label: 'Dashboard', roles: ['superadmin', 'shopadmin'] },
   { path: '/admin/shops', icon: Users, label: 'Shops & Admins', roles: ['superadmin'] },
   { path: '/admin/orders', icon: ShoppingCart, label: 'Orders', roles: ['superadmin', 'shopadmin'] },
