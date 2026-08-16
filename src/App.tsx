@@ -419,6 +419,7 @@ function getDistanceInKm(lat1: number, lon1: number, lat2: number, lon2: number)
 
 // --- Visitor Panel ---
 function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore, loadMoreProducts, apiCategories, setOrders, publicShops = [], initialShopId }: { products: Product[], settings: Record<string, string>, setProducts: React.Dispatch<React.SetStateAction<Product[]>>, hasMore?: boolean, isLoadingMore?: boolean, loadMoreProducts?: () => void, apiCategories: any[], setOrders: React.Dispatch<React.SetStateAction<any[]>>, publicShops?: any[], initialShopId?: string }) {
+    const navigate = useNavigate();
   const [cart, setCart] = useState<CartItem[]>(() => {
     try {
       const saved = localStorage.getItem('rappani_cart');
@@ -1667,48 +1668,91 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
       <Toaster position="top-center" />
 
       {/* Top Header */}
+      
       <header className="sticky top-0 z-50 glass-dark shadow-md border-b border-gold-500/20">
         <div className="px-4 py-4 flex items-center justify-between">
-          <div 
-            onClick={() => {
-              setCurrentTab('home');
-              setSelectedCategory('All');
-              setSearchQuery('');
-            }}
-            className="flex items-center gap-3 cursor-pointer select-none active:scale-95 transition-all"
-          >
-            <div className="w-10 h-10 bg-gradient-to-br from-gold-500 to-gold-600 rounded-xl flex items-center justify-center text-white font-black text-2xl italic shadow-lg shadow-gold-500/20">
-              R
+          {selectedShopId ? (() => {
+            const shop = publicShops.find(s => s.id === selectedShopId);
+            return (
+              <div className="flex items-center gap-3 w-full">
+                <button onClick={() => { setSelectedShopId(null); setCurrentTab('home'); navigate('/'); }} className="p-2 -ml-2 rounded-full hover:bg-white/10 text-white transition-colors shrink-0">
+                   <ArrowLeft className="w-6 h-6" />
+                </button>
+                <div className="flex items-center gap-3 flex-1 overflow-hidden cursor-pointer" onClick={() => setCurrentTab('home')}>
+                  <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg shrink-0 overflow-hidden p-1">
+                    {shop?.logo ? (
+                      <img src={getPremiumImageUrl(shop.logo)} alt={shop.name} className="w-full h-full object-contain" />
+                    ) : (
+                      <Store className="w-6 h-6 text-gold-500" />
+                    )}
+                  </div>
+                  <div className="overflow-hidden">
+                    <h1 className="font-black text-lg leading-tight tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-gold-100 to-gold-500 uppercase drop-shadow-sm truncate">
+                      {shop?.name || 'Shop'}
+                    </h1>
+                    <p className="text-[10px] text-neutral-300 flex items-center gap-1 opacity-90 tracking-widest font-medium uppercase mt-0.5 truncate">
+                      {shop?.shopCategory || 'Marketplace Store'} <Sparkles className="w-3 h-3 text-gold-500 shrink-0" />
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })() : (
+             <div 
+               onClick={() => {
+                 setCurrentTab('home');
+                 setSelectedCategory('All');
+                 setSearchQuery('');
+               }}
+               className="flex items-center gap-3 cursor-pointer select-none active:scale-95 transition-all"
+             >
+               <div className="w-10 h-10 bg-gradient-to-br from-gold-500 to-gold-600 rounded-xl flex items-center justify-center text-white font-black text-2xl italic shadow-lg shadow-gold-500/20">
+                 R
+               </div>
+               <div>
+                 <h1 className="font-black text-2xl leading-tight tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-gold-100 to-gold-500 uppercase drop-shadow-sm">{t.storeName}</h1>
+                 <p className="text-[10px] text-neutral-300 flex items-center gap-1 opacity-90 tracking-widest font-medium uppercase mt-0.5">
+                   Marketplace <Sparkles className="w-3 h-3 text-gold-500" />
+                 </p>
+               </div>
+             </div>
+          )}
+          {!selectedShopId && (
+            <div className="flex items-center gap-4 shrink-0">
+              <div onClick={() => setCurrentTab('account')} className="flex items-center gap-1 cursor-pointer font-medium text-sm">
+                Login
+              </div>
+              <div onClick={() => setCurrentTab('cart')} className="relative cursor-pointer md:hidden">
+                <ShoppingCart className="w-6 h-6 text-white" />
+                {cartItemsCount > 0 && (
+                  <span className="absolute -top-1.5 -right-2 bg-yellow-500 text-black text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-white">
+                    {cartItemsCount}
+                  </span>
+                )}
+              </div>
             </div>
-            <div>
-              <h1 className="font-black text-2xl leading-tight tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-gold-100 to-gold-500 uppercase drop-shadow-sm">{t.storeName}</h1>
-              <p className="text-[11px] text-neutral-300 flex items-center gap-1 opacity-90 tracking-widest font-medium uppercase mt-0.5">
-                Premium Quality <Sparkles className="w-3 h-3 text-gold-500" />
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div onClick={() => setCurrentTab('account')} className="flex items-center gap-1 cursor-pointer font-medium text-sm">
-              Login
-            </div>
-            <div onClick={() => setCurrentTab('cart')} className="relative cursor-pointer md:hidden">
-              <ShoppingCart className="w-6 h-6 text-white" />
-              {cartItemsCount > 0 && (
-                <span className="absolute -top-1.5 -right-2 bg-yellow-500 text-black text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-white">
-                  {cartItemsCount}
-                </span>
-              )}
-            </div>
-          </div>
+          )}
+          {selectedShopId && (
+             <div className="flex items-center gap-3 shrink-0">
+              <div onClick={() => setCurrentTab('cart')} className="relative cursor-pointer md:hidden">
+                <ShoppingCart className="w-6 h-6 text-white" />
+                {cartItemsCount > 0 && (
+                  <span className="absolute -top-1.5 -right-2 bg-yellow-500 text-black text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center border border-white">
+                    {cartItemsCount}
+                  </span>
+                )}
+              </div>
+             </div>
+          )}
         </div>
-        {/* Search Bar - Sticky below top bar */}
+        {/* Search Bar */}
         {currentTab === 'products' && (
           <div className="px-4 pb-3">
             <div className="relative">
               <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
               <input 
                 type="text" 
-                placeholder="Search for Products, Brands and More" 
+                placeholder={selectedShopId ? "Search in this shop..." : "Search for Products, Brands and More"}
                 className="w-full bg-white text-primary border-0 rounded-sm py-2.5 pl-10 pr-4 focus:outline-none shadow-inner text-sm"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -1774,227 +1818,206 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
             transition={{ duration: 0.2, ease: "easeOut" }}
             className="w-full"
           >
+        
         {currentTab === 'home' && (
-          <div className="space-y-4 bg-neutral-100 -mx-4 px-4 pb-4">
-            {/* Auto-Sliding Banner */}
-            <div 
-              className="relative w-full h-48 bg-white rounded-sm overflow-hidden shadow-sm mt-4 group"
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-              onMouseEnter={() => setIsSliderPaused(true)}
-              onMouseLeave={() => setIsSliderPaused(false)}
-            >
-               <div className="flex w-full h-full transition-transform duration-500 ease-in-out" style={{ transform: `translateX(-${currentSlide * 100}%)` }}>
-                  {slideProducts.map((product, idx) => (
-                    <div key={idx} className="w-full h-full flex-shrink-0 relative bg-gradient-to-r from-violet-50 to-indigo-50 flex items-center p-4 cursor-pointer" onClick={() => setSelectedProduct(product)}>
-                       <div className="w-1/2 z-10 pl-2">
-                         <span className="text-[10px] font-bold uppercase tracking-wider bg-red-500 text-white px-2 py-1 rounded inline-block mb-2 shadow-sm">Featured</span>
-                         <h2 className="text-lg font-bold leading-tight mb-2 text-primary line-clamp-2">{product.name}</h2>
-                         <div className="flex items-baseline gap-1 mb-3">
-                           <span className="text-lg font-black text-gold-500">₹{product.price}</span>
-                           {product.originalPrice && <span className="text-xs text-neutral-400 line-through">₹{product.originalPrice}</span>}
-                         </div>
-                         <button className="premium-button text-[10px] font-bold px-4 py-2 shadow-sm rounded-sm uppercase tracking-wide">Buy Now</button>
-                       </div>
-                       <div className="w-1/2 h-full flex justify-end items-center relative pr-2">
-                          <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400?text=No+Image"} alt={product.name} className="h-full max-h-36 object-contain mix-blend-multiply drop-shadow-md" />
-                       </div>
-                    </div>
-                  ))}
-               </div>
-               <div className="absolute bottom-1 left-0 right-0 flex justify-center gap-2 z-20">
-                 {slideProducts.map((_, idx) => (
-                   <div key={idx} onClick={(e) => { e.stopPropagation(); setCurrentSlide(idx); }} className="p-2 cursor-pointer flex items-center justify-center">
-                     <div className={`w-6 h-1.5 rounded-full transition-colors ${currentSlide === idx ? 'bg-primary' : 'bg-gray-300/80'}`} />
-                   </div>
-                 ))}
-               </div>
-            </div>
-
-            {/* Categories */}
-            <div className="bg-white rounded-sm shadow-sm p-3 -mx-2">
-              <div className="flex justify-between items-center mb-3 px-2">
-                <h3 className="text-sm font-bold text-primary">Shop by Category</h3>
-              </div>
-              <div className="flex overflow-x-auto no-scrollbar gap-4 px-2 pb-2">
-                <div onClick={() => { setCurrentTab('shops'); setSelectedShopId(null); }} className="flex flex-col items-center gap-1 cursor-pointer min-w-[70px]">
-                   <div className="w-16 h-16 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500 shadow-sm hover:scale-105 transition-transform"><Store className="w-8 h-8"/></div>
-                   <span className="text-xs font-bold text-primary mt-1 text-center leading-tight">All Shops</span>
-                </div>
-                {categories.map((cat, idx) => (
-                  <div key={idx} onClick={() => { setSelectedCategory(cat.name); setCurrentTab('products'); }} className="flex flex-col items-center gap-1 cursor-pointer min-w-[70px]">
-                    <div className="w-14 h-14 bg-gold-500/10 rounded-full flex items-center justify-center text-gold-500 border border-gold-500/20 transition-colors relative">
-                       {cat.icon}
-                    </div>
-                    <span className="text-[10px] font-medium text-center text-primary-light leading-tight">{getCategoryName(cat.name)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Top Shops Horizontal List */}
-            {publicShops && publicShops.length > 0 && (
-              <div className="mt-4 -mx-2">
-                <div className="flex justify-between items-center mb-3 px-2">
-                  <h3 className="text-sm font-bold text-primary flex items-center gap-1.5"><Store className="w-4 h-4 text-gold-500" /> Browse by Shop</h3>
-                  <button onClick={() => setCurrentTab('shops')} className="text-xs font-bold text-gold-600 hover:text-gold-700">View All</button>
-                </div>
-                <div className="flex overflow-x-auto no-scrollbar gap-3 px-2 pb-2">
-                  {publicShops.slice(0, 5).map((shop, idx) => (
-                    <div 
-                      key={idx} 
-                      onClick={() => { setSelectedShopId(shop.id); setCurrentTab('products'); }}
-                      className="min-w-[200px] bg-white rounded-xl shadow-sm border border-neutral-200 p-3 flex items-center gap-3 cursor-pointer hover:border-gold-500 transition-colors"
-                    >
-                      <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center shrink-0">
-                        <Store className="w-6 h-6" />
-                      </div>
-                      <div className="flex-1 overflow-hidden">
-                        <h4 className="font-bold text-primary text-sm truncate">{shop.name}</h4>
-                        <p className="text-[10px] text-neutral-500 truncate">{shop.description || 'Welcome'}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Real-time Limited Time Offers Widget on Home Page */}
-            {activeOffers.length > 0 && (
-              <div className="bg-gradient-to-br from-stone-900 to-primary text-white rounded-2xl shadow-lg p-5 border border-gold-500/20 relative overflow-hidden -mx-2">
-                <div className="absolute -top-12 -right-12 w-28 h-28 bg-gold-500/10 rounded-full blur-xl" />
-                <div className="absolute -bottom-12 -left-12 w-28 h-28 bg-red-600/10 rounded-full blur-xl" />
-                
-                <div className="flex justify-between items-center mb-3">
-                  <div className="flex items-center gap-1.5">
-                    <Sparkles className="w-5 h-5 text-gold-500 animate-spin-slow" />
-                    <h3 className="text-base font-black tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-gold-100 to-gold-400 uppercase">Limited Time Deals</h3>
-                  </div>
-                  <button 
-                    onClick={() => setIsSpecialOffersOpen(true)}
-                    className="text-xs text-gold-400 hover:text-gold-300 font-black tracking-wider uppercase cursor-pointer"
-                  >
-                    View All ({activeOffers.length})
-                  </button>
-                </div>
-
-                <div className="bg-white/5 border border-white/10 rounded-xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div className="flex-1 space-y-1">
-                    <div className="text-xs font-bold text-red-400 uppercase tracking-widest flex items-center gap-1">
-                      <Clock className="w-3.5 h-3.5" />
-                      Ends In: <span className="font-mono text-yellow-300 font-bold">{getPromoCountdown(activeOffers[0].expiryTime)}</span>
-                    </div>
-                    <h4 className="font-black text-sm tracking-tight text-white leading-snug">
-                      {activeOffers[0].offerTitle || `Coupon "${activeOffers[0].code}" Active`}
-                    </h4>
-                    <p className="text-[11px] text-neutral-400 font-medium line-clamp-1">
-                      {activeOffers[0].offerDescription || `Grab the deal before the countdown hits zero.`}
-                    </p>
-                  </div>
-
-                  <div className="w-full md:w-auto flex items-center justify-between sm:justify-start gap-4 self-stretch md:self-auto bg-black/25 px-3 py-2 rounded-lg border border-white/5">
-                    <div>
-                      <div className="text-[9px] uppercase tracking-wider text-neutral-400">Coupon Code</div>
-                      <div className="font-mono text-sm font-black uppercase text-gold-400 select-all">{activeOffers[0].code}</div>
-                    </div>
-                    <button
-                      onClick={() => handleUsePromoCoupon(activeOffers[0])}
-                      className="bg-gold-500 hover:bg-gold-400 text-black px-4 py-2 rounded-lg font-black text-xs uppercase tracking-wide transition-all shadow-md active:scale-95 cursor-pointer"
-                    >
-                      Use Now
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {/* Featured Products (Home Tab) */}
-            <div className="-mx-2">
-              <div className="flex justify-between items-end mb-4 px-2">
-                <h3 className="text-lg font-bold text-primary">Popular Now</h3>
-              </div>
-              <div className="grid grid-cols-1 gap-4">
-                {publicProducts.slice(0, homeVisibleCount).map(product => {
-                  const cartItem = cart.find(item => item.product.id === product.id);
-                  const qty = cartItem ? cartItem.quantity : 0;
-                  return (
-                    <div key={product.id} className="bg-white p-3.5 rounded-lg shadow-sm border border-neutral-300/50 flex gap-4 relative overflow-hidden transition-all hover:border-gold-500/30">
-                       {/* Favorite Button */}
-                       <button onClick={() => toggleFavorite(product.id)} className="absolute top-2 right-2 z-10 p-2 bg-white/90 backdrop-blur-md rounded-full shadow-sm text-neutral-400 hover:text-rose-500 transition-colors">
-                         <Heart className={`w-4 h-4 ${favorites.includes(product.id) ? 'fill-rose-500 text-rose-500' : 'text-neutral-300'}`} />
-                       </button>
-
-                       {/* Left: Product Image */}
-                       <div className="w-28 h-28 flex-shrink-0 bg-neutral-50 rounded-lg overflow-hidden flex items-center justify-center cursor-pointer border border-neutral-100" onClick={() => setSelectedProduct(product)}>
-                         <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400?text=No+Image"} alt={product.name} className="h-full object-contain hover:scale-105 transition-transform p-2" />
-                       </div>
-
-                       {/* Right: Product Details */}
-                       <div className="flex-1 flex flex-col justify-between py-0.5">
-                         <div>
-                           <span className="text-[10px] bg-gold-500/10 text-gold-700 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">{getCategoryName(product.category)}</span>
-                           <h4 className="text-sm font-bold text-primary mt-1.5 line-clamp-2 cursor-pointer hover:text-gold-600 transition-colors leading-tight" onClick={() => setSelectedProduct(product)}>{product.name}</h4>
-                            {product.shopId && (
-                              <p className="text-[10px] text-blue-500 font-bold mt-1 flex items-center gap-0.5" onClick={() => { setSelectedShopId(product.shopId || null); setCurrentTab('products'); }}>
-                                <Store className="w-3 h-3" />
-                                {publicShops.find(s => s.id === product.shopId)?.name || 'Store'}
-                              </p>
-                            )}
-                         </div>
-
-                         <div className="flex items-center justify-between gap-2 mt-2">
-                           <div className="flex items-baseline gap-1.5">
-                             <span className="text-base font-black text-primary">₹{product.price}</span>
-                             {product.originalPrice && product.originalPrice > product.price && (
-                               <span className="text-xs text-neutral-400 line-through">₹{product.originalPrice}</span>
-                             )}
-                           </div>
-                           
-                           <div className="w-28">
-                             {qty > 0 ? (
-                                <div className="flex items-center justify-between border border-neutral-300 rounded-lg overflow-hidden h-8">
-                                  <button onClick={() => updateQuantity(product.id, qty - 1)} className="bg-neutral-100 hover:bg-neutral-200 text-neutral-600 w-8 h-full flex items-center justify-center font-bold">-</button>
-                                  <span className="text-xs font-bold text-primary">{qty}</span>
-                                  <button onClick={() => updateQuantity(product.id, qty + 1)} className="bg-neutral-100 hover:bg-neutral-200 text-neutral-600 w-8 h-full flex items-center justify-center font-bold">+</button>
-                                </div>
+          <div className="space-y-4 -mx-4 px-4 pb-4">
+            {!selectedShopId ? (
+              // MARKETPLACE HOME - ALL SHOPS
+              <div className="space-y-6 pt-4">
+                <div className="bg-white rounded-2xl shadow-sm p-5 border border-neutral-100">
+                   <h2 className="text-xl font-black text-primary mb-2 flex items-center gap-2">
+                     <Store className="w-6 h-6 text-gold-500" />
+                     Available Shops
+                   </h2>
+                   <p className="text-sm text-neutral-500 mb-6">Select a shop to explore their products and offers.</p>
+                   
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     {publicShops.map((shop, idx) => (
+                        <div 
+                          key={idx} 
+                          onClick={() => { setSelectedShopId(shop.id); setCurrentTab('home'); navigate(`/store/${shop.id}`); }}
+                          className="bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden cursor-pointer hover:border-gold-500 hover:shadow-md transition-all group"
+                        >
+                          <div className="h-32 w-full bg-neutral-100 relative overflow-hidden">
+                             {shop.banner ? (
+                               <img src={getPremiumImageUrl(shop.banner)} alt={shop.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                              ) : (
-                                <button onClick={() => addToCart(product)} className="w-full bg-black hover:bg-gold-500 hover:text-black text-gold-500 text-xs font-bold py-1.5 rounded-lg border border-black transition-all uppercase tracking-wider active:scale-95">
-                                  Add
-                                </button>
+                               <div className="w-full h-full bg-gradient-to-r from-blue-100 to-purple-100 flex items-center justify-center">
+                                 <Store className="w-12 h-12 text-blue-300 opacity-50" />
+                               </div>
                              )}
+                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                             <div className="absolute bottom-3 left-3 flex items-center gap-3">
+                               <div className="w-12 h-12 bg-white rounded-lg p-1 shadow-md">
+                                 {shop.logo ? (
+                                   <img src={getPremiumImageUrl(shop.logo)} alt={shop.name} className="w-full h-full object-contain" />
+                                 ) : (
+                                   <div className="w-full h-full bg-blue-50 flex items-center justify-center rounded-md">
+                                     <Store className="w-6 h-6 text-blue-500" />
+                                   </div>
+                                 )}
+                               </div>
+                               <div>
+                                 <h3 className="font-bold text-white text-lg drop-shadow-sm">{shop.name}</h3>
+                                 <span className="text-[10px] bg-gold-500 text-black px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                                   {shop.shopCategory || 'Store'}
+                                 </span>
+                               </div>
+                             </div>
+                          </div>
+                          <div className="p-4">
+                            <p className="text-xs text-neutral-600 line-clamp-2 mb-3">{shop.shortDescription || shop.description || 'Welcome to our store. Click to view products.'}</p>
+                            <div className="flex items-center justify-between">
+                               <div className="flex items-center gap-1.5 text-xs text-neutral-500">
+                                 <MapPin className="w-3.5 h-3.5" />
+                                 <span className="truncate max-w-[120px]">{shop.address?.city || 'Melapalayam'}</span>
+                               </div>
+                               <button className="text-xs font-bold bg-black text-white px-4 py-2 rounded-lg hover:bg-gold-500 hover:text-black transition-colors">
+                                 Visit Shop
+                               </button>
+                            </div>
+                          </div>
+                        </div>
+                     ))}
+                   </div>
+                </div>
+              </div>
+            ) : (
+              // INDIVIDUAL SHOP HOME
+              (() => {
+                const shop = publicShops.find(s => s.id === selectedShopId);
+                const shopProducts = publicProducts.filter(p => p.shopId === selectedShopId);
+                const shopSlideProducts = shopProducts.filter(p => p.image).slice(0, 5);
+                
+                return (
+                  <div className="space-y-4 pt-2">
+                    {/* Shop Banner Header */}
+                    <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-neutral-100">
+                       <div className="h-40 sm:h-56 w-full relative">
+                         {shop?.banner ? (
+                           <img src={getPremiumImageUrl(shop.banner)} alt={shop?.name} className="w-full h-full object-cover" />
+                         ) : (
+                           <div className="w-full h-full bg-gradient-to-r from-blue-100 to-purple-100 flex items-center justify-center">
+                             <Store className="w-16 h-16 text-blue-300 opacity-50" />
+                           </div>
+                         )}
+                         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                         <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 flex items-end gap-4">
+                           <div className="w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-xl p-1.5 shadow-xl shrink-0">
+                             {shop?.logo ? (
+                               <img src={getPremiumImageUrl(shop.logo)} alt={shop?.name} className="w-full h-full object-contain" />
+                             ) : (
+                               <div className="w-full h-full bg-blue-50 flex items-center justify-center rounded-lg">
+                                 <Store className="w-8 h-8 text-blue-500" />
+                               </div>
+                             )}
+                           </div>
+                           <div className="pb-1">
+                             <h2 className="font-black text-2xl sm:text-3xl text-white drop-shadow-md">{shop?.name}</h2>
+                             <p className="text-gold-400 text-xs sm:text-sm font-medium tracking-wide drop-shadow-sm flex items-center gap-1.5 mt-1">
+                               <MapPin className="w-3.5 h-3.5" /> {shop?.address?.city || 'Melapalayam'}
+                               <span className="mx-1 text-white/30">•</span>
+                               <span className={shop?.status === 'closed' ? 'text-rose-400' : 'text-emerald-400'}>
+                                 {shop?.status === 'closed' ? 'Closed Now' : 'Open Now'}
+                               </span>
+                             </p>
                            </div>
                          </div>
                        </div>
+                       
+                       {/* Shop About & Contact Info */}
+                       {(shop?.about || shop?.phone || shop?.openingHours || shop?.address?.street) && (
+                         <div className="p-4 sm:p-6 bg-white">
+                           {shop?.about && (
+                             <p className="text-sm text-neutral-600 leading-relaxed mb-4">{shop.about}</p>
+                           )}
+                           <div className="flex flex-wrap gap-4 pt-4 border-t border-neutral-100">
+                             {shop?.phone && (
+                               <a href={`tel:${shop.phone}`} className="flex items-center gap-2 text-xs font-semibold text-neutral-700 bg-neutral-100 px-3 py-1.5 rounded-lg hover:bg-neutral-200 transition-colors">
+                                 <Phone className="w-4 h-4 text-blue-500" /> Call Us
+                               </a>
+                             )}
+                             {shop?.whatsapp && (
+                               <a href={`https://wa.me/${shop.whatsapp}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-xs font-semibold text-neutral-700 bg-green-50 px-3 py-1.5 rounded-lg hover:bg-green-100 transition-colors">
+                                 <MessageCircle className="w-4 h-4 text-green-500" /> WhatsApp
+                               </a>
+                             )}
+                             {shop?.openingHours && (
+                               <div className="flex items-center gap-2 text-xs font-medium text-neutral-600 bg-neutral-50 px-3 py-1.5 rounded-lg">
+                                 <Clock className="w-4 h-4 text-orange-500" /> {shop.openingHours}
+                               </div>
+                             )}
+                           </div>
+                         </div>
+                       )}
                     </div>
-                  );
-                })}
-              </div>
-              
-              {(hasMore || publicProducts.length > homeVisibleCount) && (
-                <div className="flex justify-center mt-4">
-                  <button 
-                    onClick={() => {
-                      setHomeVisibleCount(prev => prev + 20);
-                      if (homeVisibleCount + 20 >= publicProducts.length && hasMore && !isLoadingMore) {
-                        loadMoreProducts();
-                      }
-                    }} 
-                    disabled={isLoadingMore}
-                    className="bg-white border-2 border-gold-500 text-gold-500 font-bold py-2 px-6 rounded-full shadow-sm hover:bg-gold-500/10 transition-colors disabled:opacity-50 flex items-center gap-2 text-xs"
-                  >
-                    {isLoadingMore ? (
-                      <><div className="w-3.5 h-3.5 border-2 border-gold-500 border-t-transparent rounded-full animate-spin"></div> Loading...</>
-                    ) : (
-                      "Load More"
+                    
+                    {/* Shop Categories */}
+                    <div className="bg-white rounded-2xl shadow-sm p-4">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-base font-bold text-primary">Categories in {shop?.name}</h3>
+                        <button onClick={() => setCurrentTab('products')} className="text-xs font-bold text-gold-600 hover:text-gold-700">View All</button>
+                      </div>
+                      <div className="flex overflow-x-auto no-scrollbar gap-4 pb-2">
+                        <div onClick={() => { setSelectedCategory('All'); setCurrentTab('products'); }} className="flex flex-col items-center gap-1.5 cursor-pointer min-w-[70px]">
+                           <div className="w-14 h-14 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-500 shadow-sm hover:scale-105 transition-transform"><LayoutGrid className="w-6 h-6"/></div>
+                           <span className="text-xs font-bold text-primary text-center leading-tight">All Products</span>
+                        </div>
+                        {categories.filter(cat => shopProducts.some(p => getCategoryName(p.category) === getCategoryName(cat.name))).map((cat, idx) => (
+                          <div key={idx} onClick={() => { setSelectedCategory(cat.name); setCurrentTab('products'); }} className="flex flex-col items-center gap-1.5 cursor-pointer min-w-[70px]">
+                            <div className="w-14 h-14 bg-gold-500/10 rounded-full flex items-center justify-center text-gold-500 border border-gold-500/20 hover:scale-105 transition-transform">
+                               {cat.icon}
+                            </div>
+                            <span className="text-[10px] font-medium text-center text-primary-light leading-tight">{getCategoryName(cat.name)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Shop Auto-Sliding Banner (if shop has products) */}
+                    {shopSlideProducts.length > 0 && (
+                      <div 
+                        className="relative w-full h-48 bg-white rounded-2xl overflow-hidden shadow-sm mt-4 group"
+                        onTouchStart={handleTouchStart}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleTouchEnd}
+                        onMouseEnter={() => setIsSliderPaused(true)}
+                        onMouseLeave={() => setIsSliderPaused(false)}
+                      >
+                         <div className="flex w-full h-full transition-transform duration-500 ease-in-out" style={{ transform: `translateX(-${currentSlide * 100}%)` }}>
+                            {shopSlideProducts.map((product, idx) => (
+                              <div key={idx} className="w-full h-full flex-shrink-0 relative bg-gradient-to-r from-violet-50 to-indigo-50 flex items-center p-4 cursor-pointer" onClick={() => { setSelectedProduct(product); }}>
+                                 <div className="w-1/2 z-10 pl-2">
+                                   <span className="text-[10px] font-bold uppercase tracking-wider bg-red-500 text-white px-2 py-1 rounded inline-block mb-2 shadow-sm">Popular</span>
+                                   <h2 className="text-lg font-bold leading-tight mb-2 text-primary line-clamp-2">{product.name}</h2>
+                                   <div className="flex items-baseline gap-1 mb-3">
+                                     <span className="text-lg font-black text-gold-500">₹{product.price}</span>
+                                   </div>
+                                   <button className="premium-button text-[10px] font-bold px-4 py-2 shadow-sm rounded-sm uppercase tracking-wide">Buy Now</button>
+                                 </div>
+                                 <div className="w-1/2 h-full flex justify-end items-center relative pr-2">
+                                    <img src={getPremiumImageUrl(product.image) || "https://placehold.co/400x400?text=No+Image"} alt={product.name} className="h-full max-h-36 object-contain mix-blend-multiply drop-shadow-md" />
+                                 </div>
+                              </div>
+                            ))}
+                         </div>
+                         <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-2 z-20">
+                           {shopSlideProducts.map((_, idx) => (
+                             <div key={idx} onClick={(e) => { e.stopPropagation(); setCurrentSlide(idx); }} className="p-2 cursor-pointer flex items-center justify-center">
+                               <div className={`w-6 h-1.5 rounded-full transition-colors ${currentSlide === idx ? 'bg-primary' : 'bg-gray-300/80'}`} />
+                             </div>
+                           ))}
+                         </div>
+                      </div>
                     )}
-                  </button>
-                </div>
-              )}
-            </div>
+                    
+                  </div>
+                );
+              })()
+            )}
           </div>
         )}
-        {currentTab === 'shops' && (
+{currentTab === 'shops' && (
           <div className="space-y-4">
             <h2 className="text-xl font-bold text-primary mb-4">All Shops</h2>
             {publicShops.length === 0 ? (
@@ -2006,7 +2029,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                 {publicShops.map((shop, idx) => (
                   <div 
                     key={idx} 
-                    onClick={() => { setSelectedShopId(shop.id); setCurrentTab('products'); }}
+                    onClick={() => { setSelectedShopId(shop.id); setCurrentTab('home'); navigate(`/store/${shop.id}`); }}
                     className="bg-white rounded-2xl shadow-sm border border-neutral-200 p-4 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-gold-500 hover:shadow-md transition-all group"
                   >
                     <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -2030,7 +2053,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
           <div className="space-y-4">
             {/* Filter Chips */}
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-              {categories.map(cat => (
+              {categories.filter(cat => !selectedShopId || publicProducts.filter(p => p.shopId === selectedShopId).some(p => getCategoryName(p.category) === getCategoryName(cat.name))).map(cat => (
                  <button 
                    key={cat.id}
                    onClick={() => setSelectedCategory(cat.name)}
