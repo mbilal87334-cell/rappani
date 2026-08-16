@@ -1,12 +1,36 @@
 import React, {  useState, useEffect, useRef, lazy, Suspense  } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { BrowserRouter, Routes, Route, Link, useNavigate, Navigate, useParams } from 'react-router-dom';
-import { Phone, Mail, Instagram, MessageCircle, MapPin, Map, Lock, LogOut, Plus, Edit, Trash2, Store, ShoppingBag, Menu, X, Camera, Aperture, Globe, Database, Search, ArrowUp, Package, LayoutGrid, ShoppingCart, Minus, Image, ShieldCheck, Gift, Sparkles, Sticker, Rocket, Coffee, Eye, Star, TrendingUp, CheckCircle2, Info , Home, Heart, User, ChevronRight, CreditCard, Briefcase, Ticket, Navigation, Smartphone, Clock } from 'lucide-react';
+import { Phone, ArrowLeft, Mail, Instagram, MessageCircle, MapPin, Map, Lock, LogOut, Plus, Edit, Trash2, Store, ShoppingBag, Menu, X, Camera, Aperture, Globe, Database, Search, ArrowUp, Package, LayoutGrid, ShoppingCart, Minus, Image, ShieldCheck, Gift, Sparkles, Sticker, Rocket, Coffee, Eye, Star, TrendingUp, CheckCircle2, Info , Home, Heart, User, ChevronRight, CreditCard, Briefcase, Ticket, Navigation, Smartphone, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 const AdminApp = lazy(() => import('./admin/AdminApp'));
 import LocationMap from './LocationMap';
 import AddressManager from './AddressManager';
 import QRCode from 'react-qr-code';
+
+
+class ErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: Error | null}> {
+  constructor(props: {children: React.ReactNode}) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '20px', color: 'red', background: '#ffe6e6', height: '100vh', width: '100vw' }}>
+          <h2>React App Crashed!</h2>
+          <pre>{this.state.error?.toString()}</pre>
+          <pre>{this.state.error?.stack}</pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 
 // --- Types ---
 export interface Product {
@@ -29,6 +53,7 @@ export interface Product {
   isFeatured?: boolean;
   isVisible?: boolean;
   reviews?: Review[];
+  shopId?: string;
 }
 
 interface Review {
