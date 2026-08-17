@@ -43,8 +43,8 @@ export default function ShopProfile() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
-      if (data.shops) {
-        setShops(data.shops);
+      if (Array.isArray(data)) {
+        setShops(data);
       }
     } catch (err) {
       // Not super admin, ignore
