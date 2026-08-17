@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+const fs = require('fs');
+
+const content = `import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Store, MapPin, Phone, Mail, Instagram, Clock, CheckCircle, Loader2, Link as LinkIcon, Camera, LayoutTemplate, ChevronDown } from 'lucide-react';
 import { toast } from 'react-hot-toast';
@@ -40,7 +42,7 @@ export default function ShopProfile() {
     try {
       const token = localStorage.getItem('adminToken');
       const res = await fetch('/api/admin/shops', {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': \`Bearer \${token}\` }
       });
       const data = await res.json();
       if (data.shops) {
@@ -57,10 +59,10 @@ export default function ShopProfile() {
       const token = localStorage.getItem('adminToken');
       let url = '/api/admin/shop-profile';
       if (shopIdToFetch) {
-        url += `?shopId=${shopIdToFetch}`;
+        url += \`?shopId=\${shopIdToFetch}\`;
       }
       const res = await fetch(url, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': \`Bearer \${token}\` }
       });
       const data = await res.json();
       if (data.success && data.shop) {
@@ -102,7 +104,7 @@ export default function ShopProfile() {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` 
+          'Authorization': \`Bearer \${token}\` 
         },
         body: JSON.stringify({ ...profile, shopId: selectedShopId || profile.id })
       });
@@ -128,7 +130,7 @@ export default function ShopProfile() {
       const token = localStorage.getItem('adminToken');
       const res = await fetch('/api/upload', {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: { 'Authorization': \`Bearer \${token}\` },
         body: formData
       });
       const data = await res.json();
@@ -348,3 +350,7 @@ export default function ShopProfile() {
     </div>
   );
 }
+`;
+
+fs.writeFileSync('src/admin/pages/ShopProfile.tsx', content);
+console.log("Updated ShopProfile.tsx successfully.");
