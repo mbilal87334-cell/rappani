@@ -1,4 +1,10 @@
-import React, { useState, useEffect } from 'react';
+const fs = require('fs');
+let content = fs.readFileSync('src/admin/pages/Settings.tsx', 'utf8');
+
+// Replace the entire Store Info section with an empty string
+// We will just do a regex or substring replacement. Actually, it's easier to just overwrite Settings.tsx cleanly.
+
+const newSettingsContent = `import React, { useState, useEffect } from 'react';
 import { User, KeyRound, Mail, Store, Phone, ShieldAlert, Loader2 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
@@ -20,7 +26,7 @@ export default function Settings({ settings, setSettings }: any) {
     try {
       const token = localStorage.getItem('adminToken');
       const res = await fetch('/api/admin/profile', {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': \`Bearer \${token}\` }
       });
       const data = await res.json();
       if (data.success) {
@@ -44,7 +50,7 @@ export default function Settings({ settings, setSettings }: any) {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': \`Bearer \${token}\`
         },
         body: JSON.stringify({ email: adminEmail })
       });
@@ -75,7 +81,7 @@ export default function Settings({ settings, setSettings }: any) {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': \`Bearer \${token}\`
         },
         body: JSON.stringify({ password: newPassword })
       });
@@ -117,7 +123,7 @@ export default function Settings({ settings, setSettings }: any) {
           <h2 className="text-xl font-bold text-gray-900">{profile.username}</h2>
           
           <div className="mt-2 flex items-center gap-2">
-            <span className={`px-3 py-1 text-xs font-semibold rounded-full flex items-center gap-1.5 ${profile.role === 'superadmin' ? 'bg-purple-50 text-purple-600' : 'bg-green-50 text-green-600'}`}>
+            <span className={\`px-3 py-1 text-xs font-semibold rounded-full flex items-center gap-1.5 \${profile.role === 'superadmin' ? 'bg-purple-50 text-purple-600' : 'bg-green-50 text-green-600'}\`}>
               <ShieldAlert size={12} />
               {profile.role === 'superadmin' ? 'Super Admin' : 'Shop Admin'}
             </span>
@@ -181,3 +187,7 @@ export default function Settings({ settings, setSettings }: any) {
     </div>
   );
 }
+`;
+
+fs.writeFileSync('src/admin/pages/Settings.tsx', newSettingsContent);
+console.log("Cleaned up Settings.tsx successfully.");

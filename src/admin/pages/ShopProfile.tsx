@@ -93,18 +93,18 @@ export default function ShopProfile() {
     const toastId = toast.loading('Uploading image...');
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('image', file);
       
       const token = localStorage.getItem('adminToken');
-      const res = await fetch('/api/admin/upload', {
+      const res = await fetch('/api/upload', {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` },
         body: formData
       });
       const data = await res.json();
       
-      if (data.success) {
-        setProfile(prev => ({ ...prev, [field]: data.url }));
+      if (data.imageUrl) {
+        setProfile(prev => ({ ...prev, [field]: data.imageUrl }));
         toast.success('Image uploaded successfully', { id: toastId });
       } else {
         toast.error(data.error || 'Failed to upload image', { id: toastId });
