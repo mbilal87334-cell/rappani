@@ -2009,7 +2009,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                                </a>
                              )}
                              {shop?.instagram && (
-                               <a href={shop.instagram} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-xs font-semibold text-neutral-700 bg-pink-50 px-3 py-1.5 rounded-lg hover:bg-pink-100 transition-colors">
+                               <a href={getInstagramUrl(shop.instagram)} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-xs font-semibold text-neutral-700 bg-pink-50 px-3 py-1.5 rounded-lg hover:bg-pink-100 transition-colors">
                                  <Instagram className="w-4 h-4 text-pink-500" /> Instagram
                                </a>
                              )}
@@ -2772,13 +2772,13 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                 )}
                 
                 {(activeShopContext?.instagram) && (
-                  <a href={`https://instagram.com/${activeShopContext.instagram.replace('@', '')}`} target="_blank" rel="noreferrer" className="p-4 flex items-center gap-4 hover:bg-gold-50 transition-colors">
+                  <a href={getInstagramUrl(activeShopContext.instagram)} target="_blank" rel="noreferrer" className="p-4 flex items-center gap-4 hover:bg-gold-50 transition-colors">
                      <div className="w-10 h-10 bg-pink-50 text-pink-600 rounded-full flex items-center justify-center shrink-0">
                        <Instagram className="w-5 h-5" />
                      </div>
                      <div className="flex-1">
                        <h4 className="font-bold text-primary">Instagram</h4>
-                       <p className="text-xs text-neutral-500">{activeShopContext.instagram.startsWith('@') ? activeShopContext.instagram : '@' + activeShopContext.instagram}</p>
+                       <p className="text-xs text-neutral-500">{getInstagramDisplay(activeShopContext.instagram)}</p>
                      </div>
                   </a>
                 )}
