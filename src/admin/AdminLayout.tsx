@@ -21,7 +21,8 @@ import {
   Search,
   LogOut,
   MessageSquare,
-  Layers
+  Layers,
+  Store
 } from 'lucide-react';
 
 const ALL_MENU_ITEMS = [
