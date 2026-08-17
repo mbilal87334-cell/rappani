@@ -125,6 +125,27 @@ declare global {
 // --- API Service ---
 export const API_BASE = '/api';
 
+export const getInstagramUrl = (handleOrUrl: string) => {
+  if (!handleOrUrl) return '';
+  if (handleOrUrl.startsWith('http://') || handleOrUrl.startsWith('https://')) return handleOrUrl;
+  return `https://instagram.com/${handleOrUrl.replace('@', '')}`;
+};
+
+export const getInstagramDisplay = (handleOrUrl: string) => {
+  if (!handleOrUrl) return '';
+  if (handleOrUrl.startsWith('http://') || handleOrUrl.startsWith('https://')) {
+    try {
+      const url = new URL(handleOrUrl);
+      const path = url.pathname.split('/').filter(Boolean)[0];
+      return path ? `@${path}` : handleOrUrl;
+    } catch {
+      return handleOrUrl;
+    }
+  }
+  return handleOrUrl.startsWith('@') ? handleOrUrl : `@${handleOrUrl}`;
+};
+
+
 const getPremiumImageUrl = (url: string) => {
   if (!url) return url;
   if (url.includes('res.cloudinary.com')) {
