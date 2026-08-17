@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { User, KeyRound, Mail, Store, Phone, ShieldAlert, Loader2 } from 'lucide-react';
+import { User, KeyRound, Mail, Store, Phone, ShieldAlert, Loader2, MapPin, Instagram, Clock, MessageCircle } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 
 export default function Settings({ settings, setSettings }: any) {
@@ -11,6 +11,18 @@ export default function Settings({ settings, setSettings }: any) {
   const [newPassword, setNewPassword] = useState('');
   const [isSavingEmail, setIsSavingEmail] = useState(false);
   const [isSavingPassword, setIsSavingPassword] = useState(false);
+  const [isSavingShop, setIsSavingShop] = useState(false);
+
+  // Shop details state
+  const [shopName, setShopName] = useState('');
+  const [shopDescription, setShopDescription] = useState('');
+  const [shopAddress, setShopAddress] = useState('');
+  const [shopPhone, setShopPhone] = useState('');
+  const [shopWhatsapp, setShopWhatsapp] = useState('');
+  const [shopEmail, setShopEmail] = useState('');
+  const [shopInstagram, setShopInstagram] = useState('');
+  const [shopOpeningTime, setShopOpeningTime] = useState('');
+  const [shopClosingTime, setShopClosingTime] = useState('');
 
   useEffect(() => {
     fetchProfile();
@@ -27,6 +39,18 @@ export default function Settings({ settings, setSettings }: any) {
         setProfile(data.admin);
         setShop(data.shop);
         setAdminEmail(data.admin.email || '');
+        
+        if (data.shop) {
+          setShopName(data.shop.name || '');
+          setShopDescription(data.shop.about || data.shop.description || '');
+          setShopAddress(data.shop.address || '');
+          setShopPhone(data.shop.phone || '');
+          setShopWhatsapp(data.shop.whatsapp || '');
+          setShopEmail(data.shop.email || '');
+          setShopInstagram(data.shop.instagram || '');
+          setShopOpeningTime(data.shop.openingTime || '09:00 AM');
+          setShopClosingTime(data.shop.closingTime || '09:00 PM');
+        }
       }
     } catch (err) {
       toast.error("Failed to load profile");
@@ -93,6 +117,45 @@ export default function Settings({ settings, setSettings }: any) {
     }
   };
 
+  const handleSaveShopInfo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingShop(true);
+    try {
+      const token = localStorage.getItem('adminToken');
+      const res = await fetch('/api/admin/profile', {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          shopDetails: {
+            name: shopName,
+            about: shopDescription,
+            address: shopAddress,
+            phone: shopPhone,
+            whatsapp: shopWhatsapp,
+            email: shopEmail,
+            instagram: shopInstagram,
+            openingTime: shopOpeningTime,
+            closingTime: shopClosingTime
+          }
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        toast.success('Store Info updated successfully!');
+        if (data.shop) setShop(data.shop);
+      } else {
+        toast.error(data.error || 'Failed to update Store Info');
+      }
+    } catch (err) {
+      toast.error('Server error');
+    } finally {
+      setIsSavingShop(false);
+    }
+  };
+
   if (isLoading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin text-gold-500" size={32} /></div>;
   }
@@ -104,8 +167,8 @@ export default function Settings({ settings, setSettings }: any) {
   return (
     <div className="max-w-3xl mx-auto pb-10 p-4 lg:p-8 pt-20 lg:pt-8 w-full min-h-screen">
       <div className="mb-6">
-        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight font-heading">My Profile</h1>
-        <p className="text-sm font-medium text-gray-500 mt-1">Manage your account settings and security.</p>
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 tracking-tight font-heading">My Profile & Store Info</h1>
+        <p className="text-sm font-medium text-gray-500 mt-1">Manage your account settings and your assigned store's information.</p>
       </div>
 
       <div className="space-y-6">
@@ -137,11 +200,77 @@ export default function Settings({ settings, setSettings }: any) {
           </div>
         </div>
 
+        {/* Store Info */}
+        {shop && (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3 bg-stone-50">
+              <Store className="text-stone-500" size={20} />
+              <h3 className="font-semibold text-gray-900">Your Store Information</h3>
+            </div>
+            <form onSubmit={handleSaveShopInfo} className="p-6">
+              <p className="text-sm text-gray-500 mb-6">This information will be displayed to customers when they visit your shop.</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Store Name</label>
+                  <input type="text" value={shopName} onChange={(e) => setShopName(e.target.value)} className="w-full px-4 py-2.5 bg-stone-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-black outline-none transition-all text-sm" required />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5"><Phone size={14} className="inline mr-1"/> Phone Number</label>
+                  <input type="text" value={shopPhone} onChange={(e) => setShopPhone(e.target.value)} className="w-full px-4 py-2.5 bg-stone-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-black outline-none transition-all text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5"><MessageCircle size={14} className="inline mr-1"/> WhatsApp Number</label>
+                  <input type="text" value={shopWhatsapp} onChange={(e) => setShopWhatsapp(e.target.value)} className="w-full px-4 py-2.5 bg-stone-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-black outline-none transition-all text-sm" />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5"><Mail size={14} className="inline mr-1"/> Support Email</label>
+                  <input type="email" value={shopEmail} onChange={(e) => setShopEmail(e.target.value)} className="w-full px-4 py-2.5 bg-stone-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-black outline-none transition-all text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5"><Instagram size={14} className="inline mr-1"/> Instagram Username</label>
+                  <input type="text" value={shopInstagram} onChange={(e) => setShopInstagram(e.target.value)} placeholder="@mr_rappani" className="w-full px-4 py-2.5 bg-stone-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-black outline-none transition-all text-sm" />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5"><Clock size={14} className="inline mr-1"/> Opening Time</label>
+                  <input type="text" value={shopOpeningTime} onChange={(e) => setShopOpeningTime(e.target.value)} placeholder="09:00 AM" className="w-full px-4 py-2.5 bg-stone-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-black outline-none transition-all text-sm" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5"><Clock size={14} className="inline mr-1"/> Closing Time</label>
+                  <input type="text" value={shopClosingTime} onChange={(e) => setShopClosingTime(e.target.value)} placeholder="09:00 PM" className="w-full px-4 py-2.5 bg-stone-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-black outline-none transition-all text-sm" />
+                </div>
+                
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5"><MapPin size={14} className="inline mr-1"/> Store Physical Address</label>
+                  <textarea rows={3} value={shopAddress} onChange={(e) => setShopAddress(e.target.value)} className="w-full px-4 py-2.5 bg-stone-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-black outline-none transition-all text-sm resize-none"></textarea>
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">About Store</label>
+                  <textarea rows={2} value={shopDescription} onChange={(e) => setShopDescription(e.target.value)} placeholder="A brief description about your store" className="w-full px-4 py-2.5 bg-stone-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-black outline-none transition-all text-sm resize-none"></textarea>
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-2 border-t border-gray-100">
+                <button 
+                  type="submit" 
+                  disabled={isSavingShop}
+                  className="px-6 py-2.5 bg-black text-gold-500 rounded-xl font-medium hover:bg-gold-500 hover:text-black transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
+                >
+                  {isSavingShop ? <Loader2 size={18} className="animate-spin" /> : 'Save Store Info'}
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
         {/* Change Email */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3 bg-stone-50">
             <Mail className="text-stone-500" size={20} />
-            <h3 className="font-semibold text-gray-900">Email Address</h3>
+            <h3 className="font-semibold text-gray-900">Login Email Address</h3>
           </div>
           <form onSubmit={handleSaveEmail} className="p-6">
             <p className="text-sm text-gray-500 mb-4">Update your email address for notifications and account recovery.</p>
@@ -157,7 +286,7 @@ export default function Settings({ settings, setSettings }: any) {
               <button 
                 type="submit" 
                 disabled={isSavingEmail}
-                className="px-6 py-2.5 bg-black text-gold-500 rounded-xl font-medium hover:bg-gold-500 hover:text-black transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
+                className="px-6 py-2.5 bg-stone-100 text-stone-700 rounded-xl font-medium hover:bg-stone-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
               >
                 {isSavingEmail ? <Loader2 size={18} className="animate-spin" /> : 'Update Email'}
               </button>
@@ -169,7 +298,7 @@ export default function Settings({ settings, setSettings }: any) {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3 bg-stone-50">
             <KeyRound className="text-stone-500" size={20} />
-            <h3 className="font-semibold text-gray-900">Change Password</h3>
+            <h3 className="font-semibold text-gray-900">Change Login Password</h3>
           </div>
           <form onSubmit={handleSavePassword} className="p-6">
             <p className="text-sm text-gray-500 mb-4">Set a new password for your admin account.</p>
@@ -185,7 +314,7 @@ export default function Settings({ settings, setSettings }: any) {
               <button 
                 type="submit" 
                 disabled={isSavingPassword}
-                className="px-6 py-2.5 bg-black text-gold-500 rounded-xl font-medium hover:bg-gold-500 hover:text-black transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
+                className="px-6 py-2.5 bg-stone-100 text-stone-700 rounded-xl font-medium hover:bg-stone-200 transition-colors flex items-center justify-center gap-2 disabled:opacity-70"
               >
                 {isSavingPassword ? <Loader2 size={18} className="animate-spin" /> : 'Update Password'}
               </button>

@@ -1855,7 +1855,7 @@ async function startServer() {
 
   app.put("/api/admin/profile", authenticateToken, async (req: any, res) => {
     try {
-      const { email, password } = req.body;
+      const { email, password, shopDetails } = req.body;
       const updateData: any = {};
       
       if (email) updateData.email = email;
@@ -1867,7 +1867,18 @@ async function startServer() {
         { new: true }
       ).select('-password');
 
-      res.json({ success: true, admin: updatedAdmin });
+      let updatedShop = null;
+      if (shopDetails && updatedAdmin && updatedAdmin.shopId) {
+        // Find the shop and update it
+        // To enforce isolation, we only update the shop linked to this admin!
+        updatedShop = await Shop.findOneAndUpdate(
+          { id: updatedAdmin.shopId },
+          { $set: shopDetails },
+          { new: true }
+        );
+      }
+
+      res.json({ success: true, admin: updatedAdmin, shop: updatedShop });
     } catch (err: any) {
       res.status(500).json({ success: false, error: err.message || "Server error" });
     }
