@@ -2757,7 +2757,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                 )}
 
                 {(activeShopContext?.whatsapp || activeShopContext?.phone || settings.admin_phone) && (
-                  <a href={`https://wa.me/${(activeShopContext?.whatsapp || activeShopContext?.phone || settings.admin_phone).replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="p-4 border-b border-gray-50 flex items-center gap-4 hover:bg-gold-50 transition-colors">
+                  <a href={`https://wa.me/${String(activeShopContext?.whatsapp || activeShopContext?.phone || settings.admin_phone).replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="p-4 border-b border-gray-50 flex items-center gap-4 hover:bg-gold-50 transition-colors">
                      <div className="w-10 h-10 bg-green-50 text-green-600 rounded-full flex items-center justify-center shrink-0">
                        <MessageCircle className="w-5 h-5" />
                      </div>
