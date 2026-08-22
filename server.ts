@@ -63,6 +63,7 @@ const shopSchema = new mongoose.Schema({
   description: { type: String, default: '' },
   about: { type: String, default: '' },
   address: { type: String, default: '' },
+  location: { type: String, default: '' },
   latitude: { type: String, default: '' },
   longitude: { type: String, default: '' },
   logo: { type: String, default: '' },
@@ -831,7 +832,7 @@ async function startServer() {
   app.get("/api/public/shops", async (req, res) => {
     try {
       // Fetch active shops with new profile fields
-      const shops = await Shop.find({ status: 'active' }, 'id name address latitude longitude logo banner about phone whatsapp email instagram openingTime closingTime isOpen').lean();
+      const shops = await Shop.find({ status: 'active' }, 'id name address location latitude longitude logo banner about phone whatsapp email instagram openingTime closingTime isOpen').lean();
       res.json(shops);
     } catch (err) {
       res.status(500).json({ success: false, error: "Server error" });
@@ -873,6 +874,7 @@ async function startServer() {
         description: req.body.description,
         about: req.body.about,
         address: req.body.address,
+        location: req.body.location,
         latitude: req.body.latitude,
         longitude: req.body.longitude,
         logo: req.body.logo,
@@ -1896,6 +1898,7 @@ async function startServer() {
         name: shopName,
         description: shopDescription,
         address: shopAddress,
+        location: req.body.location || shopAddress,
         latitude: shopLatitude || '',
         longitude: shopLongitude || '',
         assignedCategories: assignedCategories || []
@@ -1927,6 +1930,7 @@ async function startServer() {
           name: shopName,
           description: shopDescription,
           address: shopAddress,
+        location: req.body.location || shopAddress,
           latitude: shopLatitude || '',
           longitude: shopLongitude || '',
           assignedCategories: assignedCategories || []

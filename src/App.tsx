@@ -1929,7 +1929,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                             <div className="flex items-center justify-between">
                                <div className="flex items-center gap-1.5 text-xs text-neutral-500">
                                  <MapPin className="w-3.5 h-3.5" />
-                                 <span className="truncate max-w-[120px]">{shop.address?.city || 'Melapalayam'}</span>
+                                 <span className="truncate max-w-[120px]">{shop.location || 'Location not available'}</span>
                                </div>
                                <button className="text-xs font-bold bg-black text-white px-4 py-2 rounded-lg hover:bg-gold-500 hover:text-black transition-colors">
                                  Visit Shop
@@ -1997,7 +1997,7 @@ function VisitorPanel({ products, settings, setProducts, hasMore, isLoadingMore,
                            <div className="pb-1">
                              <h2 className="font-black text-2xl sm:text-3xl text-white drop-shadow-md">{shop?.name}</h2>
                              <p className="text-gold-400 text-xs sm:text-sm font-medium tracking-wide drop-shadow-sm flex items-center gap-1.5 mt-1">
-                               <MapPin className="w-3.5 h-3.5" /> {shop?.address?.city || 'Melapalayam'}
+                               <MapPin className="w-3.5 h-3.5" /> {shop?.location || 'Location not available'}
                                <span className="mx-1 text-white/30">•</span>
                                <span className={shop?.status === 'closed' ? 'text-rose-400' : 'text-emerald-400'}>
                                  {shop?.status === 'closed' ? 'Closed Now' : 'Open Now'}
